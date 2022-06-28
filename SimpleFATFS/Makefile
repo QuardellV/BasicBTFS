@@ -1,9 +1,9 @@
-obj-m += simplefatfs.o
-simplefatfs-objs = fs.o
+obj-m += basicftfs.o
+basicftfs-objs = fs.o super.o inode.o file.o dir.o
 
 KDIR ?= /lib/modules/$(shell uname -r)/build
 
-MKFS =  test.simplefatfs
+MKFS =  test.basicftfs
 
 all: $(MKFS)
 	make -C $(KDIR) M=$(PWD) modules
