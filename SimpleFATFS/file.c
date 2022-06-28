@@ -7,10 +7,10 @@
 #include "basicftfs.h"
 
 const struct address_space_operations basicftfs_aops = {
-    .readpage = basicfs_readpage,
-    .writepage = basicfs_writepage,
-    .write_begin = basicfs_write_begin,
-    .write_end = basicfs_write_end,
+    // .readpage = basicfs_readpage,
+    // .writepage = basicfs_writepage,
+    // .write_begin = basicfs_write_begin,
+    // .write_end = basicfs_write_end,
 };
 
 const struct file_operations basicftfs_file_ops = {

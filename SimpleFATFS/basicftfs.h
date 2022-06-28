@@ -58,6 +58,13 @@ int basicftfs_fill_super(struct super_block *sb, void *data, int silent);
 /* Inode functions*/
 struct inode *basicftfs_iget(struct super_block *sb, unsigned long ino);
 
+/* Operation structs*/
+extern const struct file_operations basicftfs_file_ops;
+extern const struct file_operations basicftfs_dir_ops;
+extern const struct address_space_operations basicftfs_aops;
+extern const struct inode_operations basicftfs_inode_ops;
+extern const struct inode_operations symlink_inode_ops;
+
 /* Getter functions for disk info*/
 #define BASICFTFS_SB(sb) (sb->s_fs_info)
 #define BASICFTFS_INODE(inode) (container_of(inode, struct basicftfs_inode_info, vfs_inode))

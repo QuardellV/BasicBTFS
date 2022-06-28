@@ -15,6 +15,10 @@ const struct inode_operations basicfs_inode_ops = {
     // .link = basicftfs_link,
 };
 
+const struct inode_operations symlink_inode_ops = {
+    // .get_link = basicfs_get_link,
+};
+
 static void write_from_disk_to_vfs_inode(struct super_block *sb, struct inode *vfs_inode, struct basicftfs_inode *disk_inode, unsigned long ino) {
     vfs_inode->i_ino = ino;
     vfs_inode->i_sb = sb;
@@ -37,7 +41,7 @@ static void init_inode_mode(struct inode *vfs_inode, struct basicftfs_inode *dis
         inode_info->i_bno = le32_to_cpu(disk_inode->i_bno);
         vfs_inode->i_fop = &basicftfs_dir_ops;
     } else if (S_ISREG(vfs_inode->i_mode)) {
-        inode_info->i_bno = le32_to_cpu(cinode->i_bno);
+        inode_info->i_bno = le32_to_cpu(disk_inode->i_bno);
         vfs_inode->i_fop = &basicftfs_file_ops;
         vfs_inode->i_mapping->a_ops = &basicftfs_aops;
     } else if (S_ISLNK(vfs_inode->i_mode)) {
@@ -66,7 +70,8 @@ static int init_vfs_inode(struct super_block *sb, struct inode *inode, unsigned 
     bftfs_inode += inode_block_idx;
 
     write_from_disk_to_vfs_inode(sb, inode, bftfs_inode, ino);
-
+    init_inode_mode(inode, bftfs_inode, bftfs_inode_info);
+    return 0;
 }
 
 struct inode *basicftfs_iget(struct super_block *sb, unsigned long ino) {
