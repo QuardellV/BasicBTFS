@@ -9,7 +9,7 @@
 MODULE_LICENSE("GPL");
 MODULE_AUTHOR("quardell");
 
-struct Dentry *basicftfs_mount(struct file_system_type *fs_type, int flags, const char *dev_name, void *data) {
+struct dentry *basicftfs_mount(struct file_system_type *fs_type, int flags, const char *dev_name, void *data) {
     struct dentry *dentry = mount_bdev(fs_type, flags, dev_name, data, basicftfs_fill_super);
 
     if (IS_ERR(dentry)) {
@@ -21,7 +21,7 @@ struct Dentry *basicftfs_mount(struct file_system_type *fs_type, int flags, cons
     return dentry;
 }
 
-void basicftfs_kill_sb(struct superblock *sb) {
+void basicftfs_kill_sb(struct super_block *sb) {
     printk(KERN_INFO "Superblock will be destryoyed\n");
     kill_block_super(sb);
 }
@@ -53,7 +53,7 @@ static void __exit basicftfs_exit(void) {
         printk(KERN_ERR "Failed unregistration of filesystem\n");
     }
 
-    simplefatfs_destroy_inode_cache();
+    basicftfs_destroy_inode_cache();
 
     printk(KERN_INFO "remove module\n");
 }

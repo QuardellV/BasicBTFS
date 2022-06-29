@@ -53,7 +53,7 @@ static void init_inode_mode(struct inode *vfs_inode, struct basicftfs_inode *dis
 
 static int init_vfs_inode(struct super_block *sb, struct inode *inode, unsigned long ino) {
     struct basicftfs_sb_info *sbi = BASICFTFS_SB(sb);
-    struct basicftfs_inode *bftfs_inode = BASICFTFS_INODE(inode);
+    struct basicftfs_inode *bftfs_inode = NULL;
     struct basicftfs_inode_info *bftfs_inode_info = BASICFTFS_INODE(inode);
     struct buffer_head *bh = NULL;
     uint32_t inode_block = BASICFTFS_GET_INODE_BLOCK(ino, sbi->s_imap_blocks, sbi->s_bmap_blocks);
@@ -63,7 +63,7 @@ static int init_vfs_inode(struct super_block *sb, struct inode *inode, unsigned 
 
     if (!bh) {
         iget_failed(inode);
-        return ERR_PTR(-EIO);
+        return -EIO;
     }
 
     bftfs_inode = (struct basicftfs_inode *) bh->b_data;

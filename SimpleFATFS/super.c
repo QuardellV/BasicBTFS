@@ -31,8 +31,8 @@ static struct inode *basicftfs_alloc_inode(struct super_block *sb) {
     return NULL;
 }
 
-static struct inode *basicftfs_write_inode(struct super_block *sb, struct writeback_control *wbc) {
-    return NULL;
+static int basicftfs_write_inode(struct inode *inode, struct writeback_control *wbc){
+    return 0;
 }
 
 static void basicftfs_evict_inode(struct inode *inode) {
