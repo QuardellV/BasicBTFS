@@ -102,7 +102,7 @@ static int basicftfs_create(struct inode *dir, struct dentry *dentry, umode_t mo
         return ret;
     }
 
-    ret = basicftfs_add_entry(dir, inode, dentry);
+    ret = basicftfs_add_entry(dir, inode, dentry->d_name.name);
 
     if (ret < 0) {
         put_blocks(BASICFTFS_SB(sb), BASICFTFS_INODE(inode)->i_bno, 1);
@@ -112,12 +112,26 @@ static int basicftfs_create(struct inode *dir, struct dentry *dentry, umode_t mo
         return ret;
     }
 
+    if (S_ISDIR(mode)) {
+        init_empty_dir(sb, inode, dir);
+    }
+
     mark_inode_dirty(inode);
     d_instantiate(dentry, inode);
+
     return 0;
 }
 
 static int basicftfs_mkdir(struct inode *dir, struct dentry *dentry, umode_t mode) {
+    int ret = basicftfs_create(dir, dentry, mode | S_IFDIR, 0);
+}
+
+static int basicftfs_link(struct dentry *old_dentry, struct inode *dir, struct dentry *dentry) {
+    struct inode *inode = d_inode(old_dentry);
+    int ret = basicftfs_add_entry(dir, inode, dentry);
+    inode_inc_link_count(inode);
+    mark_inode_dirty(inode);
+    d_instantiate(dentry, inode);
     return 0;
 }
 
@@ -128,7 +142,7 @@ const struct inode_operations basicftfs_inode_ops = {
     .mkdir = basicftfs_mkdir,
     // .rmdir = basicftfs_rmdir,
     // .rename = basicftfs_rename,
-    // .link = basicftfs_link,
+    .link = basicftfs_link,
 };
 
 const struct inode_operations symlink_inode_ops = {

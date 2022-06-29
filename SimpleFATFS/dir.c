@@ -8,7 +8,11 @@
 #include "bitmap.h"
 #include "destroy.h"
 
-int basicftfs_add_entry(struct inode *dir, struct inode *inode, struct dentry *dentry) {
+static int basicfs_iterate(struct file *dir, struct dir_context *ctx) {
+    return 0;
+}
+
+int basicftfs_add_entry(struct inode *dir, struct inode *inode, const unsigned char *name) {
     struct super_block *sb = dir->i_sb;
     struct basicftfs_inode_info *dir_inode_info = BASICFTFS_INODE(dir);
     struct buffer_head *bh_dir, *bh_new = NULL;
@@ -54,7 +58,7 @@ int basicftfs_add_entry(struct inode *dir, struct inode *inode, struct dentry *d
 
     entry_list = (struct basicftfs_entry_list *) bh_new->b_data;
     entry_list->entries[entry_idx].ino = inode->i_ino;
-    strncpy(entry_list->entries[entry_idx].hash_name, dentry->d_name.name, BASICFTFS_NAME_LENGTH);
+    strncpy(entry_list->entries[entry_idx].hash_name, name, BASICFTFS_NAME_LENGTH);
 
     alloc_table_block->nr_of_entries++;
     mark_buffer_dirty(bh_new);
@@ -66,5 +70,5 @@ int basicftfs_add_entry(struct inode *dir, struct inode *inode, struct dentry *d
 
 const struct file_operations basicftfs_dir_ops = {
     // .owner = THIS_MODULE,
-    // .iterate_shared = basicfs_iterate,
+    .iterate_shared = basicftfs_iterate,
 };

@@ -63,4 +63,16 @@ static inline int init_vfs_inode(struct super_block *sb, struct inode *inode, un
     return 0;
 }
 
+static inline int init_empty_dir(struct super_block *sb, struct inode *inode, struct inode *dir) {
+   int ret = 0;
+   
+   ret = basicftfs_add_entry(inode, inode, ".");
+
+   if (ret < 0)return ret;
+
+   ret = basicftfs_add_entry(inode, dir, "..");
+
+   return ret;
+}
+
 #endif
