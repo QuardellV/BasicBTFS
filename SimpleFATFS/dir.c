@@ -9,6 +9,60 @@
 #include "destroy.h"
 
 static int basicftfs_iterate(struct file *dir, struct dir_context *ctx) {
+    struct inode *inode = file_inode(dir);
+    struct basicftfs_inode_info *inode_info =BASICFTFS_INODE(inode);
+    struct super_block *sb = inode->i_sb;
+    struct buffer_head *bh_table = NULL, *bh_block = NULL;
+    struct basicftfs_alloc_table *alloc_table = NULL;
+    struct basicftfs_entry_list *entry_list = NULL;
+    struct basicftfs_entry *entry = NULL;
+    uint32_t block_idx = 0, entry_idx = 0;
+
+    if (!S_ISDIR(inode->i_mode)) {
+        printk(KERN_ERR "No such directory exists\n");
+        return -ENOTDIR;
+    }
+
+    if (ctx->pos > BASICFTFS_ENTRIES_PER_DIR) {
+        printk(KERN_ERR "No such ctx position should exist\n");
+        return 0;
+    }
+
+    bh_table = sb_bread(sb, inode_info->i_bno);
+
+    if (!bh_table) return -EIO;
+
+    alloc_table = (struct basicftfs_alloc_table *) bh_table->b_data;
+
+    block_idx = BASICFTFS_GET_BLOCK_IDX(ctx->pos);
+    entry_idx = BASICFTFS_GET_ENTRY_IDX(ctx->pos);
+
+    while (block_idx < BASICFTFS_ENTRIES_PER_BLOCK && alloc_table->table[block_idx] != 0) {
+        bh_block = sb_bread(sb, alloc_table->table[block_idx]);
+
+        if (!bh_block) {
+            brelse(bh_table);
+            return -EIO;
+        }
+
+        entry_list = (struct basicftfs_entry_list *) bh_block->b_data;
+
+        if (entry_list->entries[0].ino == 0) break;
+
+        for (; entry_idx < BASICFTFS_ENTRIES_PER_BLOCK; entry_idx++) {
+            entry = &entry_list->entries[entry_idx];
+
+            if (entry->ino && !dir_emit(ctx, entry->hash_name, BASICFTFS_NAME_LENGTH, entry->ino, DT_UNKNOWN)) {
+                break;
+            }
+            ctx->pos++;
+        }
+        brelse(bh_block);
+        bh_block = NULL;
+        block_idx++;
+        entry_idx = 0;
+    }
+    brelse(bh_table);
     return 0;
 }
 
@@ -68,7 +122,62 @@ int basicftfs_add_entry(struct inode *dir, struct inode *inode, const unsigned c
     return 0;
 }
 
+struct dentry *basicfs_search_entry(struct inode *dir, struct dentry *dentry) {
+    struct super_block *sb = dir->i_sb;
+    struct basicftfs_inode_info *dir_info = BASICFTFS_INODE(dir);
+    struct buffer_head *bh_table = NULL, *bh_block = NULL;
+    struct basicftfs_alloc_table * alloc_table_block = NULL;
+    struct basicftfs_entry_list *entry_list = NULL;
+    struct basicftfs_entry *entry = NULL;
+    struct inode *inode = NULL;
+    uint32_t block_idx = 0, entry_idx = 0;
+
+    bh_table = sb_bread(sb, dir_info->i_bno);
+
+    if (!bh_table) return ERR_PTR(-EIO);
+
+    alloc_table_block = (struct basicftfs_alloc_table *) bh_table->b_data;
+
+    while (block_idx < BASICFTFS_ATABLE_MAX_BLOCKS && alloc_table_block->table[block_idx] != 0) {
+        bh_block = sb_bread(sb, alloc_table_block->table[block_idx]);
+
+        if (!bh_block) {
+            brelse(bh_table);
+            return ERR_PTR(-EIO);
+        }
+
+        entry_list = (struct basicftfs_entry_list *) bh_block->b_data;
+
+        for (entry_idx = 0; entry_idx < BASICFTFS_ENTRIES_PER_BLOCK; entry_idx) {
+            entry = &entry_list->entries[entry_idx];
+
+            if (entry->ino == 0) {
+                brelse(bh_block);
+                goto end;
+            }
+
+            if (strncmp(entry->hash_name, dentry->d_name.name, BASICFTFS_NAME_LENGTH) == 0) {
+                inode = basicftfs_iget(sb, entry->ino);
+                brelse(bh_block);
+                goto end;
+            }
+        }
+        brelse(bh_block);
+        bh_block = NULL;
+        block_idx++;
+    }
+
+end:
+    brelse(bh_table);
+    dir->i_atime = current_time(dir);
+    mark_inode_dirty(dir);
+    d_add(dentry, inode);
+    return NULL;
+
+    return NULL;
+}
+
 const struct file_operations basicftfs_dir_ops = {
-    // .owner = THIS_MODULE,
+    .owner = THIS_MODULE,
     .iterate_shared = basicftfs_iterate,
 };

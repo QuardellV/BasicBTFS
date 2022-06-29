@@ -135,8 +135,17 @@ static int basicftfs_link(struct dentry *old_dentry, struct inode *dir, struct d
     return 0;
 }
 
+static struct dentry *basicftfs_lookup(struct inode *dir, struct dentry *dentry, unsigned int flags) {
+    if (dentry->d_name.len > BASICFTFS_NAME_LENGTH) {
+        printk(KERN_ERR "No such file exists. Filename is too long");
+        return ERR_PTR(-ENAMETOOLONG);
+    }
+
+    return basicftfs_search_entry(dir, dentry);
+}
+
 const struct inode_operations basicftfs_inode_ops = {
-    // .lookup = basicftfs_lookup,
+    .lookup = basicftfs_lookup,
     .create = basicftfs_create,
     // .unlink = basicftfs_unlink,
     .mkdir = basicftfs_mkdir,
