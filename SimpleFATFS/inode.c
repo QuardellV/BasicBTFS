@@ -123,12 +123,12 @@ static int basicftfs_create(struct inode *dir, struct dentry *dentry, umode_t mo
 }
 
 static int basicftfs_mkdir(struct inode *dir, struct dentry *dentry, umode_t mode) {
-    int ret = basicftfs_create(dir, dentry, mode | S_IFDIR, 0);
+    return basicftfs_create(dir, dentry, mode | S_IFDIR, 0);
 }
 
 static int basicftfs_link(struct dentry *old_dentry, struct inode *dir, struct dentry *dentry) {
     struct inode *inode = d_inode(old_dentry);
-    int ret = basicftfs_add_entry(dir, inode, dentry);
+    int ret = basicftfs_add_entry(dir, inode, dentry->d_name.name);
     inode_inc_link_count(inode);
     mark_inode_dirty(inode);
     d_instantiate(dentry, inode);

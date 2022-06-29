@@ -8,7 +8,7 @@
 #include "bitmap.h"
 #include "destroy.h"
 
-static int basicfs_iterate(struct file *dir, struct dir_context *ctx) {
+static int basicftfs_iterate(struct file *dir, struct dir_context *ctx) {
     return 0;
 }
 
