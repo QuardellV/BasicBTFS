@@ -6,6 +6,8 @@
 #define BASICFTFS_MAX_BLOCKS_PER_ENTRY 0 // TODO: define
 #define BASICFTFS_FILE_BSIZE           0 // TODO: Define
 #define BASICFTFS_SB_BNO               0
+#define BASICFTFS_NAME_LENGTH          255
+#define BASICFTFS_ATABLE_MAX_BLOCKS    (BASICFTFS_BLOCKSIZE - sizeof(uint32_t) - sizeof(uint32_t))
 
 struct basicftfs_inode {
     uint32_t i_mode;
@@ -46,6 +48,11 @@ struct basicftfs_inode_info {
     uint32_t i_bno;
     char i_data[32];
     struct inode vfs_inode;
+};
+
+struct basicftfs_alloc_table {
+    uint32_t nr_of_entries;
+    uint32_t block_alloc_table[BASICFTFS_ATABLE_MAX_BLOCKS];
 };
 
 /* Cache functions for basic_inode_info*/
