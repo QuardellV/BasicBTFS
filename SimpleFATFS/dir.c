@@ -122,7 +122,7 @@ int basicftfs_add_entry(struct inode *dir, struct inode *inode, const unsigned c
     return 0;
 }
 
-struct dentry *basicfs_search_entry(struct inode *dir, struct dentry *dentry) {
+struct dentry *basicftfs_search_entry(struct inode *dir, struct dentry *dentry) {
     struct super_block *sb = dir->i_sb;
     struct basicftfs_inode_info *dir_info = BASICFTFS_INODE(dir);
     struct buffer_head *bh_table = NULL, *bh_block = NULL;
@@ -148,7 +148,7 @@ struct dentry *basicfs_search_entry(struct inode *dir, struct dentry *dentry) {
 
         entry_list = (struct basicftfs_entry_list *) bh_block->b_data;
 
-        for (entry_idx = 0; entry_idx < BASICFTFS_ENTRIES_PER_BLOCK; entry_idx) {
+        for (entry_idx = 0; entry_idx < BASICFTFS_ENTRIES_PER_BLOCK; entry_idx++) {
             entry = &entry_list->entries[entry_idx];
 
             if (entry->ino == 0) {

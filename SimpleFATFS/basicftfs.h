@@ -79,7 +79,7 @@ struct inode *basicftfs_iget(struct super_block *sb, unsigned long ino);
 
 /* Dir functions */
 int basicftfs_add_entry(struct inode *dir, struct inode *inode, const unsigned char *name);
-struct dentry *basicfs_search_entry(struct inode *dir, struct dentry *dentry);
+struct dentry *basicftfs_search_entry(struct inode *dir, struct dentry *dentry);
 
 /* Operation structs*/
 extern const struct file_operations basicftfs_file_ops;
