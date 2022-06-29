@@ -3,14 +3,13 @@
 
 #define BASICFTFS_MAGIC_NUMBER         0x1DEADFAD
 #define BASICFTFS_BLOCKSIZE            (1 << 12)
-#define BASICFTFS_MAX_BLOCKS_PER_ENTRY 0 // TODO: define
-#define BASICFTFS_FILE_BSIZE           0 // TODO: Define
 #define BASICFTFS_SB_BNO               0
 #define BASICFTFS_NAME_LENGTH          255
 #define BASICFTFS_HASH_LENGTH          32
 #define BASICFTFS_ATABLE_MAX_BLOCKS    ((BASICFTFS_BLOCKSIZE - sizeof(uint32_t)) / sizeof(uint32_t))
 #define BASICFTFS_ENTRIES_PER_BLOCK    (BASICFTFS_BLOCKSIZE / sizeof(struct basicftfs_entry))
 #define BASICFTFS_ENTRIES_PER_DIR      (BASICFTFS_ENTRIES_PER_BLOCK * BASICFTFS_ATABLE_MAX_BLOCKS)
+#define BASICFTFS_FILE_BSIZE           (BASICFTFS_BLOCKSIZE * BASICFTFS_ATABLE_MAX_BLOCKS)
 
 struct basicftfs_inode {
     uint32_t i_mode;
@@ -58,6 +57,7 @@ struct basicftfs_entry {
     char hash_name[BASICFTFS_NAME_LENGTH];
 };
 
+// redundant: we can also update address itself instead of doing this
 struct basicftfs_entry_list {
     struct basicftfs_entry entries[BASICFTFS_ENTRIES_PER_BLOCK];
 };

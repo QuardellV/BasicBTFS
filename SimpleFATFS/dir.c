@@ -8,6 +8,7 @@
 #include "bitmap.h"
 #include "destroy.h"
 
+// TODO: Update address directly
 static int basicftfs_iterate(struct file *dir, struct dir_context *ctx) {
     struct inode *inode = file_inode(dir);
     struct basicftfs_inode_info *inode_info =BASICFTFS_INODE(inode);
