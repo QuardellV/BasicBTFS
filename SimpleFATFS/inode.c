@@ -5,7 +5,9 @@
 
 #include "basicftfs.h"
 #include "bitmap.h"
+#include "init.h"
 #include "destroy.h"
+#include "io.h"
 
 struct inode *basicftfs_new_inode(struct inode *dir, mode_t mode) {
     struct super_block *sb = dir->i_sb;
@@ -28,7 +30,7 @@ struct inode *basicftfs_new_inode(struct inode *dir, mode_t mode) {
         return ERR_PTR(-ENOSPC);
     }
 
-    ino = get_free_inode(sbi->s_ifree_bitmap);
+    ino = get_free_inode(sbi);
 
     if (!ino) {
         printk(KERN_ERR "Not enough free inodes available\n");
@@ -40,11 +42,11 @@ struct inode *basicftfs_new_inode(struct inode *dir, mode_t mode) {
     if (IS_ERR(inode)) {
         printk(KERN_ERR "Could not allocate a new inode\n");
         put_inode(sbi, ino);
-        return ERR_PTR(inode);
+        return ERR_PTR(PTR_ERR(inode));
     }
 
     inode_info = BASICFTFS_INODE(inode);
-    bno = get_free_blocks(sbi->s_bfree_bitmap, 1);
+    bno = get_free_blocks(sbi, 1);
 
     if (!bno) {
         iput(inode);
@@ -93,9 +95,25 @@ static int basicftfs_create(struct inode *dir, struct dentry *dentry, umode_t mo
     ret = clean_block(sb, inode);
 
     if (ret < 0) {
-        
+        put_blocks(BASICFTFS_SB(sb), BASICFTFS_INODE(inode)->i_bno, 1);
+        // dir->i_blocks--;
+        put_inode(BASICFTFS_SB(sb), inode->i_ino);
+        iput(inode);
+        return ret;
     }
 
+    ret = basicftfs_add_entry(dir, inode, dentry);
+
+    if (ret < 0) {
+        put_blocks(BASICFTFS_SB(sb), BASICFTFS_INODE(inode)->i_bno, 1);
+        // dir->i_blocks--;
+        put_inode(BASICFTFS_SB(sb), inode->i_ino);
+        iput(inode);
+        return ret;
+    }
+
+    mark_inode_dirty(inode);
+    d_instantiate(dentry, inode);
     return 0;
 }
 
@@ -103,7 +121,7 @@ static int basicftfs_mkdir(struct inode *dir, struct dentry *dentry, umode_t mod
     return 0;
 }
 
-const struct inode_operations basicfs_inode_ops = {
+const struct inode_operations basicftfs_inode_ops = {
     // .lookup = basicftfs_lookup,
     .create = basicftfs_create,
     // .unlink = basicftfs_unlink,
@@ -116,77 +134,6 @@ const struct inode_operations basicfs_inode_ops = {
 const struct inode_operations symlink_inode_ops = {
     // .get_link = basicfs_get_link,
 };
-
-static void write_from_disk_to_vfs_inode(struct super_block *sb, struct inode *vfs_inode, struct basicftfs_inode *disk_inode, unsigned long ino) {
-    vfs_inode->i_ino = ino;
-    vfs_inode->i_sb = sb;
-    vfs_inode->i_op = &basicfs_inode_ops;
-
-    vfs_inode->i_mode = le32_to_cpu(disk_inode->i_mode);
-    i_uid_write(vfs_inode, le32_to_cpu(disk_inode->i_uid));
-    i_gid_write(vfs_inode, le32_to_cpu(disk_inode->i_gid));
-    vfs_inode->i_size = le32_to_cpu(disk_inode->i_size);
-    vfs_inode->i_ctime.tv_sec = (time64_t) le32_to_cpu(disk_inode->i_ctime);
-    vfs_inode->i_ctime.tv_nsec = vfs_inode->i_atime.tv_nsec = vfs_inode->i_mtime.tv_nsec = 0;
-    vfs_inode->i_atime.tv_sec = (time64_t) le32_to_cpu(disk_inode->i_atime);
-    vfs_inode->i_mtime.tv_sec = (time64_t) le32_to_cpu(disk_inode->i_mtime);
-    vfs_inode->i_blocks = le32_to_cpu(disk_inode->i_blocks);
-    set_nlink(vfs_inode, le32_to_cpu(disk_inode->i_nlink));
-}
-
-static void init_inode_mode(struct inode *vfs_inode, struct basicftfs_inode *disk_inode, struct basicftfs_inode_info *inode_info) {
-    if (S_ISDIR(vfs_inode->i_mode)) {
-        inode_info->i_bno = le32_to_cpu(disk_inode->i_bno);
-        vfs_inode->i_fop = &basicftfs_dir_ops;
-    } else if (S_ISREG(vfs_inode->i_mode)) {
-        inode_info->i_bno = le32_to_cpu(disk_inode->i_bno);
-        vfs_inode->i_fop = &basicftfs_file_ops;
-        vfs_inode->i_mapping->a_ops = &basicftfs_aops;
-    } else if (S_ISLNK(vfs_inode->i_mode)) {
-        strncpy(inode_info->i_data, disk_inode->i_data, sizeof(inode_info->i_data));
-        vfs_inode->i_link = inode_info->i_data;
-        vfs_inode->i_op = &symlink_inode_ops;
-    }
-}
-
-static void init_mode_attributes(mode_t mode, struct inode *vfs_inode, struct basicftfs_inode_info *inode_info, uint32_t bno) {
-    vfs_inode->i_blocks = 1;
-    if (S_ISDIR(mode)) {
-        inode_info->i_bno = bno;
-        vfs_inode->i_size = BASICFTFS_BLOCKSIZE;
-        vfs_inode->i_fop = &basicftfs_dir_ops;
-        set_nlink(vfs_inode, 2); /* . and .. */
-    } else if (S_ISREG(mode)) {
-        inode_info->i_bno = bno;
-        vfs_inode->i_size = 0;
-        vfs_inode->i_fop = &basicftfs_file_ops;
-        vfs_inode->i_mapping->a_ops = &basicftfs_aops;
-        set_nlink(vfs_inode, 1);
-    }
-}
-
-static int init_vfs_inode(struct super_block *sb, struct inode *inode, unsigned long ino) {
-    struct basicftfs_sb_info *sbi = BASICFTFS_SB(sb);
-    struct basicftfs_inode *bftfs_inode = NULL;
-    struct basicftfs_inode_info *bftfs_inode_info = BASICFTFS_INODE(inode);
-    struct buffer_head *bh = NULL;
-    uint32_t inode_block = BASICFTFS_GET_INODE_BLOCK(ino, sbi->s_imap_blocks, sbi->s_bmap_blocks);
-    uint32_t inode_block_idx = BASICFTFS_GET_INODE_BLOCK_IDX(ino);
-
-    bh = sb_bread(sb, inode_block);
-
-    if (!bh) {
-        iget_failed(inode);
-        return -EIO;
-    }
-
-    bftfs_inode = (struct basicftfs_inode *) bh->b_data;
-    bftfs_inode += inode_block_idx;
-
-    write_from_disk_to_vfs_inode(sb, inode, bftfs_inode, ino);
-    init_inode_mode(inode, bftfs_inode, bftfs_inode_info);
-    return 0;
-}
 
 struct inode *basicftfs_iget(struct super_block *sb, unsigned long ino) {
     struct basicftfs_sb_info *sbi = BASICFTFS_SB(sb);

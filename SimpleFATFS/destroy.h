@@ -28,4 +28,12 @@ static inline int clean_block(struct super_block *sb, struct inode *inode) {
     return ret;
 }
 
+static inline void clean_allocated_block(struct basicftfs_alloc_table *alloc_table_block, struct super_block *sb, int bi, int is_allocated) {
+    if (is_allocated && alloc_table_block->table[bi] != 0) {
+        put_blocks(BASICFTFS_SB(sb), alloc_table_block->table[bi], alloc_table_block->table[bi]);
+        alloc_table_block->table[bi] = 0;
+        // memset(&alloc_table_block->table[bi], 0, sizeof());
+    }
+}
+
 #endif

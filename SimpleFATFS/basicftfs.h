@@ -7,7 +7,9 @@
 #define BASICFTFS_FILE_BSIZE           0 // TODO: Define
 #define BASICFTFS_SB_BNO               0
 #define BASICFTFS_NAME_LENGTH          255
+#define BASICFTFS_HASH_LENGTH          32
 #define BASICFTFS_ATABLE_MAX_BLOCKS    (BASICFTFS_BLOCKSIZE - sizeof(uint32_t) - sizeof(uint32_t))
+#define BASICFTFS_ENTRIES_PER_BLOCK    (BASICFTFS_BLOCKSIZE / sizeof(struct basicftfs_entry))
 
 struct basicftfs_inode {
     uint32_t i_mode;
@@ -50,9 +52,18 @@ struct basicftfs_inode_info {
     struct inode vfs_inode;
 };
 
+struct basicftfs_entry {
+    uint32_t ino;
+    char hash_name[BASICFTFS_NAME_LENGTH];
+};
+
+struct basicftfs_entry_list {
+    struct basicftfs_entry entries[BASICFTFS_ENTRIES_PER_BLOCK];
+};
+
 struct basicftfs_alloc_table {
     uint32_t nr_of_entries;
-    uint32_t block_alloc_table[BASICFTFS_ATABLE_MAX_BLOCKS];
+    uint32_t table[BASICFTFS_ATABLE_MAX_BLOCKS];
 };
 
 /* Cache functions for basic_inode_info*/
@@ -64,6 +75,9 @@ int basicftfs_fill_super(struct super_block *sb, void *data, int silent);
 
 /* Inode functions*/
 struct inode *basicftfs_iget(struct super_block *sb, unsigned long ino);
+
+/* Dir functions */
+int basicftfs_add_entry(struct inode *dir, struct inode *inode, struct dentry *dentry);
 
 /* Operation structs*/
 extern const struct file_operations basicftfs_file_ops;
@@ -78,6 +92,8 @@ extern const struct inode_operations symlink_inode_ops;
 
 #define BASICFTFS_GET_INODE_BLOCK(ino, inode_bmap_bsize, blocks_bmap_bsize) ((ino / BASICFTFS_INODES_PER_BLOCK) + inode_bmap_bsize + blocks_bmap_bsize + 1)
 #define BASICFTFS_GET_INODE_BLOCK_IDX(ino) (ino % BASICFTFS_INODES_PER_BLOCK)
+#define BASICFTFS_GET_BLOCK_IDX(pos) (pos / BASICFTFS_ENTRIES_PER_BLOCK)
+#define BASICFTFS_GET_ENTRY_IDX(pos) (pos % BASICFTFS_ENTRIES_PER_BLOCK)
 
 #endif
 
