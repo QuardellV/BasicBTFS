@@ -3,7 +3,7 @@ basicftfs-objs = fs.o super.o inode.o file.o dir.o
 
 KDIR ?= /lib/modules/$(shell uname -r)/build
 
-MKFS =  test.basicftfs
+MKFS =  mkfs.basicftfs
 
 all: $(MKFS)
 	make -C $(KDIR) M=$(PWD) modules
