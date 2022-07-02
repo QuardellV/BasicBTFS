@@ -38,7 +38,7 @@ static inline int put_free_bits(unsigned long *freemap, unsigned long size, uint
     if (start_no + len - 1 > size) {
         return -1;
     }
-    
+
     bitmap_clear(freemap, start_no, len);
     return 0;
 }
