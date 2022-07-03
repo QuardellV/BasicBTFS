@@ -83,7 +83,6 @@ static int write_ifree_blocks(int fd, struct superblock *sb) {
         }
     }
 
-    printf("inode bitmap blocks: wrote %d\n", i);
     free(block);
     return 0;
 }

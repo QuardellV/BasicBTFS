@@ -192,7 +192,11 @@ struct basicftfs_sb_info *init_super_block_info(struct super_block *sb, int *res
 
     brelse(bh);
 
+    printk(KERN_INFO "initialized new sbi\n");
+
     new_sbi->s_ifree_bitmap = kzalloc(new_sbi->s_imap_blocks * BASICFTFS_BLOCKSIZE, GFP_KERNEL);
+
+    printk(KERN_INFO "initialized new sbi\n");
 
     if (!new_sbi->s_ifree_bitmap) {
         kfree(new_sbi);
@@ -247,18 +251,18 @@ int basicftfs_fill_super(struct super_block *sb, void *data, int silent) {
 
     if (ret < 0) return ret;
 
-    new_sbi = init_super_block_info(sb, &ret);
+    // new_sbi = init_super_block_info(sb, &ret);
 
-    if (!new_sbi) return ret;
+    // if (!new_sbi) return ret;
 
-    ret = init_root_inode(sb);
+    // ret = init_root_inode(sb);
 
-    if (ret < 0) {
-        kfree(new_sbi->s_bfree_bitmap);
-        kfree(new_sbi->s_ifree_bitmap);
-        kfree(new_sbi);
-        return ret;
-    }
+    // if (ret < 0) {
+    //     kfree(new_sbi->s_bfree_bitmap);
+    //     kfree(new_sbi->s_ifree_bitmap);
+    //     kfree(new_sbi);
+    //     return ret;
+    // }
 
     return 0;
 }
