@@ -7,6 +7,7 @@
 #include <linux/module.h>
 
 #include "basicftfs.h"
+#include "bitmap.h"
 
 static inline void reset_block(char *block, struct buffer_head *bh) {
     memset(block, 0, BASICFTFS_BLOCKSIZE);
@@ -34,6 +35,18 @@ static inline void clean_allocated_block(struct basicftfs_alloc_table *alloc_tab
         alloc_table_block->table[bi] = 0;
         // memset(&alloc_table_block->table[bi], 0, sizeof());
     }
+}
+
+static void clean_inode(struct inode *inode) {
+    inode->i_blocks = 0;
+    BASICFTFS_INODE(inode)->i_bno = 0;
+    inode->i_size = 0;
+    i_uid_write(inode, 0);
+    i_gid_write(inode, 0);
+    inode->i_mode = 0;
+    inode->i_ctime.tv_sec = inode->i_mtime.tv_sec = inode->i_atime.tv_sec = 0;
+    drop_nlink(inode);
+    mark_inode_dirty(inode);
 }
 
 #endif

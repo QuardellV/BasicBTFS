@@ -3,23 +3,93 @@
 #include <linux/kernel.h>
 #include <linux/module.h>
 
-#include "basicftfs.h"
 #include "bitmap.h"
-#include "init.h"
+#include "basicftfs.h"
 #include "destroy.h"
 #include "io.h"
+#include "init.h"
 
-struct inode *basicftfs_new_inode(struct inode *dir, mode_t mode) {
-    struct super_block *sb = dir->i_sb;
+static int init_vfs_inode(struct super_block *sb, struct inode *inode, unsigned long ino) {
     struct basicftfs_sb_info *sbi = BASICFTFS_SB(sb);
-    struct inode *inode = NULL;
-    struct basicftfs_inode_info *inode_info = NULL;
-    uint32_t ino = 0, bno = 0;
+    struct basicftfs_inode *bftfs_inode = NULL;
+    struct basicftfs_inode_info *bftfs_inode_info = BASICFTFS_INODE(inode);
+    struct buffer_head *bh = NULL;
+    uint32_t inode_block = BASICFTFS_GET_INODE_BLOCK(ino, sbi->s_imap_blocks, sbi->s_bmap_blocks);
+    uint32_t inode_block_idx = BASICFTFS_GET_INODE_BLOCK_IDX(ino);
 
-    if (!S_ISDIR(mode) && !S_ISREG(mode)) {
-        printk(KERN_ERR "File type not supported\n");
+    bh = sb_bread(sb, inode_block);
+
+    if (!bh) {
+        iget_failed(inode);
+        return -EIO;
+    }
+
+    bftfs_inode = (struct basicftfs_inode *) bh->b_data;
+    bftfs_inode += inode_block_idx;
+    write_from_disk_to_vfs_inode(sb, inode, bftfs_inode, ino);
+    init_inode_mode(inode, bftfs_inode, bftfs_inode_info);
+    return 0;
+}
+
+struct inode *basicftfs_iget(struct super_block *sb, unsigned long ino)
+{
+    struct inode *inode = NULL;
+    struct basicftfs_inode *bfs_inode = NULL;
+    struct basicftfs_inode_info *bfs_inode_info = NULL;
+    struct basicftfs_sb_info *sbi = BASICFTFS_SB(sb);
+    struct buffer_head *bh = NULL;
+    uint32_t inode_block = BASICFTFS_GET_INODE_BLOCK(ino, sbi->s_imap_blocks, sbi->s_bmap_blocks);
+    uint32_t inode_bi = BASICFTFS_GET_INODE_BLOCK_IDX(ino);
+
+    int ret= 0;
+
+    if (ino >= sbi->s_ninodes) {
+        printk(KERN_ERR "ino is bigger than the number of inodes\n");
         return ERR_PTR(-EINVAL);
     }
+
+    inode = iget_locked(sb, ino);
+    if (!inode) {
+        printk(KERN_ERR "No inode could be allocated\n");
+        return ERR_PTR(-ENOMEM);
+    }
+
+    if (!(inode->i_state & I_NEW)) {
+        return inode;
+    }
+
+    ret = init_vfs_inode(sb, inode, ino);
+
+    if (ret < 0) return ERR_PTR(ret);
+    unlock_new_inode(inode);
+
+    return inode;
+}
+
+static struct dentry *basicftfs_lookup(struct inode *dir, struct dentry *dentry, unsigned int flags) {
+    if (dentry->d_name.len > BASICFTFS_NAME_LENGTH) {
+        printk(KERN_ERR "filename is longer than %d\n", BASICFTFS_NAME_LENGTH);
+        return ERR_PTR(-ENAMETOOLONG);
+    }
+
+    return basicftfs_search_entry(dir, dentry);
+}
+
+static struct inode *basicftfs_new_inode(struct inode *dir, mode_t mode) {
+    struct inode *inode = NULL;
+    struct basicftfs_inode_info *bfs_inode_info = NULL;
+    struct super_block *sb = NULL;
+    struct basicftfs_sb_info *sbi = NULL;
+    uint32_t ino, bno;
+    int ret;
+
+    if (!S_ISDIR(mode) && !S_ISREG(mode) && !S_ISLNK(mode)) {
+        printk(KERN_ERR "File type not supported (only directory, and regular file are supported\n");
+        return ERR_PTR(-EINVAL);
+    }
+
+    sb = dir->i_sb;
+    sbi = BASICFTFS_SB(sb);
 
     if (sbi->s_nfree_inodes == 0) {
         printk(KERN_ERR "Not enough free inodes available\n");
@@ -31,21 +101,20 @@ struct inode *basicftfs_new_inode(struct inode *dir, mode_t mode) {
     }
 
     ino = get_free_inode(sbi);
-
     if (!ino) {
         printk(KERN_ERR "Not enough free inodes available\n");
         return ERR_PTR(-ENOSPC);
     }
 
     inode = basicftfs_iget(sb, ino);
-
     if (IS_ERR(inode)) {
         printk(KERN_ERR "Could not allocate a new inode\n");
+        ret = PTR_ERR(inode);
         put_inode(sbi, ino);
-        return ERR_PTR(PTR_ERR(inode));
+        return ERR_PTR(ret);
     }
 
-    inode_info = BASICFTFS_INODE(inode);
+    bfs_inode_info = BASICFTFS_INODE(inode);
     bno = get_free_blocks(sbi, 1);
 
     if (!bno) {
@@ -55,45 +124,70 @@ struct inode *basicftfs_new_inode(struct inode *dir, mode_t mode) {
     }
 
     inode_init_owner(inode, dir, mode);
-    init_mode_attributes(mode, inode, inode_info, bno);
+    init_mode_attributes(mode, inode, bfs_inode_info, bno);
     inode->i_ctime = inode->i_atime = inode->i_mtime = current_time(inode);
 
     return inode;
 }
 
-static int basicftfs_create(struct inode *dir, struct dentry *dentry, umode_t mode, bool excl) {
+static int basicftfs_create(struct inode *dir, struct dentry *dentry, umode_t mode, bool excl)
+{
     struct super_block *sb = dir->i_sb;
-    struct basicftfs_inode_info *par_inode_info = NULL;
-    struct basicftfs_alloc_table *alloc_table = NULL;
-    struct buffer_head *bh = NULL;
     struct inode *inode = NULL;
-    int ret = 0;
+    struct basicftfs_inode_info *bfs_inode_info_dir = NULL;
+    struct basicftfs_alloc_table *cblock = NULL;
+    struct basicftfs_entry_list *fblock = NULL;
+    struct buffer_head *bh_dir, *bh_dblock = NULL;
+    uint32_t page = 0;
+    int ret = 0, is_allocated = false, bno = 0;
+    int bi = 0, fi = 0;
 
     if (strlen(dentry->d_name.name) > BASICFTFS_NAME_LENGTH) return -ENAMETOOLONG;
 
-    par_inode_info = BASICFTFS_INODE(dir);
-    bh = sb_bread(sb, par_inode_info->i_bno);
+    bfs_inode_info_dir = BASICFTFS_INODE(dir);
+    printk("basicftfs_create() sb_bread bfs_inode_info_dir->data_block: %d\n", bfs_inode_info_dir->i_bno);
+    bh_dir = sb_bread(sb, bfs_inode_info_dir->i_bno);
 
-    if (!bh) return -EIO;
-
-    alloc_table = (struct basicftfs_alloc_table *) bh->b_data;
-
-    if (alloc_table->nr_of_entries >= BASICFTFS_ATABLE_MAX_BLOCKS) {
-        printk(KERN_ERR "Full parent directory\n");
-        brelse(bh);
-        return -EMLINK;
+    if (!bh_dir) {
+        return -EIO;
     }
 
-    brelse(bh);
+    cblock = (struct basicftfs_alloc_table *) bh_dir->b_data;
+
+    if (cblock->nr_of_entries >= BASICFTFS_ENTRIES_PER_DIR) {
+        printk(KERN_ERR "Parent directory is full\n");
+        ret = -EMLINK;
+        brelse(bh_dir);
+        return ret;
+    }
+
+    if (cblock->nr_of_entries == 0) {
+        printk(KERN_INFO "Initialize");
+    }
 
     inode = basicftfs_new_inode(dir, mode);
-
     if (IS_ERR(inode)) {
-        return PTR_ERR(inode);
+        ret = PTR_ERR(inode);
+        brelse(bh_dir);
+        return ret;
     }
 
+    /* clean block in case it contains garbage data. */
     ret = clean_block(sb, inode);
 
+    if (ret == -EIO) {
+        brelse(bh_dir);
+        put_blocks(BASICFTFS_SB(sb), BASICFTFS_INODE(inode)->i_bno, 1);
+        // dir->i_blocks--;
+        put_inode(BASICFTFS_SB(sb), inode->i_ino);
+        iput(inode);
+        return ret;
+    }
+
+    brelse(bh_dir);
+
+    ret = basicftfs_add_entry(dir, inode, dentry);
+
     if (ret < 0) {
         put_blocks(BASICFTFS_SB(sb), BASICFTFS_INODE(inode)->i_bno, 1);
         // dir->i_blocks--;
@@ -102,49 +196,43 @@ static int basicftfs_create(struct inode *dir, struct dentry *dentry, umode_t mo
         return ret;
     }
 
-    ret = basicftfs_add_entry(dir, inode, dentry->d_name.name);
-
-    if (ret < 0) {
-        put_blocks(BASICFTFS_SB(sb), BASICFTFS_INODE(inode)->i_bno, 1);
-        // dir->i_blocks--;
-        put_inode(BASICFTFS_SB(sb), inode->i_ino);
-        iput(inode);
-        return ret;
-    }
+    /* Update stats and mark dir and new inode dirty */
+    mark_inode_dirty(inode);
+    dir->i_mtime = dir->i_atime = dir->i_ctime = current_time(dir);
 
     if (S_ISDIR(mode)) {
-        init_empty_dir(sb, inode, dir);
+        inc_nlink(dir);
     }
 
-    mark_inode_dirty(inode);
+    mark_inode_dirty(dir);
     d_instantiate(dentry, inode);
 
     return 0;
 }
+
+int basicftfs_makedir(struct inode *dir, struct dentry *dentry, umode_t mode) {
+    return basicftfs_create(dir, dentry, mode | S_IFDIR, 0);
+}
+
 
 static int basicftfs_mkdir(struct inode *dir, struct dentry *dentry, umode_t mode) {
     return basicftfs_create(dir, dentry, mode | S_IFDIR, 0);
 }
 
-static int basicftfs_link(struct dentry *old_dentry, struct inode *dir, struct dentry *dentry) {
+static int basicftfs_link(struct dentry *old_dentry,
+                         struct inode *dir,
+                         struct dentry *dentry)
+{
     struct inode *inode = d_inode(old_dentry);
-    int ret = basicftfs_add_entry(dir, inode, dentry->d_name.name);
-
-    if (ret < 0) return ret;
-    
+    int ret = 0;
     inode_inc_link_count(inode);
-    mark_inode_dirty(inode);
+    ret = basicftfs_add_entry(dir, inode, dentry);
     d_instantiate(dentry, inode);
-    return 0;
+    return ret;
 }
 
-static struct dentry *basicftfs_lookup(struct inode *dir, struct dentry *dentry, unsigned int flags) {
-    if (dentry->d_name.len > BASICFTFS_NAME_LENGTH) {
-        printk(KERN_ERR "No such file exists. Filename is too long");
-        return ERR_PTR(-ENAMETOOLONG);
-    }
-
-    return basicftfs_search_entry(dir, dentry);
+static const char *basicftfs_get_link(struct dentry *dentry, struct inode *inode, struct delayed_call *done) {
+    return inode->i_link;
 }
 
 const struct inode_operations basicftfs_inode_ops = {
@@ -158,35 +246,5 @@ const struct inode_operations basicftfs_inode_ops = {
 };
 
 const struct inode_operations symlink_inode_ops = {
-    // .get_link = basicfs_get_link,
+    .get_link = basicftfs_get_link,
 };
-
-struct inode *basicftfs_iget(struct super_block *sb, unsigned long ino) {
-    struct basicftfs_sb_info *sbi = BASICFTFS_SB(sb);
-    struct inode *inode = NULL;
-    int ret = 0;
-
-    if (ino > sbi->s_ninodes) {
-        printk(KERN_ERR "Not enough inodes available\n");
-        return ERR_PTR(-EINVAL);
-    }
-
-    inode = iget_locked(sb, ino);
-
-    if (!inode) {
-        printk(KERN_ERR "No inode could be allocated\n");
-        return ERR_PTR(-ENOMEM);
-    }
-
-    if (!(inode->i_state & I_NEW)) {
-        return inode;
-    }
-
-    ret = init_vfs_inode(sb, inode, ino);
-
-    if (ret < 0) return ERR_PTR(ret);
-
-    unlock_new_inode(inode);
-
-    return inode;
-}

@@ -8,98 +8,88 @@
 #include "basicftfs.h"
 #include "io.h"
 
-static struct kmem_cache *basicftfs_cache;
+static struct kmem_cache *basicftfs_inode_cache;
 
 int basicftfs_init_inode_cache(void) {
-    basicftfs_cache = kmem_cache_create("basicftfs_cache", sizeof(struct  basicftfs_inode), 0, 0, NULL);
+    basicftfs_inode_cache = kmem_cache_create("basicftfs_cache", sizeof(struct basicftfs_inode_info), 0, 0, NULL);
 
-    if (!basicftfs_cache) {
-        return -ENOMEM;
-    }
-
+    if (!basicftfs_inode_cache) return -ENOMEM;
     return 0;
 }
 
 void basicftfs_destroy_inode_cache(void) {
-    kmem_cache_destroy(basicftfs_cache);
+    kmem_cache_destroy(basicftfs_inode_cache);
 }
 
-/**
- * @brief Free all allocated kernel memory
- * 
- * @param sb Superblock
- */
 static void basicftfs_put_super(struct super_block *sb) {
     struct basicftfs_sb_info *sbi = BASICFTFS_SB(sb);
-
     if (sbi) {
         kfree(sbi->s_ifree_bitmap);
-        kfree(sbi->s_ifree_bitmap);
+        kfree(sbi->s_bfree_bitmap);
         kfree(sbi);
     }
 }
 
 static struct inode *basicftfs_alloc_inode(struct super_block *sb) {
-    struct basicftfs_inode_info *inode_info = kmem_cache_alloc(basicftfs_cache, GFP_KERNEL);
+    struct basicftfs_inode_info *ci = kmem_cache_alloc(basicftfs_inode_cache, GFP_KERNEL);
+    if (!ci) return NULL;
 
-    if (!inode_info) return NULL;
-
-    inode_init_once(&inode_info->vfs_inode);
-    return &inode_info->vfs_inode;
-    return NULL;
+    inode_init_once(&ci->vfs_inode);
+    return &ci->vfs_inode;
 }
 
-static int basicftfs_write_inode(struct inode *inode, struct writeback_control *wbc){
+static int basicftfs_write_inode(struct inode *inode, struct writeback_control *wbc) {
+    struct basicftfs_inode *disk_inode;
     struct super_block *sb = inode->i_sb;
     struct basicftfs_sb_info *sbi = BASICFTFS_SB(sb);
-    struct basicftfs_inode *disk_inode = NULL;
+    struct buffer_head *bh;
     uint32_t ino = inode->i_ino;
     uint32_t inode_block = BASICFTFS_GET_INODE_BLOCK(ino, sbi->s_imap_blocks, sbi->s_bmap_blocks);
-    uint32_t inode_bidx = BASICFTFS_GET_INODE_BLOCK_IDX(ino);
-    struct buffer_head *bh = NULL;
+    uint32_t inode_bi = BASICFTFS_GET_INODE_BLOCK_IDX(ino);
 
-    if (ino >= sbi->s_nfree_inodes) return 0;
+    if (ino >= sbi->s_ninodes) return 0;
 
+    printk("basicftfs_write_inode() inode_block: %d\n", inode_block);
     bh = sb_bread(sb, inode_block);
-
+    
     if (!bh) return -EIO;
 
-    disk_inode = (struct basicftfs_inode *)bh->b_data;
-    disk_inode += inode_bidx;
-
+    disk_inode = (struct basicftfs_inode *) bh->b_data;
+    disk_inode += inode_bi;
+    
     write_from_vfs_inode_to_disk(disk_inode, inode);
-
     mark_buffer_dirty(bh);
     sync_dirty_buffer(bh);
     brelse(bh);
+
     return 0;
 }
 
-static void basicftfs_evict_inode(struct inode *inode) {
-}
-
 static void basicftfs_destroy_inode(struct inode *inode) {
-    kmem_cache_destroy(basicftfs_cache);
+    struct basicftfs_inode_info *ci = BASICFTFS_INODE(inode);
+    kmem_cache_free(basicftfs_inode_cache, ci);
 }
 
-static int basicftfs_sync_fs(struct super_block *sb, int wait) {
+static int basicftfs_sync_fs(struct super_block *sb, int wait)
+{
     struct basicftfs_sb_info *sbi = BASICFTFS_SB(sb);
+    struct basicftfs_sb_info *disk_sb;
+    struct buffer_head *bh;
     int ret = 0;
 
+    /* Flush superblock */
+    printk("basicftfs_sync_fs() 0: %d\n", 0);
     ret = flush_superblock(sb, wait);
-
     if (ret < 0) return ret;
-
     ret = flush_bitmap(sb, sbi->s_ifree_bitmap, sbi->s_imap_blocks, 1, wait);
-
     if (ret < 0) return ret;
-
     ret = flush_bitmap(sb, sbi->s_bfree_bitmap, sbi->s_bmap_blocks, sbi->s_imap_blocks + 1, wait);
 
     return ret;
 }
 
-static int basicftfs_statfs(struct dentry *dentry, struct kstatfs *stat) {
+static int basicftfs_statfs(struct dentry *dentry, struct kstatfs *stat)
+{
     struct super_block *sb = dentry->d_sb;
     struct basicftfs_sb_info *sbi = BASICFTFS_SB(sb);
 
@@ -115,13 +105,11 @@ static int basicftfs_statfs(struct dentry *dentry, struct kstatfs *stat) {
     return 0;
 }
 
-//TODO: Implement functions
 static struct super_operations basicftfs_super_ops = {
     .put_super = basicftfs_put_super,
     .alloc_inode = basicftfs_alloc_inode,
-    .write_inode = basicftfs_write_inode,
-    .evict_inode = basicftfs_evict_inode,
     .destroy_inode = basicftfs_destroy_inode,
+    .write_inode = basicftfs_write_inode,
     .sync_fs = basicftfs_sync_fs,
     .statfs = basicftfs_statfs,
 };
@@ -133,6 +121,18 @@ int init_super_block(struct super_block *sb) {
     sb->s_maxbytes = BASICFTFS_FILE_BSIZE;
     sb->s_op = &basicftfs_super_ops;
     return ret;
+}
+
+int init_sbi(struct super_block *sb, struct basicftfs_sb_info *csb, struct basicftfs_sb_info *sbi) {
+    sbi->s_nblocks = csb->s_nblocks;
+    sbi->s_ninodes = csb->s_ninodes;
+    sbi->s_inode_blocks = csb->s_inode_blocks;
+    sbi->s_imap_blocks = csb->s_imap_blocks;
+    sbi->s_bmap_blocks = csb->s_bmap_blocks;
+    sbi->s_nfree_inodes = csb->s_nfree_inodes;
+    sbi->s_nfree_blocks = csb->s_nfree_blocks;
+    sb->s_fs_info = sbi;
+    return 0;
 }
 
 int init_bitmap(struct super_block *sb, unsigned long *bitmap, uint32_t map_nr_blocks, uint32_t block_offset) {
@@ -151,84 +151,67 @@ int init_bitmap(struct super_block *sb, unsigned long *bitmap, uint32_t map_nr_b
     return 0;
 }
 
-struct basicftfs_sb_info *init_super_block_info(struct super_block *sb, int *res) {
+/* Fill the struct superblock from partition superblock */
+int basicftfs_fill_super(struct super_block *sb, void *data, int silent)
+{
     struct buffer_head *bh = NULL;
-    struct basicftfs_sb_info *new_sbi = NULL;
-    struct basicftfs_sb_info *disk_sbi = NULL;
+    struct basicftfs_sb_info *csb = NULL;
+    struct basicftfs_sb_info *sbi = NULL;
+    struct inode *root_inode = NULL;
+    int i = 0;
     int ret = 0;
 
+    ret = init_super_block(sb);
+
+    if (ret < 0) return ret;
+
     bh = sb_bread(sb, BASICFTFS_SB_BNO);
+    if (!bh) return -EIO;
 
-    if (!bh) {
-        *res = -EIO;
-        return NULL;
-    }
+    csb = (struct basicftfs_sb_info *) bh->b_data;
 
-    disk_sbi = (struct basicftfs_sb_info *) bh->b_data;
-
-    if (sb->s_magic != disk_sbi->s_magic) {
-        printk(KERN_ERR "Incorrect magic number. Wrong filesystem\n");
+    if (csb->s_magic != sb->s_magic) {
+        printk(KERN_ERR "Wrong magic number: %x\n", csb->s_magic);
         brelse(bh);
-        *res = -EINVAL;
-        return NULL;
+        return -EINVAL;
     }
 
-    new_sbi = kzalloc(sizeof(struct basicftfs_sb_info), GFP_KERNEL);
-
-    if (!new_sbi) {
+    sbi = kzalloc(sizeof(struct basicftfs_sb_info), GFP_KERNEL);
+    if (!sbi) {
+        printk(KERN_ERR "Could not allocate sufficient memory\n");
         brelse(bh);
-        *res = -ENOMEM;
-        return NULL;
+        return -ENOMEM;
     }
 
-    new_sbi->s_nblocks = disk_sbi->s_nblocks;
-    new_sbi->s_ninodes = disk_sbi->s_ninodes;
-    new_sbi->s_inode_blocks = disk_sbi->s_inode_blocks;
-    new_sbi->s_imap_blocks = disk_sbi->s_imap_blocks;
-    new_sbi->s_bmap_blocks = disk_sbi->s_bmap_blocks;
-    new_sbi->s_nfree_inodes = disk_sbi->s_nfree_inodes;
-    new_sbi->s_nfree_blocks = disk_sbi->s_nfree_blocks;
-    sb->s_fs_info = new_sbi;
-
+    init_sbi(sb, csb, sbi);
     brelse(bh);
 
-    printk(KERN_INFO "initialized new sbi\n");
-
-    new_sbi->s_ifree_bitmap = kzalloc(new_sbi->s_imap_blocks * BASICFTFS_BLOCKSIZE, GFP_KERNEL);
-
-    printk(KERN_INFO "initialized new sbi\n");
-
-    if (!new_sbi->s_ifree_bitmap) {
-        kfree(new_sbi);
-        *res = -ENOMEM;
-        return NULL;
+    sbi->s_ifree_bitmap = kzalloc(sbi->s_imap_blocks * BASICFTFS_BLOCKSIZE, GFP_KERNEL);
+    if (!sbi->s_ifree_bitmap) {
+        kfree(sbi);
+        return -ENOMEM;
     }
 
-    ret = init_bitmap(sb, new_sbi->s_ifree_bitmap, new_sbi->s_imap_blocks, 1);
+    ret = init_bitmap(sb, sbi->s_ifree_bitmap, sbi->s_imap_blocks, 1);
 
-    if (ret < 0) {
-        kfree(new_sbi->s_ifree_bitmap);
-        kfree(new_sbi);
-        *res = -EIO;
-        return NULL;
+    if (ret < 0) return ret;
+
+    sbi->s_bfree_bitmap = kzalloc(sbi->s_bmap_blocks * BASICFTFS_BLOCKSIZE, GFP_KERNEL);
+    if (!sbi->s_bfree_bitmap) {
+        kfree(sbi->s_ifree_bitmap);
+        kfree(sbi);
+        return -ENOMEM;
     }
 
-    ret = init_bitmap(sb, new_sbi->s_bfree_bitmap, new_sbi->s_bmap_blocks, new_sbi->s_imap_blocks + 1);
+    init_bitmap(sb, sbi->s_bfree_bitmap, sbi->s_bmap_blocks, sbi->s_bmap_blocks + 1);
 
-    if (ret < 0) {
-        kfree(new_sbi->s_ifree_bitmap);
-        kfree(new_sbi->s_bfree_bitmap);
-        kfree(new_sbi);
-        *res = -EIO;
-        return NULL;
+    root_inode = basicftfs_iget(sb, 0);
+    if (IS_ERR(root_inode)) {
+        kfree(sbi->s_bfree_bitmap);
+        kfree(sbi->s_ifree_bitmap);
+        kfree(sbi);
+        return PTR_ERR(root_inode);
     }
-    return new_sbi;
-}
-
-int init_root_inode(struct super_block *sb) {
-    struct inode *root_inode = basicftfs_iget(sb, 0); // TODO: implement iget
-
-    if (IS_ERR(root_inode)) return PTR_ERR(root_inode);
 
     inode_init_owner(root_inode, NULL, root_inode->i_mode);
 
@@ -236,33 +219,11 @@ int init_root_inode(struct super_block *sb) {
 
     if (!sb->s_root) {
         iput(root_inode);
+        kfree(sbi->s_bfree_bitmap);
+        kfree(sbi->s_ifree_bitmap);
+        kfree(sbi);
         return -ENOMEM;
     }
-    return 0;
-}
-
-
-
-int basicftfs_fill_super(struct super_block *sb, void *data, int silent) {
-    struct basicftfs_sb_info *new_sbi = NULL;
-    int ret = 0;
-
-    ret = init_super_block(sb);
-
-    if (ret < 0) return ret;
-
-    // new_sbi = init_super_block_info(sb, &ret);
-
-    // if (!new_sbi) return ret;
-
-    // ret = init_root_inode(sb);
-
-    // if (ret < 0) {
-    //     kfree(new_sbi->s_bfree_bitmap);
-    //     kfree(new_sbi->s_ifree_bitmap);
-    //     kfree(new_sbi);
-    //     return ret;
-    // }
 
     return 0;
 }

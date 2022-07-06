@@ -12,6 +12,7 @@ static inline uint32_t get_first_free_bits(unsigned long *freemap, unsigned long
         return -1;
     }
     bitmap_set(freemap, start_no, len);
+    printk("start bno: %ld\n", start_no);
     return start_no;
 }
 
@@ -38,7 +39,7 @@ static inline int put_free_bits(unsigned long *freemap, unsigned long size, uint
     if (start_no + len - 1 > size) {
         return -1;
     }
-
+    
     bitmap_clear(freemap, start_no, len);
     return 0;
 }
@@ -62,4 +63,4 @@ static inline void put_blocks(struct basicftfs_sb_info *sbi,uint32_t bno, uint32
     sbi->s_nfree_blocks += len;
 }
 
-#endif
+#endif /* basicFS_BITMAP_H */
