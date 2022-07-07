@@ -291,6 +291,20 @@ static int basicftfs_rmdir(struct inode *dir, struct dentry *dentry) {
     return ret;
 }
 
+static int basicftfs_rename(struct inode *old_dir, struct dentry *old_dentry, struct inode *new_dir, struct dentry *new_dentry, unsigned int flags) {
+    /*
+     * 1. Check flags, and do what is necessary: RENAME_EXCHANGE, RENAME_NOREPLACE, RENAME_WHITEOUT?
+     * 2. Check name length
+     * 3. check if dentry exists. If true, replace
+     * 4. otherwise, add if non-full directory
+     * 5. update new dir metadata
+     * 6. remove from old dir
+     * 7. update old dir metadata
+     */
+
+    return 0;
+}
+
 static const char *basicftfs_get_link(struct dentry *dentry, struct inode *inode, struct delayed_call *done) {
     return inode->i_link;
 }
@@ -301,7 +315,7 @@ const struct inode_operations basicftfs_inode_ops = {
     .unlink = basicftfs_unlink,
     .mkdir = basicftfs_mkdir,
     .rmdir = basicftfs_rmdir,
-    // .rename = basicftfs_rename,
+    .rename = basicftfs_rename,
     .link = basicftfs_link,
 };
 
