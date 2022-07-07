@@ -77,8 +77,7 @@ struct dentry *basicftfs_search_entry(struct inode *dir, struct dentry *dentry) 
     struct inode *inode = NULL;
     struct buffer_head *bh_block = NULL, *bh_clusters = NULL;
     struct basicftfs_alloc_table *cblock = NULL;
-    struct basicftfs_entry_list *fblock = NULL;
-    struct basicftfs_entry *f = NULL;
+    struct basicftfs_entry *entry = NULL;
     int block_idx = 0, entry_idx = 0;
     uint32_t cur_block = 0;
 
@@ -99,71 +98,19 @@ struct dentry *basicftfs_search_entry(struct inode *dir, struct dentry *dentry) 
             return ERR_PTR(-EIO);
         }
 
-        fblock = (struct basicftfs_entry_list *) bh_block->b_data;
+        entry = (struct basicftfs_entry *) bh_block->b_data;
 
         for (entry_idx = 0; entry_idx < BASICFTFS_ENTRIES_PER_BLOCK; entry_idx++) {
-            f = &fblock->entries[entry_idx];
-            if (f->ino == 0) {
+            if (entry->ino == 0) {
                 brelse(bh_block);
                 goto lookup_end;
             }
-            if (strncmp(f->hash_name, dentry->d_name.name, BASICFTFS_NAME_LENGTH) == 0) {
-                inode = basicftfs_iget(sb, f->ino);
+            if (strncmp(entry->hash_name, dentry->d_name.name, BASICFTFS_NAME_LENGTH) == 0) {
+                inode = basicftfs_iget(sb, entry->ino);
                 brelse(bh_block);
                 goto lookup_end;
             }
-        }
-        brelse(bh_dir);
-        bh_dir = NULL;
-        entry_idx = 0;
-        block_idx++;
-    }
-
-    brelse(bh_block);
-    return ret;
-}
-
-struct dentry *basicftfs_search_entry(struct inode *dir, struct dentry *dentry) {
-    struct super_block *sb = dir->i_sb;
-    struct basicftfs_inode_info *ci_dir = BASICFTFS_INODE(dir);
-    struct inode *inode = NULL;
-    struct buffer_head *bh_block = NULL, *bh_clusters = NULL;
-    struct basicftfs_alloc_table *cblock = NULL;
-    struct basicftfs_entry_list *fblock = NULL;
-    struct basicftfs_entry *f = NULL;
-    int block_idx = 0, entry_idx = 0;
-    uint32_t cur_block = 0;
-
-    printk("basicftfs_lookup() sb_bread ci_dir->data_block: %d\n", ci_dir->i_bno);
-    bh_clusters = sb_bread(sb, ci_dir->i_bno);
-    if (!bh_clusters) {
-        return ERR_PTR(-EIO);
-    }
-
-    cblock = (struct basicftfs_alloc_table *) bh_clusters->b_data;
-
-    while (block_idx < BASICFTFS_ATABLE_MAX_BLOCKS && cblock->table[block_idx] != 0) {
-        cur_block = cblock->table[block_idx];
-        printk("basicftfs_lookup() sb_bread cur_page: %d\n", cur_block);
-        bh_block = sb_bread(sb, cur_block);
-
-        if (!bh_block) {
-            return ERR_PTR(-EIO);
-        }
-
-        fblock = (struct basicftfs_entry_list *) bh_block->b_data;
-
-        for (entry_idx = 0; entry_idx < BASICFTFS_ENTRIES_PER_BLOCK; entry_idx++) {
-            f = &fblock->entries[entry_idx];
-            if (f->ino == 0) {
-                brelse(bh_block);
-                goto lookup_end;
-            }
-            if (strncmp(f->hash_name, dentry->d_name.name, BASICFTFS_NAME_LENGTH) == 0) {
-                inode = basicftfs_iget(sb, f->ino);
-                brelse(bh_block);
-                goto lookup_end;
-            }
+            entry++;
         }
         brelse(bh_block);
         bh_block = NULL;
@@ -184,7 +131,7 @@ int basicftfs_add_entry(struct inode *dir, struct inode *inode, struct dentry *d
     struct super_block *sb = dir->i_sb;
     struct basicftfs_inode_info *bfs_dir = BASICFTFS_INODE(dir);
     struct basicftfs_alloc_table *cblock = NULL;
-    struct basicftfs_entry_list *fblock = NULL;
+    struct basicftfs_entry *entry = NULL;
     struct buffer_head *bh_dir, *bh_dblock = NULL;
     uint32_t bno = 0;
     int ret = 0, is_allocated = false;
@@ -223,10 +170,10 @@ int basicftfs_add_entry(struct inode *dir, struct inode *inode, struct dentry *d
         goto clean_allocated_dir_block;
     }
 
-    fblock = (struct basicftfs_entry_list *) bh_dblock->b_data;
-
-    fblock->entries[entry_idx].ino = inode->i_ino;
-    strncpy(fblock->entries[entry_idx].hash_name, dentry->d_name.name, BASICFTFS_NAME_LENGTH);
+    entry = (struct basicftfs_entry *) bh_dblock->b_data;
+    entry += entry_idx;
+    entry->ino = inode->i_ino;
+    strncpy(entry->hash_name, dentry->d_name.name, BASICFTFS_NAME_LENGTH);
 
     cblock->nr_of_entries++;
     printk("nr of files after creation: %d\n", cblock->nr_of_entries);

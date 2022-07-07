@@ -57,11 +57,6 @@ struct basicftfs_entry {
     char hash_name[BASICFTFS_NAME_LENGTH];
 };
 
-// redundant: we can also update address itself instead of doing this
-struct basicftfs_entry_list {
-    struct basicftfs_entry entries[BASICFTFS_ENTRIES_PER_BLOCK];
-};
-
 struct basicftfs_alloc_table {
     uint32_t nr_of_entries;
     uint32_t table[BASICFTFS_ATABLE_MAX_BLOCKS];

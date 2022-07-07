@@ -5,14 +5,11 @@ F_MOD="-rw-r--r--"
 D_MOD="drwxr-xr-x"
 ROOT_DIR="test"
 
-<<<<<<< HEAD
 BLUE_TXT="$(tput setaf 6)"
 WHITE_TXT="$(tput setaf 7)"
 GREEN_TXT="$(tput setaf 2)"
 RED_TXT="$(tput setaf 1)"
 
-=======
->>>>>>> d575a2dfdbfdbbc899b693483bff72206bcbf55d
 check_output() {
     local message=$1
     local result=$2
@@ -84,7 +81,6 @@ test_create_file() {
     fi
 }
 
-<<<<<<< HEAD
 test_mkdir() {
     local op=$1
     local mode=$2
@@ -129,24 +125,11 @@ test_write_file() {
 
     check_output "$old_msg" "$result" "WRITE FILE $file_name BEFORE"
     ret=$?
-=======
-test_create_file_empty() {
-    local test_count=1
-    local test_passed=0
-    local filename=$(tr -dc A-Za-z </dev/urandom | head -c 16)
-
-    echo "$(tput setaf 6)CREATE FILE EMPTY TESTS: "$test_count"$(tput setaf 7)"
-
-    test_create_file 'touch test/'$filename'' $F_MOD "1" $filename "" "FILE EMPTY" $filename "1"
-    ret=$?
-
->>>>>>> d575a2dfdbfdbbc899b693483bff72206bcbf55d
     if [ "$ret" == 0 ]
     then
         ((test_passed++))
     fi
 
-<<<<<<< HEAD
     sudo sh -c "$op"
 
     # check whether data of file is correct
@@ -165,9 +148,6 @@ test_create_file_empty() {
     else
         return 1
     fi
-=======
-    echo "CREATE FILE EMPTY: "$test_passed"/"$test_count""
->>>>>>> d575a2dfdbfdbbc899b693483bff72206bcbf55d
 }
 
 test_create_root() {
