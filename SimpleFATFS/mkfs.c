@@ -15,17 +15,22 @@ struct superblock {
     char padding[BASICFTFS_BLOCKSIZE - sizeof(struct basicftfs_sb_info)]; /* Padding to match block size */
 };
 
+/* Returns ceil(a/b) */
 static inline uint32_t div_ceil(uint32_t a, uint32_t b) {
     uint32_t ret = a / b;
-    if (a % b) return ret + 1;
-    else       return ret;
-    
+    if (a % b) {
+        return ret + 1;
+    } else {
+        return ret;
+    }
 }
 
 static void my_set_bit(uint64_t *val, int bit, int value) {
-    if(value)  *val |= ((uint64_t)1 << bit);
-    else       *val &= ~((uint64_t)1 << bit);
-    
+    if(value) {
+        *val |= ((uint64_t)1 << bit);
+    } else {
+        *val &= ~((uint64_t)1 << bit);
+    }
 }
 
 static struct superblock *write_superblock(int fd, struct stat *fstats) {
@@ -56,6 +61,20 @@ static struct superblock *write_superblock(int fd, struct stat *fstats) {
         return NULL;
     }
 
+    printf(
+        "Superblock: (%ld)\n"
+        "\tmagic=%#x\n"
+        "\tnr_blocks=%u\n"
+        "\tnr_inodes=%u (inode blocks=%u blocks)\n"
+        "\tnr_ifree_blocks=%u\n"
+        "\tnr_bfree_blocks=%u\n"
+        "\tnr_free_inodes=%u\n"
+        "\tnr_free_blocks=%u\n",
+        sizeof(struct superblock), sb->info.s_magic, sb->info.s_nblocks,
+        sb->info.s_ninodes, sb->info.s_inode_blocks, sb->info.s_imap_blocks,
+        sb->info.s_bmap_blocks, sb->info.s_nfree_inodes,
+        sb->info.s_nfree_blocks);
+
     return sb;
 }
 
@@ -83,9 +102,11 @@ static int write_ifree_blocks(int fd, struct superblock *sb) {
         }
     }
 
+    printf("inode bitmap blocks: wrote %d\n", i);
     free(block);
     return 0;
 }
+
 
 static int write_bfree_blocks(int fd, struct superblock *sb)
 {
@@ -175,6 +196,7 @@ static int write_inode_blocks(int fd, struct superblock *sb) {
     return 0;
 }
 
+
 int main(int argc, char **argv)
 {
     if (argc != 2) {
@@ -182,6 +204,7 @@ int main(int argc, char **argv)
         return EXIT_FAILURE;
     }
 
+    /* Open disk image */
     int fd = open(argv[1], O_RDWR);
     if (fd == -1) {
         perror("could not open disk\n");
@@ -240,5 +263,5 @@ int main(int argc, char **argv)
 
     free(sb);
     close(fd);
-    return 0;
+    return ret;
 }

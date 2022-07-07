@@ -9,6 +9,7 @@
 MODULE_LICENSE("GPL");
 MODULE_AUTHOR("quardell");
 
+/* Mount a basicftfs partition */
 struct dentry *basicftfs_mount(struct file_system_type *fs_type, int flags, const char *dev_name, void *data) {
     struct dentry *dentry = mount_bdev(fs_type, flags, dev_name, data, basicftfs_fill_super);
 
@@ -21,12 +22,13 @@ struct dentry *basicftfs_mount(struct file_system_type *fs_type, int flags, cons
     return dentry;
 }
 
+/* Unmount a basicftfs partition */
 void basicftfs_kill_sb(struct super_block *sb) {
-    printk(KERN_INFO "Superblock will be destryoyed\n");
+    printk(KERN_INFO "disk will be destroyed\n");
     kill_block_super(sb);
 }
 
-static struct file_system_type basicftfs_type = {
+static struct file_system_type basicftfs_file_system_type = {
     .owner = THIS_MODULE,
     .name = "basicftfs",
     .mount = basicftfs_mount,
@@ -35,27 +37,32 @@ static struct file_system_type basicftfs_type = {
     .next = NULL,
 };
 
-static int __init  basicftfs_init(void) {
+static int __init basicftfs_init(void) {
     int ret = basicftfs_init_inode_cache();
+    if (ret) {
+        printk(KERN_ERR "Inode cache creation failed\n");
+        return ret;
+    }
 
-    ret = register_filesystem(&basicftfs_type);
-
+    ret = register_filesystem(&basicftfs_file_system_type);
     if (ret) {
         printk(KERN_ERR "Failed registration of filesystem\n");
+        return ret;
     }
-    printk(KERN_INFO "Fileystem registered succesfully\n");
-    return 0;
+
+    printk(KERN_INFO "Module registered succesfully\n");
+    return ret;
 }
 
 static void __exit basicftfs_exit(void) {
-    int ret = unregister_filesystem(&basicftfs_type);
+    int ret = unregister_filesystem(&basicftfs_file_system_type);
     if (ret) {
         printk(KERN_ERR "Failed unregistration of filesystem\n");
     }
 
     basicftfs_destroy_inode_cache();
 
-    printk(KERN_INFO "remove module\n");
+    printk(KERN_INFO "Module unregistered succesfully\n");
 }
 
 module_init(basicftfs_init);

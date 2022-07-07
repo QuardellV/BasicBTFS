@@ -8,7 +8,7 @@
 
 #include "basicftfs.h"
 
-static void write_from_disk_to_vfs_inode(struct super_block *sb, struct inode *vfs_inode, struct basicftfs_inode *disk_inode, unsigned long ino) {
+static inline void write_from_disk_to_vfs_inode(struct super_block *sb, struct inode *vfs_inode, struct basicftfs_inode *disk_inode, unsigned long ino) {
     vfs_inode->i_ino = ino;
     vfs_inode->i_sb = sb;
     vfs_inode->i_op = &basicftfs_inode_ops;
@@ -25,7 +25,7 @@ static void write_from_disk_to_vfs_inode(struct super_block *sb, struct inode *v
     set_nlink(vfs_inode, le32_to_cpu(disk_inode->i_nlink));
 }
 
-static void write_from_vfs_inode_to_disk(struct basicftfs_inode *disk_inode, struct inode *vfs_inode) {
+static inline void write_from_vfs_inode_to_disk(struct basicftfs_inode *disk_inode, struct inode *vfs_inode) {
     struct basicftfs_inode_info *inode_info = BASICFTFS_INODE(vfs_inode);
 
     disk_inode->i_mode = vfs_inode->i_mode;
@@ -41,7 +41,7 @@ static void write_from_vfs_inode_to_disk(struct basicftfs_inode *disk_inode, str
     strncpy(disk_inode->i_data, inode_info->i_data, sizeof(inode_info->i_data));
 }
 
-static int flush_superblock(struct super_block *sb, int wait) {
+static inline int flush_superblock(struct super_block *sb, int wait) {
     struct buffer_head *bh = NULL;
     struct basicftfs_sb_info *sbi = BASICFTFS_SB(sb);
     struct basicftfs_sb_info *disk_sbi = NULL;
@@ -67,7 +67,7 @@ static int flush_superblock(struct super_block *sb, int wait) {
     return 0;
 }
 
-static int flush_bitmap(struct super_block *sb, unsigned long *bitmap, uint32_t map_nr_blocks, uint32_t block_offset, int wait) {
+static inline int flush_bitmap(struct super_block *sb, unsigned long *bitmap, uint32_t map_nr_blocks, uint32_t block_offset, int wait) {
     struct buffer_head *bh = NULL;
     int i = 0;
 

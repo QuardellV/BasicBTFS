@@ -78,7 +78,7 @@ int basicftfs_fill_super(struct super_block *sb, void *data, int silent);
 struct inode *basicftfs_iget(struct super_block *sb, unsigned long ino);
 
 /* Dir functions */
-int basicftfs_add_entry(struct inode *dir, struct inode *inode, const unsigned char *name);
+int basicftfs_add_entry(struct inode *dir, struct inode *inode, struct dentry *dentry);
 struct dentry *basicftfs_search_entry(struct inode *dir, struct dentry *dentry);
 
 /* Operation structs*/
