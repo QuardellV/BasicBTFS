@@ -36,19 +36,15 @@ static inline uint32_t get_free_blocks(struct basicftfs_sb_info *sbi, uint32_t l
 }
 
 static inline int put_free_bits(unsigned long *freemap, unsigned long size, uint32_t start_no, uint32_t len) {
-    if (start_no + len - 1 > size) {
-        return -1;
-    }
-    
+    if (start_no + len - 1 > size) return -1;
+
     bitmap_clear(freemap, start_no, len);
     return 0;
 }
 
 static inline void put_inode(struct basicftfs_sb_info *sbi, uint32_t ino) {
     int ret = put_free_bits(sbi->s_ifree_bitmap, sbi->s_ninodes, ino, 1);
-    if (ret != 0) {
-        return;
-    }
+    if (ret != 0) return;
 
     sbi->s_nfree_inodes++;
 }
@@ -56,9 +52,7 @@ static inline void put_inode(struct basicftfs_sb_info *sbi, uint32_t ino) {
 static inline void put_blocks(struct basicftfs_sb_info *sbi,uint32_t bno, uint32_t len) {
     int ret = put_free_bits(sbi->s_bfree_bitmap, sbi->s_nblocks, bno, len);
 
-    if (ret != 0) {
-        return;
-    }
+    if (ret != 0) return;
 
     sbi->s_nfree_blocks += len;
 }

@@ -222,6 +222,75 @@ static int basicftfs_link(struct dentry *old_dentry,
     return ret;
 }
 
+static int basicftfs_unlink(struct inode *dir ,struct dentry *dentry) {
+    int ret = 0;
+    uint32_t bno = 0, ino = 0;
+    struct super_block *sb  = dir->i_sb;
+    struct basicftfs_sb_info *sbi = BASICFTFS_SB(sb);
+    struct buffer_head *bh = NULL;
+    struct basicftfs_alloc_table *table = NULL;
+    struct inode *inode = d_inode(dentry);
+    ino = inode->i_ino;
+
+    ret = basicftfs_delete_entry(dir, inode);
+
+    if (ret < 0) return ret;
+
+    dir->i_mtime = dir->i_atime = dir->i_ctime = current_time(dir);
+
+    inode_dec_link_count(inode);
+
+    /* Currently, it just resets the inode*/
+    bno = BASICFTFS_INODE(inode)->i_bno;
+    bh = sb_bread(sb, bno);
+    if (!bh) {
+        clean_inode(inode);
+        put_blocks(sbi, bno, 1);
+        put_inode(sbi, inode->i_ino);
+        return ret;
+    }
+
+    table = (struct basicftfs_alloc_table *) bh->b_data;
+
+    if (S_ISDIR(inode->i_mode)) {
+        reset_block((char *)table, bh);
+        clean_inode(inode);
+        put_blocks(sbi, bno, 1);
+        put_inode(sbi, ino);
+    } else if (S_ISREG(inode->i_mode)) {
+        // clean_file_block(inode);
+        // clean_inode(inode);
+        // put_blocks(sbi, bno, 1);
+        // put_inode(sbi, ino);
+    }
+    return ret;
+}
+
+static int basicftfs_rmdir(struct inode *dir, struct dentry *dentry) {
+    struct inode *inode = d_inode(dentry);
+    struct super_block *sb = dir->i_sb;
+    uint32_t ino = BASICFTFS_INODE(inode)->i_bno;
+    struct buffer_head *bh = NULL;
+    struct basicftfs_alloc_table *table = NULL;
+    int ret = basicftfs_unlink(dir, dentry);
+
+    if (inode->i_nlink > 2) return -ENOTEMPTY;
+
+    bh = sb_bread(sb, ino);
+
+    if (!bh) return -EIO;
+
+    table = (struct basicftfs_alloc_table *) bh->b_data;
+
+    if (table->nr_of_entries > 0) {
+        brelse(bh);
+        return -ENOTEMPTY;
+    }
+
+    brelse(bh);
+    return ret;
+}
+
 static const char *basicftfs_get_link(struct dentry *dentry, struct inode *inode, struct delayed_call *done) {
     return inode->i_link;
 }
@@ -229,9 +298,9 @@ static const char *basicftfs_get_link(struct dentry *dentry, struct inode *inode
 const struct inode_operations basicftfs_inode_ops = {
     .lookup = basicftfs_lookup,
     .create = basicftfs_create,
-    // .unlink = basicftfs_unlink,
+    .unlink = basicftfs_unlink,
     .mkdir = basicftfs_mkdir,
-    // .rmdir = basicftfs_rmdir,
+    .rmdir = basicftfs_rmdir,
     // .rename = basicftfs_rename,
     .link = basicftfs_link,
 };

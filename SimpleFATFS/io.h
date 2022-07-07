@@ -86,4 +86,30 @@ static inline int flush_bitmap(struct super_block *sb, unsigned long *bitmap, ui
     return 0;
 }
 
+// static inline void move_files(struct basicftfs_entry *fblock_prev, struct basicftfs_entry *fblock_cur) {
+//     memmove(fblock_prev + BASICFTFS_ENTRIES_PER_BLOCK - 1, fblock_cur, sizeof(struct basicftfs_entry));
+//     memmove(fblock_cur, fblock_cur + 1, (BASICFTFS_ENTRIES_PER_BLOCK - 1) * sizeof(struct basicftfs_entry));
+//     memset(fblock_cur + BASICFTFS_ENTRIES_PER_BLOCK - 1, 0, sizeof(struct basicftfs_entry));
+// }
+
+// static inline void remove_file_from_dir(int entry_idx, struct basicftfs_entry *entry) {
+//     if (entry_idx != BASICFTFS_ENTRIES_PER_BLOCK - 1) {
+//         memmove(entry + entry_idx, entry + entry_idx + 1, (BASICFTFS_ENTRIES_PER_BLOCK - entry_idx - 1) * sizeof(struct basicftfs_entry));
+//     }
+//     memset(entry + BASICFTFS_ENTRIES_PER_BLOCK - 1, 0, sizeof(struct basicftfs_entry));
+// }
+
+static inline void move_files(struct basicftfs_entry *fblock_prev, struct basicftfs_entry *fblock_cur) {
+    memmove(fblock_prev + BASICFTFS_ENTRIES_PER_BLOCK - 1, fblock_cur, sizeof(struct basicftfs_entry));
+    memmove(fblock_cur, fblock_cur + 1, (BASICFTFS_ENTRIES_PER_BLOCK - 1) * sizeof(struct basicftfs_entry));
+    memset(fblock_cur + BASICFTFS_ENTRIES_PER_BLOCK - 1, 0, sizeof(struct basicftfs_entry));
+}
+
+static inline void remove_file_from_dir(int fi, struct basicftfs_entry *fblock) {
+    if (fi != BASICFTFS_ENTRIES_PER_BLOCK - 1) {
+        memmove(fblock + fi, fblock + fi + 1, (BASICFTFS_ENTRIES_PER_BLOCK - fi - 1) * sizeof(struct basicftfs_entry));
+    }
+    memset(fblock + BASICFTFS_ENTRIES_PER_BLOCK - 1, 0, sizeof(struct basicftfs_entry));
+}
+
 #endif
