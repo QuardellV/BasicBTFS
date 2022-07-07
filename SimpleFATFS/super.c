@@ -73,6 +73,8 @@ static void basicftfs_destroy_inode(struct inode *inode) {
 static int basicftfs_sync_fs(struct super_block *sb, int wait)
 {
     struct basicftfs_sb_info *sbi = BASICFTFS_SB(sb);
+    struct basicftfs_sb_info *disk_sb;
+    struct buffer_head *bh;
     int ret = 0;
 
     /* Flush superblock */
