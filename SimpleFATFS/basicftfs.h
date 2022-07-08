@@ -76,6 +76,7 @@ struct inode *basicftfs_iget(struct super_block *sb, unsigned long ino);
 int basicftfs_add_entry(struct inode *dir, struct inode *inode, struct dentry *dentry);
 struct dentry *basicftfs_search_entry(struct inode *dir, struct dentry *dentry);
 int basicftfs_delete_entry(struct inode *dir, struct inode *inode);
+int basicftfs_update_entry(struct inode *old_dir, struct inode *new_dir, struct dentry *old_dentry, struct dentry *new_dentry, unsigned int flags);
 int clean_file_block(struct inode *inode);
 
 /* Operation structs*/

@@ -301,6 +301,35 @@ static int basicftfs_rename(struct inode *old_dir, struct dentry *old_dentry, st
      * 6. remove from old dir
      * 7. update old dir metadata
      */
+    int ret = 0;
+
+    if (flags & (RENAME_EXCHANGE)) {
+        return -EINVAL;
+    }
+
+    if (flags & (RENAME_EXCHANGE & RENAME_NOREPLACE)) {
+        return -EINVAL;
+    }
+
+    if (strlen(new_dentry->d_name.name) > BASICFTFS_NAME_LENGTH) {
+        return -ENAMETOOLONG;
+    }
+
+    ret = basicftfs_update_entry(old_dir, new_dir, old_dentry, new_dentry, flags);
+
+    if (ret < 0) return ret;
+
+    new_dir->i_atime = new_dir->i_ctime = new_dir->i_mtime = current_time(new_dir);
+
+    if (S_ISDIR(d_inode(new_dentry)->i_mode)) inc_nlink(new_dir);
+
+    mark_inode_dirty(new_dir);
+
+    old_dir->i_atime = old_dir->i_ctime = old_dir->i_mtime = current_time(old_dir);
+
+    if (S_ISDIR(d_inode(new_dentry)->i_mode)) drop_nlink(old_dir);
+
+    mark_inode_dirty(old_dir);
 
     return 0;
 }
