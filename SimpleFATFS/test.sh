@@ -1040,6 +1040,34 @@ test_rm_subdir() {
     echo "REMOVE SUBDIR PASSED: "$test_passed"/"$test_count""
 }
 
+test_move_file() {
+
+}
+
+test move_file_noreplace() {
+
+}
+
+test_move_file_advanced() {
+
+}
+
+test_move_dir() {
+
+}
+
+test_move_dir_noreplace() {
+
+}
+
+test_move_dir_advanced() {
+
+}
+
+test_move_advanced() {
+
+}
+
 # make n files, pick random file and write something random in it. also delete random files
 # remove, make, list, write on root
 test_advanced_sequence_1() {
