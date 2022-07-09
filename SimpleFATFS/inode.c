@@ -346,6 +346,7 @@ const struct inode_operations basicftfs_inode_ops = {
     .rmdir = basicftfs_rmdir,
     .rename = basicftfs_rename,
     .link = basicftfs_link,
+    // .symlink = basicftfs_symlink,
 };
 
 const struct inode_operations symlink_inode_ops = {
