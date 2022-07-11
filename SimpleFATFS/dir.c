@@ -2,6 +2,8 @@
 #include <linux/fs.h>
 #include <linux/kernel.h>
 #include <linux/module.h>
+#include <openssl/err.h>
+#include <openssl/rand.h>
 
 #include "basicftfs.h"
 #include "destroy.h"

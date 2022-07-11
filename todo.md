@@ -1,8 +1,9 @@
 # TODO list 
 - make move test to check inode operation rename
+- Fix the two root directories
 - update directory using btree
 - Update using clusters for at least files
-- Check how we can checksums for data integrity
+- Check how we can checksums for data integrity and shorter names
 - Check how we can decrease the length using the checksums/hash
 - Check for possibility to use btree for everything instead of using bitmap. See: Btrfs paper: https://dominoweb.draco.res.ibm.com/reports/rj10501.pdf
 - Use iozone, fxmark, iostat to check the scalability and performance of the different filesystems. More reliable than doing it manually. Moreover, we won't reinvent the wheel. See paper, for more information.

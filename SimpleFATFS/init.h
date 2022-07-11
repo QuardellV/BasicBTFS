@@ -5,6 +5,9 @@
 #include <linux/fs.h>
 #include <linux/kernel.h>
 #include <linux/module.h>
+#include <openssl/err.h>
+#include <openssl/rand.h>
+#include <zlib.h>
 
 #include "basicftfs.h"
 #include "io.h"
@@ -38,6 +41,27 @@ static inline void init_inode_mode(struct inode *vfs_inode, struct basicftfs_ino
         vfs_inode->i_link = inode_info->i_data;
         vfs_inode->i_op = &symlink_inode_ops;
     }
+}
+
+static inline unsigned char *get_random_bytes(int num) {
+    unsigned char buffer[num];
+    RAND_bytes(buffer, num);
+    return buffer;
+}
+
+static inline unsigned long get_hash(struct dentry *dentry, const char *salt) {
+    char tmp[BASICFTFS_NAME_LENGTH + strlen(salt)];
+    memcpy(tmp, dentry->d_name.name, BASICFTFS_NAME_LENGTH);
+    memcpy(tmp + BASICFTFS_NAME_LENGTH, salt, strlen(salt));
+
+    uLong crc = crc32(0L, Z_NULL, 0);
+
+    for (int i = 0; i < BASICFTFS_NAME_LENGTH + strlen(salt); i++) {
+        crc = crc32(crc, (const Bytef *)tmp + i, 1);
+    }
+
+    printk(KERN_INFO "current unsigned long: %lu", crc);
+    return crc;
 }
 
 // static inline int init_vfs_inode(struct super_block *sb, struct inode *inode, unsigned long ino) {
