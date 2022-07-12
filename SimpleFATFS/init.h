@@ -5,9 +5,8 @@
 #include <linux/fs.h>
 #include <linux/kernel.h>
 #include <linux/module.h>
-#include <openssl/err.h>
-#include <openssl/rand.h>
-#include <zlib.h>
+#include <linux/crc32.h>
+#include <linux/random.h>
 
 #include "basicftfs.h"
 #include "io.h"
@@ -43,24 +42,23 @@ static inline void init_inode_mode(struct inode *vfs_inode, struct basicftfs_ino
     }
 }
 
-static inline unsigned char *get_random_bytes(int num) {
-    unsigned char buffer[num];
-    RAND_bytes(buffer, num);
-    return buffer;
+static inline unsigned char *my_get_rand_bytes(int num) {
+    unsigned char buf[num];
+    get_random_bytes(buf, num);
+
+    printk("random bytes: %hhn\n", buf);
+    return buf;
 }
 
 static inline unsigned long get_hash(struct dentry *dentry, const char *salt) {
+    u32 crc = 0;
     char tmp[BASICFTFS_NAME_LENGTH + strlen(salt)];
     memcpy(tmp, dentry->d_name.name, BASICFTFS_NAME_LENGTH);
     memcpy(tmp + BASICFTFS_NAME_LENGTH, salt, strlen(salt));
 
-    uLong crc = crc32(0L, Z_NULL, 0);
+    crc32(crc, tmp, BASICFTFS_NAME_LENGTH + strlen(salt));
 
-    for (int i = 0; i < BASICFTFS_NAME_LENGTH + strlen(salt); i++) {
-        crc = crc32(crc, (const Bytef *)tmp + i, 1);
-    }
-
-    printk(KERN_INFO "current unsigned long: %lu", crc);
+    printk(KERN_INFO "current unsigned long: %hhx", crc);
     return crc;
 }
 

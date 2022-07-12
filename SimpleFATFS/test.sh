@@ -1117,131 +1117,131 @@ test_move_file_simple() {
     echo "MOVE FILE EMPTY TESTS: "$test_passed"/"$test_count""
 }
 
-test move_file_noreplace() {
-    local dirname=$(tr -dc A-Za-z </dev/urandom | head -c 16)
-    local dirname2=$(tr -dc A-Za-z </dev/urandom | head -c 16)
-    local filename=$(tr -dc A-Za-z </dev/urandom | head -c 16)
-    local filename2=$(tr -dc A-Za-z </dev/urandom | head -c 16)
+# test move_file_noreplace() {
+#     local dirname=$(tr -dc A-Za-z </dev/urandom | head -c 16)
+#     local dirname2=$(tr -dc A-Za-z </dev/urandom | head -c 16)
+#     local filename=$(tr -dc A-Za-z </dev/urandom | head -c 16)
+#     local filename2=$(tr -dc A-Za-z </dev/urandom | head -c 16)
 
-    echo "$(tput setaf 6)MOVE_FILE_NOREPLACE TESTS: "$test_count"$(tput setaf 7)"
+#     echo "$(tput setaf 6)MOVE_FILE_NOREPLACE TESTS: "$test_count"$(tput setaf 7)"
 
-    test_mkdir 'mkdir test/'$dirname'' $D_MOD "2" $dirname "1" "1"
-    ret=$?
+#     test_mkdir 'mkdir test/'$dirname'' $D_MOD "2" $dirname "1" "1"
+#     ret=$?
 
-    if [ "$ret" == 0 ]
-    then
-        ((test_passed++))
-    fi
+#     if [ "$ret" == 0 ]
+#     then
+#         ((test_passed++))
+#     fi
 
-    test_mkdir 'mkdir test/'$dirname2'' $D_MOD "2" $dirname2 "1" "1"
-    ret=$?
+#     test_mkdir 'mkdir test/'$dirname2'' $D_MOD "2" $dirname2 "1" "1"
+#     ret=$?
 
-    if [ "$ret" == 0 ]
-    then
-        ((test_passed++))
-    fi
+#     if [ "$ret" == 0 ]
+#     then
+#         ((test_passed++))
+#     fi
 
-    test_create_file 'touch test/'$dirname'/'$filename'' $F_MOD "1" $filename "" "FILE EMPTY" $filename "1"
-    ret=$?
+#     test_create_file 'touch test/'$dirname'/'$filename'' $F_MOD "1" $filename "" "FILE EMPTY" $filename "1"
+#     ret=$?
 
-    if [ "$ret" == 0 ]
-    then
-        ((test_passed++))
-    fi
+#     if [ "$ret" == 0 ]
+#     then
+#         ((test_passed++))
+#     fi
 
-    test_create_file 'touch test/'$dirname2'/'$filename'' $F_MOD "1" $filename2 "" "FILE EMPTY" $filename2 "1"
-    ret=$?
+#     test_create_file 'touch test/'$dirname2'/'$filename'' $F_MOD "1" $filename2 "" "FILE EMPTY" $filename2 "1"
+#     ret=$?
 
-    if [ "$ret" == 0 ]
-    then
-        ((test_passed++))
-    fi
+#     if [ "$ret" == 0 ]
+#     then
+#         ((test_passed++))
+#     fi
 
-    test_mvfile 'mv test/'$dirname'/'$filename1' test/'$dirname2'/'$filename2'' $F_MOD "1" $filename $filename2 "0" "1"
-    ret=$?
+#     test_mvfile 'mv test/'$dirname'/'$filename1' test/'$dirname2'/'$filename2'' $F_MOD "1" $filename $filename2 "0" "1"
+#     ret=$?
 
-    if [ "$ret" == 0 ]
-    then
-        ((test_passed++))
-    fi
+#     if [ "$ret" == 0 ]
+#     then
+#         ((test_passed++))
+#     fi
 
-    echo "MOVE_FILE_NOREPLACE TESTS: "$test_passed"/"$test_count""
+#     echo "MOVE_FILE_NOREPLACE TESTS: "$test_passed"/"$test_count""
 
-}
+# }
 
-test_move_file_advanced() {
+# test_move_file_advanced() {
 
-}
+# }
 
-test_move_dir() {
-    local dirname=$(tr -dc A-Za-z </dev/urandom | head -c 16)
-    local dirname2=$(tr -dc A-Za-z </dev/urandom | head -c 16)
-    local test_count=3
-    local test_passed=0
+# test_move_dir() {
+#     local dirname=$(tr -dc A-Za-z </dev/urandom | head -c 16)
+#     local dirname2=$(tr -dc A-Za-z </dev/urandom | head -c 16)
+#     local test_count=3
+#     local test_passed=0
 
-    echo "$(tput setaf 6)MOVE DIR EMPTY TESTS: "$test_count"$(tput setaf 7)"
+#     echo "$(tput setaf 6)MOVE DIR EMPTY TESTS: "$test_count"$(tput setaf 7)"
 
-    test_mkdir 'mkdir test/'$dirname'' $D_MOD "2" $dirname "1" "1"
-    ret=$?
+#     test_mkdir 'mkdir test/'$dirname'' $D_MOD "2" $dirname "1" "1"
+#     ret=$?
 
-    if [ "$ret" == 0 ]
-    then
-        ((test_passed++))
-    fi
+#     if [ "$ret" == 0 ]
+#     then
+#         ((test_passed++))
+#     fi
 
-    test_mvfile 'mv test/'$dirname' test/'$dirname2'' $F_MOD "1" $dirname $dirname2 "1" "0"
-    ret=$?
+#     test_mvfile 'mv test/'$dirname' test/'$dirname2'' $F_MOD "1" $dirname $dirname2 "1" "0"
+#     ret=$?
 
-    if [ "$ret" == 0 ]
-    then
-        ((test_passed++))
-    fi
+#     if [ "$ret" == 0 ]
+#     then
+#         ((test_passed++))
+#     fi
 
-    echo "MOVE DIR EMPTY TESTS: "$test_passed"/"$test_count""
-}
+#     echo "MOVE DIR EMPTY TESTS: "$test_passed"/"$test_count""
+# }
 
-test_move_dir_noreplace() {
-    local dirname=$(tr -dc A-Za-z </dev/urandom | head -c 16)
-    local dirname2=$(tr -dc A-Za-z </dev/urandom | head -c 16)
-    local filename=$(tr -dc A-Za-z </dev/urandom | head -c 16)
-    local filename2=$(tr -dc A-Za-z </dev/urandom | head -c 16)
+# test_move_dir_noreplace() {
+#     local dirname=$(tr -dc A-Za-z </dev/urandom | head -c 16)
+#     local dirname2=$(tr -dc A-Za-z </dev/urandom | head -c 16)
+#     local filename=$(tr -dc A-Za-z </dev/urandom | head -c 16)
+#     local filename2=$(tr -dc A-Za-z </dev/urandom | head -c 16)
 
-    echo "$(tput setaf 6)MOVE_FILE_NOREPLACE TESTS: "$test_count"$(tput setaf 7)"
+#     echo "$(tput setaf 6)MOVE_FILE_NOREPLACE TESTS: "$test_count"$(tput setaf 7)"
 
-    test_mkdir 'mkdir test/'$dirname'' $D_MOD "2" $dirname "1" "1"
-    ret=$?
+#     test_mkdir 'mkdir test/'$dirname'' $D_MOD "2" $dirname "1" "1"
+#     ret=$?
 
-    if [ "$ret" == 0 ]
-    then
-        ((test_passed++))
-    fi
+#     if [ "$ret" == 0 ]
+#     then
+#         ((test_passed++))
+#     fi
 
-    test_mkdir 'mkdir test/'$dirname2'' $D_MOD "2" $dirname2 "1" "1"
-    ret=$?
+#     test_mkdir 'mkdir test/'$dirname2'' $D_MOD "2" $dirname2 "1" "1"
+#     ret=$?
 
-    if [ "$ret" == 0 ]
-    then
-        ((test_passed++))
-    fi
+#     if [ "$ret" == 0 ]
+#     then
+#         ((test_passed++))
+#     fi
 
-    test_mvfile 'mv test/'$dirname'/'$filename1' test/'$dirname2'/'$filename2'' $F_MOD "1" $filename $filename2 "0" "1"
-    ret=$?
+#     test_mvfile 'mv test/'$dirname'/'$filename1' test/'$dirname2'/'$filename2'' $F_MOD "1" $filename $filename2 "0" "1"
+#     ret=$?
 
-    if [ "$ret" == 0 ]
-    then
-        ((test_passed++))
-    fi
+#     if [ "$ret" == 0 ]
+#     then
+#         ((test_passed++))
+#     fi
 
-    echo "MOVE_FILE_NOREPLACE TESTS: "$test_passed"/"$test_count""
-}
+#     echo "MOVE_FILE_NOREPLACE TESTS: "$test_passed"/"$test_count""
+# }
 
-test_move_dir_advanced() {
+# test_move_dir_advanced() {
 
-}
+# }
 
-test_move_advanced() {
+# test_move_advanced() {
 
-}
+# }
 
 # make n files, pick random file and write something random in it. also delete random files
 # remove, make, list, write on root
@@ -1788,32 +1788,34 @@ init() {
 }
 
 test_create_root $D_MOD "2" "test" "root"
-test_create_file_empty
-test_create_file_nonempty
-test_create_file_toolong
-test_create_already_exist
+# test_create_file_empty
+# test_create_file_nonempty
+# test_create_file_toolong
+# test_create_already_exist
 
-test_mkdir_depth_1
-test_mkdir_depth_n
-test_mkdir_toolong
+# test_mkdir_depth_1
+# test_mkdir_depth_n
+# test_mkdir_toolong
 
-test_create_file_subdir_1
-test_create_file_subdir_n
-test_create_nfiles_subdir_1
+# test_create_file_subdir_1
+# test_create_file_subdir_n
+# test_create_nfiles_subdir_1
 
-test_write_small
+# test_write_small
 
-test_rm_empty
-test_rm_small
-test_rm_large
+# test_rm_empty
+# test_rm_small
+# test_rm_large
 
-test_rmdir_empty
-test_rmdir_nonempty
+# test_rmdir_empty
+# test_rmdir_nonempty
 
-test_rm_in_subdir
-test_rm_subdir
+# test_rm_in_subdir
+# test_rm_subdir
 
-test_advanced_sequence_1
-test_advanced_sequence_2
-test_advanced_sequence_3
-test_advanced_sequence_4
+test_move_file_simple
+
+# test_advanced_sequence_1
+# test_advanced_sequence_2
+# test_advanced_sequence_3
+# test_advanced_sequence_4

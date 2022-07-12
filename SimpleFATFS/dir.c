@@ -2,8 +2,6 @@
 #include <linux/fs.h>
 #include <linux/kernel.h>
 #include <linux/module.h>
-#include <openssl/err.h>
-#include <openssl/rand.h>
 
 #include "basicftfs.h"
 #include "destroy.h"
@@ -28,6 +26,8 @@ static int basicftfs_iterate(struct file *dir, struct dir_context *ctx) {
         printk(KERN_ERR "ctx position is bigger than the amount of subfiles we can handle in a directory\n");
         return 0;
     }
+
+    printk("iterate()\n");
 
     // fix if two entries are added. However, currently are not being displayed with ls :(
     if (!dir_emit_dots(dir, ctx)) return 0;
@@ -81,6 +81,8 @@ struct dentry *basicftfs_search_entry(struct inode *dir, struct dentry *dentry) 
     struct basicftfs_entry *entry = NULL;
     int block_idx = 0, entry_idx = 0;
     uint32_t cur_block = 0;
+    
+    printk("lookup()\n");
 
     bh_clusters = sb_bread(sb, ci_dir->i_bno);
     if (!bh_clusters) {
@@ -135,6 +137,8 @@ int basicftfs_add_entry(struct inode *dir, struct inode *inode, struct dentry *d
     uint32_t bno = 0;
     int ret = 0, is_allocated = false;
     int block_idx = 0, entry_idx = 0;
+
+    printk("add()\n");
 
     bh_dir = sb_bread(sb, bfs_dir->i_bno);
 
@@ -264,24 +268,28 @@ int basicftfs_update_entry(struct inode *old_dir, struct inode *new_dir, struct 
     struct buffer_head *bh_new_dir = NULL, *bh_block = NULL;
     struct basicftfs_inode_info *new_dir_info = BASICFTFS_INODE(new_dir);
     struct inode *old_inode = d_inode(old_dentry);
-    struct inode *new_inode = d_inode(new_dentry);
-    struct basicftfs_alloc_table *cblock = NULL;
+    // struct inode *new_inode = d_inode(new_dentry);
+    struct basicftfs_alloc_table *a_table = NULL;
     struct basicftfs_entry *entry = NULL;
     int block_idx = 0, entry_idx = 0, ret = 0;
     uint32_t cur_block = 0;
+
+    printk("basicfs_update_entry() sb_bread BASICFS_INODE(dir)->data_bloc: %d\n", BASICFTFS_INODE(new_dir)->i_bno);
 
     bh_new_dir = sb_bread(sb, new_dir_info->i_bno);
 
     if (!bh_new_dir) return -EIO;
 
-    cblock = (struct basicftfs_alloc_table *) bh_new_dir->b_data;
+    // printk("check 1\n");
 
-    while (block_idx < BASICFTFS_ATABLE_MAX_BLOCKS && cblock->table[block_idx] != 0) {
-        cur_block = cblock->table[block_idx];
+    a_table = (struct basicftfs_alloc_table *) bh_new_dir->b_data;
+
+    while (block_idx < BASICFTFS_ATABLE_MAX_BLOCKS && a_table->table[block_idx] != 0) {
+        cur_block = a_table->table[block_idx];
         bh_block = sb_bread(sb, cur_block);
 
         if (!bh_block) {
-            return -EIO;
+            return ERR_PTR(-EIO);
         }
 
         entry = (struct basicftfs_entry *) bh_block->b_data;
@@ -289,20 +297,7 @@ int basicftfs_update_entry(struct inode *old_dir, struct inode *new_dir, struct 
         for (entry_idx = 0; entry_idx < BASICFTFS_ENTRIES_PER_BLOCK; entry_idx++) {
             if (entry->ino == 0) {
                 brelse(bh_block);
-                goto update_entry;
-            }
-            if (strncmp(entry->hash_name, new_dentry->d_name.name, BASICFTFS_NAME_LENGTH) == 0) {
-                if (flags & (RENAME_NOREPLACE)) {
-                    ret = -EEXIST;
-                    brelse(bh_block);
-                    goto update_entry;
-                } else {
-                    entry->ino = new_inode->i_ino;
-                    strncpy(entry->hash_name, new_dentry->d_name.name, BASICFTFS_NAME_LENGTH);
-                    mark_buffer_dirty(bh_block);
-                    brelse(bh_block);
-                    goto update_entry;
-                }
+                goto lookup_end;
             }
             entry++;
         }
@@ -311,18 +306,21 @@ int basicftfs_update_entry(struct inode *old_dir, struct inode *new_dir, struct 
         block_idx++;
     }
 
-    brelse(bh_new_dir);
+    lookup_end:
 
-    if (cblock->nr_of_entries >= BASICFTFS_ENTRIES_PER_DIR) {
+    if (a_table->nr_of_entries >= BASICFTFS_ENTRIES_PER_DIR) {
         return -EMLINK;
     }
 
-    ret = basicftfs_add_entry(new_dir, new_inode, new_dentry);
+    brelse(bh_new_dir);
 
+    ret = basicftfs_add_entry(new_dir, old_inode, new_dentry);
 
-    update_entry:
+    // update_entry:
     
     ret = basicftfs_delete_entry(old_dir, old_inode);
+
+    printk("check5\n");
 
 
     return ret;
