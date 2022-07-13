@@ -62,39 +62,4 @@ static inline unsigned long get_hash(struct dentry *dentry, const char *salt) {
     return crc;
 }
 
-// static inline int init_vfs_inode(struct super_block *sb, struct inode *inode, unsigned long ino) {
-//     struct basicftfs_sb_info *sbi = BASICFTFS_SB(sb);
-//     struct basicftfs_inode *bftfs_inode = NULL;
-//     struct basicftfs_inode_info *bftfs_inode_info = BASICFTFS_INODE(inode);
-//     struct buffer_head *bh = NULL;
-//     uint32_t inode_block = BASICFTFS_GET_INODE_BLOCK(ino, sbi->s_imap_blocks, sbi->s_bmap_blocks);
-//     uint32_t inode_block_idx = BASICFTFS_GET_INODE_BLOCK_IDX(ino);
-
-//     bh = sb_bread(sb, inode_block);
-
-//     if (!bh) {
-//         iget_failed(inode);
-//         return -EIO;
-//     }
-
-//     bftfs_inode = (struct basicftfs_inode *) bh->b_data;
-//     bftfs_inode += inode_block_idx;
-
-//     write_from_disk_to_vfs_inode(sb, inode, bftfs_inode, ino);
-//     init_inode_mode(inode, bftfs_inode, bftfs_inode_info);
-//     return 0;
-// }
-
-// // static inline int init_empty_dir(struct super_block *sb, struct inode *inode, struct inode *dir) {
-// //    int ret = 0;
-    
-// //    ret = basicftfs_add_entry(inode, inode, ".");
-
-// //    if (ret < 0)return ret;
-
-// //    ret = basicftfs_add_entry(inode, dir, "..");
-
-// //    return ret;
-// // }
-
 #endif
