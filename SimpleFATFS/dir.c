@@ -268,6 +268,7 @@ int basicftfs_update_entry(struct inode *old_dir, struct inode *new_dir, struct 
     struct buffer_head *bh_new_dir = NULL, *bh_block = NULL;
     struct basicftfs_inode_info *new_dir_info = BASICFTFS_INODE(new_dir);
     struct inode *old_inode = d_inode(old_dentry);
+    struct inode *new_inode = d_inode(new_dentry);
     // struct inode *new_inode = d_inode(new_dentry);
     struct basicftfs_alloc_table *a_table = NULL;
     struct basicftfs_entry *entry = NULL;
@@ -275,6 +276,16 @@ int basicftfs_update_entry(struct inode *old_dir, struct inode *new_dir, struct 
     uint32_t cur_block = 0;
 
     printk("basicfs_update_entry() sb_bread BASICFS_INODE(dir)->data_bloc: %d\n", BASICFTFS_INODE(new_dir)->i_bno);
+
+    if (flags & (RENAME_WHITEOUT)) {
+        return -EINVAL;
+    }
+
+    if (flags & (RENAME_EXCHANGE)) {
+        if (!(old_inode && new_inode)) {
+            return -EINVAL;
+        }
+    }
 
     bh_new_dir = sb_bread(sb, new_dir_info->i_bno);
 
@@ -297,7 +308,26 @@ int basicftfs_update_entry(struct inode *old_dir, struct inode *new_dir, struct 
         for (entry_idx = 0; entry_idx < BASICFTFS_ENTRIES_PER_BLOCK; entry_idx++) {
             if (entry->ino == 0) {
                 brelse(bh_block);
-                goto lookup_end;
+                goto iterate_end;
+            }
+
+            if (strncmp(entry->hash_name, new_dentry->d_name.name, BASICFTFS_NAME_LENGTH) == 0) {
+                if (flags & (RENAME_NOREPLACE)) {
+                    ret = -EEXIST;
+                    brelse(bh_block);
+                    goto end;
+                } else {
+                    if (new_inode) {
+                        // Is it necessary to delete old entry, since it might get referenced to other things
+                        basicftfs_delete_entry(new_dir, new_inode);
+                    }
+
+                    entry->ino = old_inode->i_ino;
+                    strncpy(entry->hash_name, old_dentry->d_name.name, BASICFTFS_NAME_LENGTH);
+                    mark_buffer_dirty(bh_block);
+                    brelse(bh_block);
+                    goto end;
+                }
             }
             entry++;
         }
@@ -306,8 +336,7 @@ int basicftfs_update_entry(struct inode *old_dir, struct inode *new_dir, struct 
         block_idx++;
     }
 
-    lookup_end:
-
+    iterate_end:
     if (a_table->nr_of_entries >= BASICFTFS_ENTRIES_PER_DIR) {
         return -EMLINK;
     }
@@ -316,13 +345,12 @@ int basicftfs_update_entry(struct inode *old_dir, struct inode *new_dir, struct 
 
     ret = basicftfs_add_entry(new_dir, old_inode, new_dentry);
 
-    // update_entry:
-    
     ret = basicftfs_delete_entry(old_dir, old_inode);
 
-    printk("check5\n");
+    return ret;
 
-
+    end:
+    brelse(bh_new_dir);
     return ret;
 }
 

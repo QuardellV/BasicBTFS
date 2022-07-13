@@ -1106,7 +1106,7 @@ test_move_file_simple() {
         ((test_passed++))
     fi
 
-    test_mvfile 'mv test/'$filename' test/'$filename2'' $F_MOD "1" $filename $filename2 "1" "0"
+    test_mvfile 'mv test/'$filename' test/'$filename2'' $F_MOD "1" $filename $filename2 "1" "1"
     ret=$?
 
     if [ "$ret" == 0 ]
