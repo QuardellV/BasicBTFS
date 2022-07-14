@@ -308,7 +308,7 @@ int basicftfs_update_entry(struct inode *old_dir, struct inode *new_dir, struct 
             printk("current vs wanted: %s | %s\n", entry->hash_name, new_dentry->d_name.name);
 
             if (strncmp(entry->hash_name, new_dentry->d_name.name, BASICFTFS_NAME_LENGTH) == 0) {
-                if (flags & (RENAME_NOREPLACE)) {
+                if (flags & (RENAME_NOREPLACE) && new_dir == old_dir) {
                     printk("flag\n");
                     ret = -EEXIST;
                     brelse(bh_block);
