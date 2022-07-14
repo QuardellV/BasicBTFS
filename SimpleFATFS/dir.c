@@ -27,8 +27,6 @@ static int basicftfs_iterate(struct file *dir, struct dir_context *ctx) {
         return 0;
     }
 
-    printk("iterate()\n");
-
     // fix if two entries are added. However, currently are not being displayed with ls :(
     if (!dir_emit_dots(dir, ctx)) return 0;
 
@@ -82,8 +80,6 @@ struct dentry *basicftfs_search_entry(struct inode *dir, struct dentry *dentry) 
     int block_idx = 0, entry_idx = 0;
     uint32_t cur_block = 0;
     
-    printk("lookup()\n");
-
     bh_clusters = sb_bread(sb, ci_dir->i_bno);
     if (!bh_clusters) {
         return ERR_PTR(-EIO);
@@ -137,8 +133,6 @@ int basicftfs_add_entry(struct inode *dir, struct inode *inode, struct dentry *d
     uint32_t bno = 0;
     int ret = 0, is_allocated = false;
     int block_idx = 0, entry_idx = 0;
-
-    printk("add()\n");
 
     bh_dir = sb_bread(sb, bfs_dir->i_bno);
 
@@ -275,7 +269,7 @@ int basicftfs_update_entry(struct inode *old_dir, struct inode *new_dir, struct 
     int block_idx = 0, entry_idx = 0, ret = 0;
     uint32_t cur_block = 0;
 
-    printk("basicfs_update_entry() sb_bread BASICFS_INODE(dir)->data_bloc: %d\n", BASICFTFS_INODE(new_dir)->i_bno);
+    printk("update entry");
 
     if (flags & (RENAME_WHITEOUT)) {
         return -EINVAL;
@@ -291,9 +285,9 @@ int basicftfs_update_entry(struct inode *old_dir, struct inode *new_dir, struct 
 
     if (!bh_new_dir) return -EIO;
 
-    // printk("check 1\n");
 
     a_table = (struct basicftfs_alloc_table *) bh_new_dir->b_data;
+    printk("ino: %d\n", a_table->table[block_idx]);
 
     while (block_idx < BASICFTFS_ATABLE_MAX_BLOCKS && a_table->table[block_idx] != 0) {
         cur_block = a_table->table[block_idx];
@@ -311,21 +305,26 @@ int basicftfs_update_entry(struct inode *old_dir, struct inode *new_dir, struct 
                 goto iterate_end;
             }
 
+            printk("current vs wanted: %s | %s\n", entry->hash_name, new_dentry->d_name.name);
+
             if (strncmp(entry->hash_name, new_dentry->d_name.name, BASICFTFS_NAME_LENGTH) == 0) {
                 if (flags & (RENAME_NOREPLACE)) {
+                    printk("flag\n");
                     ret = -EEXIST;
                     brelse(bh_block);
                     goto end;
                 } else {
+                    printk("no flag\n");
                     if (new_inode) {
                         // Is it necessary to delete old entry, since it might get referenced to other things
-                        basicftfs_delete_entry(new_dir, new_inode);
+                        ret = basicftfs_delete_entry(new_dir, new_inode);
                     }
 
                     entry->ino = old_inode->i_ino;
-                    strncpy(entry->hash_name, old_dentry->d_name.name, BASICFTFS_NAME_LENGTH);
+                    strncpy(entry->hash_name, new_dentry->d_name.name, BASICFTFS_NAME_LENGTH);
                     mark_buffer_dirty(bh_block);
                     brelse(bh_block);
+                    ret = basicftfs_delete_entry(old_dir, old_inode);
                     goto end;
                 }
             }
@@ -335,6 +334,8 @@ int basicftfs_update_entry(struct inode *old_dir, struct inode *new_dir, struct 
         bh_block = NULL;
         block_idx++;
     }
+
+    printk("hello\n");
 
     iterate_end:
     if (a_table->nr_of_entries >= BASICFTFS_ENTRIES_PER_DIR) {

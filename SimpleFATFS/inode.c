@@ -61,6 +61,7 @@ struct inode *basicftfs_iget(struct super_block *sb, unsigned long ino)
 }
 
 static struct dentry *basicftfs_lookup(struct inode *dir, struct dentry *dentry, unsigned int flags) {
+    printk(KERN_INFO "Instruction: lookup\n");
     if (dentry->d_name.len > BASICFTFS_NAME_LENGTH) {
         printk(KERN_ERR "filename is longer than %d\n", BASICFTFS_NAME_LENGTH);
         return ERR_PTR(-ENAMETOOLONG);
@@ -124,8 +125,8 @@ static struct inode *basicftfs_new_inode(struct inode *dir, mode_t mode) {
     return inode;
 }
 
-static int basicftfs_create(struct inode *dir, struct dentry *dentry, umode_t mode, bool excl)
-{
+static int basicftfs_create(struct inode *dir, struct dentry *dentry, umode_t mode, bool excl) {
+    printk(KERN_INFO "Instruction: Create\n");
     struct super_block *sb = dir->i_sb;
     struct inode *inode = NULL;
     struct basicftfs_inode_info *bfs_inode_info_dir = NULL;
@@ -207,6 +208,7 @@ int basicftfs_makedir(struct inode *dir, struct dentry *dentry, umode_t mode) {
 
 
 static int basicftfs_mkdir(struct inode *dir, struct dentry *dentry, umode_t mode) {
+    printk(KERN_INFO "Instruction: mkdir\n");
     return basicftfs_create(dir, dentry, mode | S_IFDIR, 0);
 }
 
@@ -216,6 +218,8 @@ static int basicftfs_link(struct dentry *old_dentry,
 {
     struct inode *inode = d_inode(old_dentry);
     int ret = 0;
+
+    printk(KERN_INFO "Instruction: link\n");
     inode_inc_link_count(inode);
     ret = basicftfs_add_entry(dir, inode, dentry);
     d_instantiate(dentry, inode);
@@ -231,6 +235,8 @@ static int basicftfs_unlink(struct inode *dir ,struct dentry *dentry) {
     struct basicftfs_alloc_table *table = NULL;
     struct inode *inode = d_inode(dentry);
     ino = inode->i_ino;
+
+    printk(KERN_INFO "Instruction: Unlink\n");
 
     ret = basicftfs_delete_entry(dir, inode);
 
@@ -274,6 +280,8 @@ static int basicftfs_rmdir(struct inode *dir, struct dentry *dentry) {
     struct basicftfs_alloc_table *table = NULL;
     int ret = basicftfs_unlink(dir, dentry);
 
+    printk(KERN_INFO "Instruction: rmdir\n");
+
     if (inode->i_nlink > 2) return -ENOTEMPTY;
 
     bh = sb_bread(sb, ino);
@@ -302,6 +310,8 @@ static int basicftfs_rename(struct inode *old_dir, struct dentry *old_dentry, st
      * 7. update old dir metadata
      */
     int ret = 0;
+
+    printk(KERN_INFO "Instruction: rename\n");
 
     if (flags & (RENAME_EXCHANGE)) {
         return -EINVAL;
