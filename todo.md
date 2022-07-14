@@ -1,5 +1,4 @@
-# TODO list 
-- make move test to check inode operation rename
+# TODO list
 - Fix the two root directories
 - update directory using btree
 - Update using clusters for at least files
