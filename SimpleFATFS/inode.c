@@ -126,13 +126,14 @@ static struct inode *basicftfs_new_inode(struct inode *dir, mode_t mode) {
 }
 
 static int basicftfs_create(struct inode *dir, struct dentry *dentry, umode_t mode, bool excl) {
-    printk(KERN_INFO "Instruction: Create\n");
     struct super_block *sb = dir->i_sb;
     struct inode *inode = NULL;
     struct basicftfs_inode_info *bfs_inode_info_dir = NULL;
     struct basicftfs_alloc_table *cblock = NULL;
     struct buffer_head *bh_dir = NULL;
     int ret = 0;
+
+    printk(KERN_INFO "Instruction: Create\n");
 
     if (strlen(dentry->d_name.name) > BASICFTFS_NAME_LENGTH) return -ENAMETOOLONG;
 
@@ -193,6 +194,7 @@ static int basicftfs_create(struct inode *dir, struct dentry *dentry, umode_t mo
     dir->i_mtime = dir->i_atime = dir->i_ctime = current_time(dir);
 
     if (S_ISDIR(mode)) {
+        init_empty_dir(sb, inode, dir);
         inc_nlink(dir);
     }
 

@@ -6,6 +6,7 @@
 #include "basicftfs.h"
 #include "destroy.h"
 #include "io.h"
+#include "init.h"
 
 static int basicftfs_iterate(struct file *dir, struct dir_context *ctx) {
     struct inode *inode = file_inode(dir);
@@ -16,6 +17,7 @@ static int basicftfs_iterate(struct file *dir, struct dir_context *ctx) {
     struct basicftfs_entry *entry = NULL;
     int  block_idx = 0, entry_idx = 0;
     int ret = 0;
+    printk("iterate start\n");
 
     if (!S_ISDIR(inode->i_mode)) {
         printk(KERN_ERR "This file is not a directory\n");
@@ -28,7 +30,7 @@ static int basicftfs_iterate(struct file *dir, struct dir_context *ctx) {
     }
 
     // fix if two entries are added. However, currently are not being displayed with ls :(
-    if (!dir_emit_dots(dir, ctx)) return 0;
+    // if (!dir_emit_dots(dir, ctx)) return 0;
 
     bh_block = sb_bread(sb, inode_info->i_bno);
     if (!bh_block) {
@@ -36,8 +38,16 @@ static int basicftfs_iterate(struct file *dir, struct dir_context *ctx) {
     }
 
     root_block = (struct basicftfs_alloc_table *) bh_block->b_data;
-    block_idx = BASICFTFS_GET_BLOCK_IDX((ctx->pos - 2));
-    entry_idx = BASICFTFS_GET_ENTRY_IDX((ctx->pos - 2));
+
+    ret = emit_dots(sb, root_block, ctx);
+
+    if (ret < 0) {
+        brelse(bh_block);
+        return ret;
+    }
+
+    block_idx = BASICFTFS_GET_BLOCK_IDX((ctx->pos));
+    entry_idx = BASICFTFS_GET_ENTRY_IDX((ctx->pos));
 
 
     while (block_idx < BASICFTFS_ATABLE_MAX_BLOCKS && root_block->table[block_idx] != 0) {
@@ -49,10 +59,10 @@ static int basicftfs_iterate(struct file *dir, struct dir_context *ctx) {
         }
 
         entry = (struct basicftfs_entry *) bh_dir->b_data;
+        entry += 2;
         if (entry->ino == 0) break;
 
         for (; entry_idx < BASICFTFS_ENTRIES_PER_BLOCK; entry_idx++) {
-
             if (entry->ino && !dir_emit(ctx, entry->hash_name, BASICFTFS_NAME_LENGTH, entry->ino, DT_UNKNOWN)) {
                 // printk(KERN_INFO "No files available anymore\n");
                 break;
@@ -124,7 +134,7 @@ lookup_end:
     return NULL;
 }
 
-int basicftfs_add_entry(struct inode *dir, struct inode *inode, struct dentry *dentry) {
+int basicftfs_add_entry_name(struct inode *dir, struct inode *inode, char *filename) {
     struct super_block *sb = dir->i_sb;
     struct basicftfs_inode_info *bfs_dir = BASICFTFS_INODE(dir);
     struct basicftfs_alloc_table *cblock = NULL;
@@ -166,7 +176,7 @@ int basicftfs_add_entry(struct inode *dir, struct inode *inode, struct dentry *d
     entry = (struct basicftfs_entry *) bh_dblock->b_data;
     entry += entry_idx;
     entry->ino = inode->i_ino;
-    strncpy(entry->hash_name, dentry->d_name.name, BASICFTFS_NAME_LENGTH);
+    strncpy(entry->hash_name, filename, BASICFTFS_NAME_LENGTH);
 
     cblock->nr_of_entries++;
     mark_buffer_dirty(bh_dblock);
@@ -187,6 +197,10 @@ clean_allocated_inode:
 
     brelse(bh_dir);
     return ret;
+}
+
+int basicftfs_add_entry(struct inode *dir, struct inode *inode, struct dentry *dentry) {
+    return basicftfs_add_entry_name(dir, inode, (char *)dentry->d_name.name);
 }
 
 int basicftfs_delete_entry(struct inode *dir, struct inode *inode) {
@@ -287,14 +301,13 @@ int basicftfs_update_entry(struct inode *old_dir, struct inode *new_dir, struct 
 
 
     a_table = (struct basicftfs_alloc_table *) bh_new_dir->b_data;
-    printk("ino: %d\n", a_table->table[block_idx]);
 
     while (block_idx < BASICFTFS_ATABLE_MAX_BLOCKS && a_table->table[block_idx] != 0) {
         cur_block = a_table->table[block_idx];
         bh_block = sb_bread(sb, cur_block);
 
         if (!bh_block) {
-            return ERR_PTR(-EIO);
+            return -EIO;
         }
 
         entry = (struct basicftfs_entry *) bh_block->b_data;

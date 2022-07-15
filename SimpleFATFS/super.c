@@ -7,6 +7,7 @@
 
 #include "basicftfs.h"
 #include "io.h"
+#include "init.h"
 
 static struct kmem_cache *basicftfs_inode_cache;
 
@@ -211,6 +212,8 @@ int basicftfs_fill_super(struct super_block *sb, void *data, int silent)
     }
 
     inode_init_owner(root_inode, NULL, root_inode->i_mode);
+
+    init_empty_dir(sb, root_inode, root_inode);
 
     sb->s_root = d_make_root(root_inode);
 

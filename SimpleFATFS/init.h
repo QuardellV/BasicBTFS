@@ -7,6 +7,7 @@
 #include <linux/module.h>
 #include <linux/crc32.h>
 #include <linux/random.h>
+#include <linux/slab.h>
 
 #include "basicftfs.h"
 #include "io.h"
@@ -42,24 +43,23 @@ static inline void init_inode_mode(struct inode *vfs_inode, struct basicftfs_ino
     }
 }
 
-static inline unsigned char *my_get_rand_bytes(int num) {
-    unsigned char buf[num];
-    get_random_bytes(buf, num);
+static inline int init_empty_dir(struct super_block *sb, struct inode *cur_inode, struct inode *par_inode) {
+    int ret = 0;
 
-    printk("random bytes: %hhn\n", buf);
-    return buf;
+    ret = basicftfs_add_entry_name(cur_inode, cur_inode, ".");
+
+    if (ret < 0) return ret;
+
+    ret = basicftfs_add_entry_name(cur_inode, par_inode, "..");
+
+    return ret;
 }
 
-static inline unsigned long get_hash(struct dentry *dentry, const char *salt) {
-    u32 crc = 0;
-    char tmp[BASICFTFS_NAME_LENGTH + strlen(salt)];
-    memcpy(tmp, dentry->d_name.name, BASICFTFS_NAME_LENGTH);
-    memcpy(tmp + BASICFTFS_NAME_LENGTH, salt, strlen(salt));
+static inline void my_get_rand_bytes(char *buffer, int num) {
+    get_random_bytes(buffer, num);
 
-    crc32(crc, tmp, BASICFTFS_NAME_LENGTH + strlen(salt));
+    printk("random bytes: %s\n", buffer);
 
-    printk(KERN_INFO "current unsigned long: %hhx", crc);
-    return crc;
 }
 
 #endif
