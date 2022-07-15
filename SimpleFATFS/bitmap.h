@@ -12,7 +12,6 @@ static inline uint32_t get_first_free_bits(unsigned long *freemap, unsigned long
         return -1;
     }
     bitmap_set(freemap, start_no, len);
-    printk("start bno: %ld\n", start_no);
     return start_no;
 }
 

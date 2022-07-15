@@ -52,12 +52,12 @@ static int basicftfs_write_inode(struct inode *inode, struct writeback_control *
 
     printk("basicftfs_write_inode() inode_block: %d\n", inode_block);
     bh = sb_bread(sb, inode_block);
-    
+
     if (!bh) return -EIO;
 
     disk_inode = (struct basicftfs_inode *) bh->b_data;
     disk_inode += inode_bi;
-    
+
     write_from_vfs_inode_to_disk(disk_inode, inode);
     mark_buffer_dirty(bh);
     sync_dirty_buffer(bh);

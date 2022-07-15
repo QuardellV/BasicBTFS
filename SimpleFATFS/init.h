@@ -54,12 +54,4 @@ static inline int init_empty_dir(struct super_block *sb, struct inode *cur_inode
 
     return ret;
 }
-
-static inline void my_get_rand_bytes(char *buffer, int num) {
-    get_random_bytes(buffer, num);
-
-    printk("random bytes: %s\n", buffer);
-
-}
-
 #endif

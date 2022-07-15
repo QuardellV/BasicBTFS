@@ -17,7 +17,6 @@ static int basicftfs_iterate(struct file *dir, struct dir_context *ctx) {
     struct basicftfs_entry *entry = NULL;
     int  block_idx = 0, entry_idx = 0;
     int ret = 0;
-    printk("iterate start\n");
 
     if (!S_ISDIR(inode->i_mode)) {
         printk(KERN_ERR "This file is not a directory\n");
@@ -29,7 +28,7 @@ static int basicftfs_iterate(struct file *dir, struct dir_context *ctx) {
         return 0;
     }
 
-    // fix if two entries are added. However, currently are not being displayed with ls :(
+    // Tried different approaches to show the . However, currently are not being displayed with ls for the root inode :(
     // if (!dir_emit_dots(dir, ctx)) return 0;
 
     bh_block = sb_bread(sb, inode_info->i_bno);
@@ -64,7 +63,6 @@ static int basicftfs_iterate(struct file *dir, struct dir_context *ctx) {
 
         for (; entry_idx < BASICFTFS_ENTRIES_PER_BLOCK; entry_idx++) {
             if (entry->ino && !dir_emit(ctx, entry->hash_name, BASICFTFS_NAME_LENGTH, entry->ino, DT_UNKNOWN)) {
-                // printk(KERN_INFO "No files available anymore\n");
                 break;
             }
             ctx->pos++;
@@ -89,7 +87,7 @@ struct dentry *basicftfs_search_entry(struct inode *dir, struct dentry *dentry) 
     struct basicftfs_entry *entry = NULL;
     int block_idx = 0, entry_idx = 0;
     uint32_t cur_block = 0;
-    
+
     bh_clusters = sb_bread(sb, ci_dir->i_bno);
     if (!bh_clusters) {
         return ERR_PTR(-EIO);
@@ -211,7 +209,6 @@ int basicftfs_delete_entry(struct inode *dir, struct inode *inode) {
     int bi = 0, fi = 0;
     int ret = 0, has_found = false;
     
-    printk("basicfs_remove_from_dir() sb_bread BASICFS_INODE(dir)->data_bloc: %d\n", BASICFTFS_INODE(dir)->i_bno);
     bh = sb_bread(sb, BASICFTFS_INODE(dir)->i_bno);
     if (!bh) {
         return -EIO;
@@ -220,7 +217,6 @@ int basicftfs_delete_entry(struct inode *dir, struct inode *inode) {
     cblock = (struct basicftfs_alloc_table *) bh->b_data;
     while (bi < BASICFTFS_ATABLE_MAX_BLOCKS && cblock->table[bi] != 0) {
         uint32_t page = cblock->table[bi];
-        printk("basicfs_remove_from_dir() sb_bread page: %d\n", page);
         bh2 = sb_bread(sb, page);
         if (!bh2) {
             brelse(bh);
@@ -277,13 +273,10 @@ int basicftfs_update_entry(struct inode *old_dir, struct inode *new_dir, struct 
     struct basicftfs_inode_info *new_dir_info = BASICFTFS_INODE(new_dir);
     struct inode *old_inode = d_inode(old_dentry);
     struct inode *new_inode = d_inode(new_dentry);
-    // struct inode *new_inode = d_inode(new_dentry);
     struct basicftfs_alloc_table *a_table = NULL;
     struct basicftfs_entry *entry = NULL;
     int block_idx = 0, entry_idx = 0, ret = 0;
     uint32_t cur_block = 0;
-
-    printk("update entry");
 
     if (flags & (RENAME_WHITEOUT)) {
         return -EINVAL;
@@ -318,16 +311,12 @@ int basicftfs_update_entry(struct inode *old_dir, struct inode *new_dir, struct 
                 goto iterate_end;
             }
 
-            printk("current vs wanted: %s | %s\n", entry->hash_name, new_dentry->d_name.name);
-
             if (strncmp(entry->hash_name, new_dentry->d_name.name, BASICFTFS_NAME_LENGTH) == 0) {
                 if (flags & (RENAME_NOREPLACE) && new_dir == old_dir) {
-                    printk("flag\n");
                     ret = -EEXIST;
                     brelse(bh_block);
                     goto end;
                 } else {
-                    printk("no flag\n");
                     if (new_inode) {
                         // Is it necessary to delete old entry, since it might get referenced to other things
                         ret = basicftfs_delete_entry(new_dir, new_inode);
@@ -348,8 +337,6 @@ int basicftfs_update_entry(struct inode *old_dir, struct inode *new_dir, struct 
         block_idx++;
     }
 
-    printk("hello\n");
-
     iterate_end:
     if (a_table->nr_of_entries >= BASICFTFS_ENTRIES_PER_DIR) {
         return -EMLINK;
@@ -359,6 +346,8 @@ int basicftfs_update_entry(struct inode *old_dir, struct inode *new_dir, struct 
 
     ret = basicftfs_add_entry(new_dir, old_inode, new_dentry);
 
+    if (ret < 0) return ret;
+    
     ret = basicftfs_delete_entry(old_dir, old_inode);
 
     return ret;
@@ -390,9 +379,7 @@ int clean_file_block(struct inode *inode) {
         put_blocks(sbi, file_block->table[bi], 1);
         // dir->i_blocks -= file_block->clusters[ci].nr_of_blocks;
 
-
         bno = file_block->table[bi];
-        printk("basicftfs_unlink() sb_bread page: %d\n", bno);
         bh2 = sb_bread(sb, bno);
         if (!bh2) {
             continue;

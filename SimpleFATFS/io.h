@@ -98,7 +98,6 @@ static inline int emit_dots(struct super_block *sb, struct basicftfs_alloc_table
     entry = (struct basicftfs_entry *) bh_block->b_data;
 
     for (i = 0; i < 2; i++) {
-        printk("hash name: %s | %d\n", entry->hash_name, entry->ino);
         if (!dir_emit(ctx, entry->hash_name, BASICFTFS_NAME_LENGTH, entry->ino, DT_DIR)){
             break;
         }

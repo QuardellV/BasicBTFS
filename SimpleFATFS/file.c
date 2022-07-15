@@ -20,7 +20,6 @@ static int basicftfs_file_get_block(struct inode *inode, sector_t iblock, struct
         return -EFBIG;
     }
 
-    printk("basicftfs_file_get_block() sb_bread ci->data_block: %d\n", ci->i_bno);
     bh_index = sb_bread(sb, ci->i_bno);
 
     if (!bh_index) {
@@ -45,7 +44,7 @@ static int basicftfs_file_get_block(struct inode *inode, sector_t iblock, struct
     } else {
         bno = block_list->table[iblock];
     }
-    printk("basicftfs_file_get_block() sb_bread bno: %d | %lld \n", bno, iblock);
+    
     map_bh(bh_result, sb, bno);
     return ret;
 }
