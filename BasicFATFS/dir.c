@@ -38,8 +38,6 @@ static int basicftfs_iterate(struct file *dir, struct dir_context *ctx) {
 
     root_block = (struct basicftfs_alloc_table *) bh_block->b_data;
 
-    // ret = emit_dots(sb, root_block, ctx);
-
     if (ret < 0) {
         brelse(bh_block);
         return ret;

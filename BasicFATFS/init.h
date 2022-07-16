@@ -43,15 +43,4 @@ static inline void init_inode_mode(struct inode *vfs_inode, struct basicftfs_ino
     }
 }
 
-static inline int init_empty_dir(struct super_block *sb, struct inode *cur_inode, struct inode *par_inode) {
-    int ret = 0;
-
-    ret = basicftfs_add_entry_name(cur_inode, cur_inode, ".");
-
-    if (ret < 0) return ret;
-
-    ret = basicftfs_add_entry_name(cur_inode, par_inode, "..");
-
-    return ret;
-}
 #endif

@@ -1,0 +1,9 @@
+*ko.cmd
+*.cmd
+*.ko
+*.o
+*.mod*
+*mkfs.*
+*.symvers
+*.order
+*.img
