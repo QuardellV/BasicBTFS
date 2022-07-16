@@ -1,0 +1,10 @@
+{
+    "files.associations": {
+        "version.h": "c",
+        "util.h": "c",
+        "module.h": "c",
+        "buffer_head.h": "c",
+        "basicftfs.h": "c",
+        "fs.h": "c"
+    }
+}

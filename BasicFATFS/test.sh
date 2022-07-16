@@ -2070,6 +2070,7 @@ test_create_file_subdir_n
 test_create_nfiles_subdir_1
 
 test_write_small
+test_write_advanced
 
 test_rm_empty
 test_rm_small

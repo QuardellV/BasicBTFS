@@ -62,7 +62,7 @@ struct inode *basicftfs_iget(struct super_block *sb, unsigned long ino)
 
 static struct dentry *basicftfs_lookup(struct inode *dir, struct dentry *dentry, unsigned int flags) {
     if (dentry->d_name.len > BASICFTFS_NAME_LENGTH) {
-        printk(KERN_ERR "filename is longer than %d\n", BASICFTFS_NAME_LENGTH);
+        printk(KERN_ERR "filename %s is longer than %d\n", dentry->d_name.name, BASICFTFS_NAME_LENGTH);
         return ERR_PTR(-ENAMETOOLONG);
     }
 
@@ -190,7 +190,6 @@ static int basicftfs_create(struct inode *dir, struct dentry *dentry, umode_t mo
     dir->i_mtime = dir->i_atime = dir->i_ctime = current_time(dir);
 
     if (S_ISDIR(mode)) {
-        init_empty_dir(sb, inode, dir);
         inc_nlink(dir);
     }
 
@@ -335,6 +334,10 @@ static int basicftfs_rename(struct inode *old_dir, struct dentry *old_dentry, st
     return 0;
 }
 
+static const char *basicftfs_get_link(struct dentry *dentry, struct inode *inode, struct delayed_call *done) {
+    return inode->i_link;
+}
+
 const struct inode_operations basicftfs_inode_ops = {
     .lookup = basicftfs_lookup,
     .create = basicftfs_create,
@@ -343,4 +346,8 @@ const struct inode_operations basicftfs_inode_ops = {
     .rmdir = basicftfs_rmdir,
     .rename = basicftfs_rename,
     .link = basicftfs_link,
+};
+
+const struct inode_operations symlink_inode_ops = {
+    .get_link = basicftfs_get_link,
 };
