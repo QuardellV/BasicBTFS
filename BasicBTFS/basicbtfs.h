@@ -7,10 +7,12 @@
 #define BASICBTFS_NAME_LENGTH          255
 #define BASICBTFS_HASH_LENGTH          32
 #define BASICBTFS_SALT_LENGTH          8
+#define BASICBTFS_MIN_DEGREE           7
 #define BASICBTFS_ATABLE_MAX_BLOCKS    ((BASICBTFS_BLOCKSIZE - sizeof(uint32_t)) / sizeof(uint32_t))
 #define BASICBTFS_ENTRIES_PER_BLOCK    (BASICBTFS_BLOCKSIZE / sizeof(struct basicbtfs_entry))
 #define BASICBTFS_ENTRIES_PER_DIR      (BASICBTFS_ENTRIES_PER_BLOCK * BASICBTFS_ATABLE_MAX_BLOCKS)
 #define BASICBTFS_FILE_BSIZE           (BASICBTFS_BLOCKSIZE * BASICBTFS_ATABLE_MAX_BLOCKS)
+
 
 struct basicbtfs_inode {
     uint32_t i_mode;
@@ -61,6 +63,14 @@ struct basicbtfs_entry {
 struct basicbtfs_alloc_table {
     uint32_t nr_of_entries;
     uint32_t table[BASICBTFS_ATABLE_MAX_BLOCKS];
+};
+
+struct basicbtfs_btree_node {
+    struct basicbtfs_entry entries[2 * BASICBTFS_MIN_DEGREE - 1];
+    uint32_t children[2 * BASICBTFS_MIN_DEGREE];
+    uint32_t nr_of_keys;
+    uint32_t nr_of_files;
+    bool leaf;
 };
 
 /* Cache functions for basic_inode_info*/
