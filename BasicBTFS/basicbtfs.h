@@ -70,6 +70,7 @@ struct basicbtfs_btree_node {
     uint32_t children[2 * BASICBTFS_MIN_DEGREE];
     uint32_t nr_of_keys;
     uint32_t nr_of_files;
+    uint32_t nr_times_done;
     bool leaf;
 };
 
