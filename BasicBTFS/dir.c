@@ -29,7 +29,7 @@ static int basicbtfs_iterate(struct file *dir, struct dir_context *ctx) {
     }
 
     // Tried different approaches to show the . However, currently are not being displayed with ls for the root inode :(
-    // if (!dir_emit_dots(dir, ctx)) return 0;
+    if (!dir_emit_dots(dir, ctx)) return 0;
 
     bh_block = sb_bread(sb, inode_info->i_bno);
     if (!bh_block) {
@@ -38,15 +38,13 @@ static int basicbtfs_iterate(struct file *dir, struct dir_context *ctx) {
 
     root_block = (struct basicbtfs_alloc_table *) bh_block->b_data;
 
-    ret = emit_dots(sb, root_block, ctx);
-
     if (ret < 0) {
         brelse(bh_block);
         return ret;
     }
 
-    block_idx = BASICBTFS_GET_BLOCK_IDX((ctx->pos));
-    entry_idx = BASICBTFS_GET_ENTRY_IDX((ctx->pos));
+    block_idx = BASICBTFS_GET_BLOCK_IDX((ctx->pos - 2));
+    entry_idx = BASICBTFS_GET_ENTRY_IDX((ctx->pos - 2));
 
 
     while (block_idx < BASICBTFS_ATABLE_MAX_BLOCKS && root_block->table[block_idx] != 0) {
@@ -58,7 +56,6 @@ static int basicbtfs_iterate(struct file *dir, struct dir_context *ctx) {
         }
 
         entry = (struct basicbtfs_entry *) bh_dir->b_data;
-        entry += 2;
         if (entry->ino == 0) break;
 
         for (; entry_idx < BASICBTFS_ENTRIES_PER_BLOCK; entry_idx++) {

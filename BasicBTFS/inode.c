@@ -190,7 +190,6 @@ static int basicbtfs_create(struct inode *dir, struct dentry *dentry, umode_t mo
     dir->i_mtime = dir->i_atime = dir->i_ctime = current_time(dir);
 
     if (S_ISDIR(mode)) {
-        init_empty_dir(sb, inode, dir);
         inc_nlink(dir);
     }
 
