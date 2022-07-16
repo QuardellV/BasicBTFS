@@ -5,6 +5,11 @@
 
 # TODO list Improved version
 - update directory using btree
+  - Traverse
+  - Search
+  - Insert
+  - Delete
+  - Remove
 - Update using clusters for at least files
 - Check how we can checksums for data integrity and shorter names. this will be included for the btree
 - Check how we can decrease the length using the checksums/hash and improve the usage of filenames.
