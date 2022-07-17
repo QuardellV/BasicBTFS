@@ -287,12 +287,133 @@ static inline int basicbtfs_btree_node_insert(struct super_block *sb, struct ino
     return 0;
 }
 
+static inline int basicbtfs_btree_node_find_key(struct super_block *sb, uint32_t bno, char *filename) {
+    struct buffer_head *bh = NULL;
+    struct basicbtfs_btree_node *node = NULL;
+    int index = 0;
+
+    bh = sb_bread(sb, bno);
+
+    if (!bh) return -1;
+
+    node = (struct basicbtfs_btree_node *) bh->b_data;
+
+    while (index < node->nr_of_keys && strncmp(node->entries[index].hash_name, filename, BASICBTFS_NAME_LENGTH) < 0) {
+        ++index;
+    }
+    brelse(bh);
+    printk(KERN_INFO "Founded key: %d\n", index);
+    return index;
+}
+
+static inline int basicbtfs_btree_node_remove_from_leaf(struct super_block *sb, uint32_t bno, int index) {
+    struct buffer_head *bh = NULL;
+    struct basicbtfs_btree_node *node = NULL;
+    int i = 0;
+
+    bh = sb_bread(sb, bno);
+
+    if (!bh) return -1;
+
+    node = (struct basicbtfs_btree_node *) bh->b_data;
+
+    for (i = index + 1; i < node->nr_of_keys; ++i) {
+        memcpy(&node->entries[i - 1], &node->entries[i], sizeof(struct basicbtfs_entry));
+    }
+
+    node->nr_of_keys--;
+    mark_buffer_dirty(bh);
+    brelse(bh);
+    return 0;
+}
+
+static inline int basicbtfs_btree_node_remove_from_nonleaf(struct super_block *sb, uint32_t bno, int index) {
+    return 0;
+}
+
 static inline int basicbtfs_btree_node_delete(struct super_block *sb, uint32_t bno, char *filename) {
+    struct buffer_head *bh = NULL, *bh2 = NULL;
+    struct basicbtfs_btree_node *node = NULL, *child = NULL;
+    int index = basicbtfs_btree_node_find_key(sb, bno, filename);
+    int ret = 0;
+    bool flag = false;
+    uint32_t bno2 = 0;
+
+    bno2 = basicbtfs_btree_node_lookup(sb, bno, filename, 0);
+
+    if (bno2 != 0 && bno2 != 1) {
+        printk("yes we did it\n");
+    }
+
+    bh = sb_bread(sb, bno);
+
+    if (!bh) return -EIO;
+
+    node = (struct basicbtfs_btree_node *) bh->b_data;
+
+    if (index < node->nr_of_keys && strncmp(node->entries[index].hash_name, filename,BASICBTFS_NAME_LENGTH) == 0) {
+        if (node->leaf) {
+            ret = basicbtfs_btree_node_remove_from_leaf(sb, bno, index);
+        } else {
+            ret = basicbtfs_btree_node_remove_from_nonleaf(sb, bno, index);
+        }
+    }
     return 0;
 }
 
 static inline int basicbtfs_btree_delete_entry(struct super_block *sb, struct inode *inode, uint32_t root_bno, char *filename) {
-    return 0;
+    struct buffer_head *bh = NULL, *bh2 = NULL;
+    struct basicbtfs_btree_node *node, *new_root_node = NULL;
+    int ret = 0;
+
+    bh = sb_bread(sb, root_bno);
+
+    if (!bh) return -EIO;
+
+    node = (struct basicbtfs_btree_node *) bh->b_data;
+
+    ret = basicbtfs_btree_node_delete(sb, root_bno, filename);
+
+    if (ret == 1) {
+        brelse(bh);
+        return 0;
+    } else if (ret < 0) {
+        brelse(bh);
+        return ret;
+    }
+
+    if (node->nr_of_keys == 0) {
+        if (node->leaf) {
+            node->nr_of_files--;
+            mark_buffer_dirty(bh);
+        } else {
+            ret = basicbtfs_btree_update_root(inode, node->children[0]);
+
+            if (ret != 0) {
+                brelse(bh);
+                return ret;
+            }
+
+            bh2 = sb_bread(sb, node->children[0]);
+
+            if (!bh2) {
+                brelse(bh);
+                return -EIO;
+            }
+
+            new_root_node = (struct basicbtfs_btree_node *) bh2->b_data;
+            new_root_node->nr_of_files = node->nr_of_files - 1;
+            new_root_node->nr_times_done = node->nr_times_done;
+            mark_buffer_dirty(bh2);
+            brelse(bh2);
+        }
+    } else {
+        node->nr_of_files--;
+        mark_buffer_dirty(bh);
+    }
+
+    brelse(bh);
+    return ret;
 }
 
 static inline int basicbtfs_btree_clear(struct super_block *sb, uint32_t bno) {
