@@ -13,7 +13,6 @@ static int basicbtfs_iterate(struct file *dir, struct dir_context *ctx) {
     struct inode *inode = file_inode(dir);
     struct basicbtfs_inode_info *inode_info = BASICBTFS_INODE(inode);
     struct super_block *sb = inode->i_sb;
-    int ret = 0;
     loff_t ctx_index = 0;
 
     if (!S_ISDIR(inode->i_mode)) {
@@ -39,7 +38,7 @@ struct dentry *basicbtfs_search_entry(struct inode *dir, struct dentry *dentry) 
     struct inode *inode = NULL;
     uint32_t ino = 0;
 
-    ino = basicbtfs_btree_node_lookup(sb, inode_info->i_bno, dentry->d_name.name, 0);
+    ino = basicbtfs_btree_node_lookup(sb, inode_info->i_bno, (char *)dentry->d_name.name, 0);
 
     if (ino != 0 && ino != -1) {
         inode = basicbtfs_iget(sb, ino);

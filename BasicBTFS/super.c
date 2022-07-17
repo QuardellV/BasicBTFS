@@ -157,6 +157,7 @@ int basicbtfs_fill_super(struct super_block *sb, void *data, int silent)
     struct basicbtfs_sb_info *csb = NULL;
     struct basicbtfs_sb_info *sbi = NULL;
     struct inode *root_inode = NULL;
+    struct basicbtfs_btree_node *node = NULL;
     int ret = 0;
 
     ret = init_super_block(sb);
@@ -212,6 +213,18 @@ int basicbtfs_fill_super(struct super_block *sb, void *data, int silent)
     }
 
     inode_init_owner(root_inode, NULL, root_inode->i_mode);
+
+
+    bh = sb_bread(sb, BASICBTFS_INODE(root_inode)->i_bno);
+
+    if (!bh) return -EIO;
+
+    node = (struct basicbtfs_btree_node *) bh->b_data;
+    node->leaf = true;
+    node->nr_of_keys = 0;
+    node->nr_of_files = 0;
+    mark_buffer_dirty(bh);
+    brelse(bh);
 
     sb->s_root = d_make_root(root_inode);
 

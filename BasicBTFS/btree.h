@@ -147,8 +147,7 @@ static inline int basicbtfs_btree_insert_non_full(struct super_block *sb, uint32
     struct buffer_head *bh = NULL, *bh_child = NULL;
     struct basicbtfs_btree_node *node = NULL, *child = NULL;
     int ret = 0;
-    uint32_t child_bno = 0;
-
+    
     bh = sb_bread(sb, bno);
 
     if (!bh) return -EIO;
