@@ -2057,13 +2057,13 @@ init() {
 
 test_create_root $D_MOD "2" "test" "root"
 test_create_file_empty
-# test_create_file_nonempty
-# test_create_file_toolong
-# test_create_already_exist
+test_create_file_nonempty
+test_create_file_toolong
+test_create_already_exist
 
-# test_mkdir_depth_1
-# test_mkdir_depth_n
-# test_mkdir_toolong
+test_mkdir_depth_1
+test_mkdir_depth_n
+test_mkdir_toolong
 
 # test_create_file_subdir_1
 # test_create_file_subdir_n

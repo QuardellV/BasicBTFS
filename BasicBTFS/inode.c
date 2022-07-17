@@ -128,8 +128,8 @@ static int basicbtfs_create(struct inode *dir, struct dentry *dentry, umode_t mo
     struct super_block *sb = dir->i_sb;
     struct inode *inode = NULL;
     struct basicbtfs_inode_info *bfs_inode_info_dir = NULL;
-    struct basicbtfs_alloc_table *cblock = NULL;
-    struct buffer_head *bh_dir = NULL;
+    struct basicbtfs_btree_node *node = NULL;
+    struct buffer_head *bh_dir = NULL, *bh = NULL;
     int ret = 0;
 
     if (strlen(dentry->d_name.name) > BASICBTFS_NAME_LENGTH) return -ENAMETOOLONG;
@@ -137,21 +137,15 @@ static int basicbtfs_create(struct inode *dir, struct dentry *dentry, umode_t mo
     bfs_inode_info_dir = BASICBTFS_INODE(dir);
     bh_dir = sb_bread(sb, bfs_inode_info_dir->i_bno);
 
-    if (!bh_dir) {
-        return -EIO;
-    }
+    if (!bh_dir) return -EIO;
 
-    cblock = (struct basicbtfs_alloc_table *) bh_dir->b_data;
+    node = (struct basicbtfs_btree_node *) bh_dir->b_data;
 
-    if (cblock->nr_of_entries >= BASICBTFS_ENTRIES_PER_DIR) {
+    if (node->nr_of_files >= BASICBTFS_ENTRIES_PER_DIR) {
         printk(KERN_ERR "Parent directory is full\n");
         ret = -EMLINK;
         brelse(bh_dir);
         return ret;
-    }
-
-    if (cblock->nr_of_entries == 0) {
-        printk(KERN_INFO "Initialize");
     }
 
     inode = basicbtfs_new_inode(dir, mode);
@@ -174,6 +168,20 @@ static int basicbtfs_create(struct inode *dir, struct dentry *dentry, umode_t mo
     }
 
     brelse(bh_dir);
+    node = NULL;
+
+    if (S_ISDIR(inode->i_mode)) {
+        bh = sb_bread(sb, BASICBTFS_INODE(inode)->i_bno);
+
+        if (!bh) return -EIO;
+
+        node = (struct basicbtfs_btree_node *) bh->b_data;
+        node->leaf = true;
+        node->nr_of_files = 0;
+        node->nr_of_keys = 0;
+        mark_buffer_dirty(bh);
+        brelse(bh);
+    }
 
     ret = basicbtfs_add_entry(dir, inode, dentry);
 
