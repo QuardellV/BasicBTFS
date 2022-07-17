@@ -29,7 +29,11 @@ static int basicbtfs_iterate(struct file *dir, struct dir_context *ctx) {
         return 0;
     }
 
-    return basicbtfs_btree_traverse(sb, inode_info->i_bno, ctx, ctx->pos, &ctx_index);
+    // printk(KERN_INFO "START Debug btree iterate\n");
+    // basicbtfs_btree_traverse_debug(sb, inode_info->i_bno);
+    // printk(KERN_INFO "END Debug btree iterate\n");
+
+    return basicbtfs_btree_traverse(sb, inode_info->i_bno, ctx, ctx->pos - 2, &ctx_index);
 }
 
 struct dentry *basicbtfs_search_entry(struct inode *dir, struct dentry *dentry) {
@@ -55,9 +59,9 @@ int basicbtfs_add_entry(struct inode *dir, struct inode *inode, struct dentry *d
 
     ret = basicbtfs_btree_node_insert(dir->i_sb, dir, inode_info->i_bno, (char *)dentry->d_name.name, inode->i_ino);
 
-    printk(KERN_INFO "START Debug btree traverse added: %s\n", dentry->d_name.name);
-    basicbtfs_btree_traverse_debug(dir->i_sb, inode_info->i_bno);
-    printk(KERN_INFO "END Debug btree traverse\n");
+    // printk(KERN_INFO "START Debug btree traverse added: %s\n", dentry->d_name.name);
+    // basicbtfs_btree_traverse_debug(dir->i_sb, inode_info->i_bno);
+    // printk(KERN_INFO "END Debug btree traverse\n");
 
     return ret;
 }

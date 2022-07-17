@@ -147,7 +147,7 @@ static inline int basicbtfs_btree_insert_non_full(struct super_block *sb, uint32
     struct buffer_head *bh = NULL, *bh_child = NULL;
     struct basicbtfs_btree_node *node = NULL, *child = NULL;
     int ret = 0;
-    
+
     bh = sb_bread(sb, bno);
 
     if (!bh) return -EIO;
@@ -323,6 +323,8 @@ static inline int basicbtfs_btree_traverse(struct super_block *sb, uint32_t bno,
             *ctx_index += 1;
             continue;
         }
+
+        // printk(KERN_INFO "file: %s | ino: %d\n", node->entries[index].hash_name, node->entries[index].ino);
 
         if (!dir_emit(ctx, node->entries[index].hash_name, BASICBTFS_NAME_LENGTH, node->entries[index].ino, DT_UNKNOWN)) {
             printk(KERN_INFO "No files available anymore\n");

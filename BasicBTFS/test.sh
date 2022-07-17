@@ -293,7 +293,7 @@ test_create_root() {
 
     echo "$(tput setaf 6)CREATE ROOT TESTS: $test_count$(tput setaf 7)" 
 
-    local result=$(sudo sh -c "ls -l | grep -e 'basicftfs.ko' | wc -l")
+    local result=$(sudo sh -c "ls -l | grep -e 'basicbtfs.ko' | wc -l")
     if [ "$result" == 1 ]
     then
         ((test_passed++))
