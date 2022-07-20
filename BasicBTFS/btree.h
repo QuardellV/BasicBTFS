@@ -9,6 +9,8 @@
 #include "basicbtfs.h"
 #include "bitmap.h"
 
+static inline int basicbtfs_btree_node_delete(struct super_block *sb, uint32_t bno, char *filename);
+
 static inline void basicbtfs_btree_node_init(struct basicbtfs_btree_node *node, bool leaf) {
     memset(node, 0, sizeof(struct basicbtfs_btree_node));
     node->nr_of_keys = 0;
@@ -327,7 +329,395 @@ static inline int basicbtfs_btree_node_remove_from_leaf(struct super_block *sb, 
     return 0;
 }
 
+static inline int basicbtfs_btree_node_get_predecessor(struct super_block *sb, uint32_t bno, int index, struct basicbtfs_entry *ret) {
+    struct buffer_head *bh = NULL;
+    struct basicbtfs_btree_node *node = NULL;
+    uint32_t bno_child = 0;
+
+    bh = sb_bread(sb, bno);
+
+    if (!bh) return -EIO;
+
+    node = (struct basicbtfs_btree_node *) bh->b_data;
+    bno_child = node->children[index];
+
+    brelse(bh);
+    bh = NULL;
+    node = NULL;
+    bh = sb_bread(sb, bno_child);
+
+    if (!bh) return -EIO;
+
+    node = (struct basicbtfs_btree_node *) bh->b_data;
+
+
+    while (!node->leaf) {
+        uint32_t bno_child = node->children[node->nr_of_keys];
+        brelse(bh);
+        bh = NULL;
+        node = NULL;
+
+        bh = sb_bread(sb, bno_child);
+
+        if (!bh) return -EIO;
+
+        node = (struct basicbtfs_btree_node *) bh->b_data;
+    }
+
+    memcpy(ret, &node->entries[node->nr_of_keys- 1], sizeof (struct basicbtfs_entry));
+    brelse(bh);
+    return 0;
+}
+
+static inline int basicbtfs_btree_node_get_succesor(struct super_block *sb, uint32_t bno, int index, struct basicbtfs_entry *ret) {
+    struct buffer_head *bh = NULL;
+    struct basicbtfs_btree_node *node = NULL;
+    uint32_t bno_child = 0;
+
+    bh = sb_bread(sb, bno);
+
+    if (!bh) return -EIO;
+
+    node = (struct basicbtfs_btree_node *) bh->b_data;
+    bno_child = node->children[index + 1];
+
+    brelse(bh);
+    bh = NULL;
+    node = NULL;
+    bh = sb_bread(sb, bno_child);
+
+    if (!bh) return -EIO;
+
+    node = (struct basicbtfs_btree_node *) bh->b_data;
+
+
+    while (!node->leaf) {
+        uint32_t bno_child = node->children[0];
+        brelse(bh);
+        bh = NULL;
+        node = NULL;
+
+        bh = sb_bread(sb, bno_child);
+
+        if (!bh) return -EIO;
+
+        node = (struct basicbtfs_btree_node *) bh->b_data;
+    }
+
+    memcpy(ret, &node->entries[0], sizeof (struct basicbtfs_entry));
+    brelse(bh);
+    return 0;
+}
+
+static inline int basicbtfs_btree_node_merge(struct super_block *sb, uint32_t bno, int index) {
+    struct buffer_head *bh_par = NULL, *bh_lhs = NULL, *bh_rhs = NULL;
+    struct basicbtfs_btree_node *node = NULL, *lhs = NULL, *rhs = NULL;
+    int i = 0;
+
+    bh_par = sb_bread(sb, bno);
+
+    if (!bh_par) return -EIO;
+
+    node = (struct basicbtfs_btree_node *) bh_par->b_data;
+
+    bh_lhs = sb_bread(sb, node->children[index]);
+
+    if (!bh_lhs) {
+        brelse(bh_par);
+        return -EIO;
+    }
+
+    lhs = (struct basicbtfs_btree_node *) bh_lhs->b_data;
+
+    bh_rhs = sb_bread(sb, node->children[index + 1]);
+
+    if (!bh_rhs) {
+        brelse(bh_par);
+        brelse(bh_lhs);
+        return -EIO;
+    }
+
+    rhs = (struct basicbtfs_btree_node *) bh_rhs->b_data;
+
+    memcpy(&lhs->[BASICBTFS_MIN_DEGREE - 1], &node->entries[index], sizeof(struct basicbtfs_entry));
+
+    for (i  = 0; i < rhs->nr_of_keys; i++) {
+        memcpy(&lhs->entries[i + BASICBTFS_MIN_DEGREE], &rhs->entries[i], sizeof(struct basicbtfs_entry));
+    }
+
+    if (!lhs->leaf) {
+        for (i = 0; rhs->nr_of_keys; i++) {
+            lhs->children[i + BASICBTFS_MIN_DEGREE] = rhs->children[i];
+        }
+    }
+
+    for (i = index + 1; i < node->nr_of_keys; i++) {
+        memcpy(&node->entries[i - 1], &node->entries[i], sizeof(struct basicbtfs_entry));
+    }
+
+    for (i = index + 2; i <= node->nr_of_keys; i++) {
+        node->children[i - 1] = node->children[i];
+    }
+
+    lhs->nr_of_keys = lhs->nr_of_keys + rhs->nr_of_keys + 1;
+    node->nr_of_keys--;
+    put_blocks(BASICBTFS_SB(sb), node->children[index + 1], 1);
+    node->children[index + 1] = 0;
+
+    mark_buffer_dirty(bh_par);
+    mark_buffer_dirty(bh_lhs);
+    mark_buffer_dirty(bh_rhs);
+
+    brelse(bh_par);
+    brelse(bh_lhs);
+    brelse(bh_rhs);
+    return 0;
+}
+
 static inline int basicbtfs_btree_node_remove_from_nonleaf(struct super_block *sb, uint32_t bno, int index) {
+    struct buffer_head *bh_par = NULL, *bh_lhs = NULL, *bh_rhs = NULL;
+    struct basicbtfs_btree_node *node = NULL, *lhs = NULL, *rhs = NULL;
+    struct basicbtfs_entry tmp, pred, succ;
+    int ret = 0;
+
+    bh_par = sb_bread(sb, bno);
+
+    if (!bh_par) return -EIO;
+
+    node = (struct basicbtfs_btree_node *) bh_par->b_data;
+
+    bh_lhs = sb_bread(sb, node->children[index]);
+
+    if (!bh_lhs) {
+        brelse(bh_par);
+        return -EIO;
+    }
+
+    lhs = (struct basicbtfs_btree_node *) bh_lhs->b_data;
+
+    bh_rhs = sb_bread(sb, node->children[index + 1]);
+
+    if (!bh_rhs) {
+        brelse(bh_par);
+        brelse(bh_lhs);
+        return -EIO;
+    }
+
+    rhs = (struct basicbtfs_btree_node *) bh_rhs->b_data;
+
+    if (lhs->nr_of_keys >= BASICBTFS_MIN_DEGREE) {
+        ret = basicbtfs_btree_node_get_predecessor(sb, bno, index, &pred);
+
+        if (ret != 0) {
+            brelse(bh_par);
+            brelse(bh_lhs);
+            brelse(bh_rhs);
+            return ret;
+        }
+        memcpy(&node->entries[index], &pred, sizeof(struct basicbtfs_entry));
+        mark_buffer_dirty(bh_par);
+        ret = basicbtfs_btree_node_delete(sb, node->children[index], pred.hash_name);
+    } else if (rhs->nr_of_keys >= BASICBTFS_MIN_DEGREE) {
+        ret = basicbtfs_btree_node_get_succesor(sb, bno, index, &succ);
+
+        if (ret != 0) {
+            brelse(bh_par);
+            brelse(bh_lhs);
+            brelse(bh_rhs);
+            return ret;
+        }
+
+        memcpy(&node->entries[index], &succ, sizeof(struct basicbtfs_entry));
+        mark_buffer_dirty(bh);
+        ret = basicbtfs_btree_node_delete(sb, node->children[index + 1], succ.hash_name);
+    } else {
+        memcpy(&tmp, &node->entries[index], sizeof(struct basicbtfs_entry));
+        ret = basicbtfs_btree_node_merge(sb, bno, index);
+
+        if (ret != 0) {
+            brelse(bh_par);
+            brelse(bh_lhs);
+            brelse(bh_rhs);
+            return ret;
+        }
+
+        ret = basicbtfs_btree_node_delete(sb, node->children[index], tmp.hash_name);
+    }
+
+    brelse(bh_par);
+    brelse(bh_lhs);
+    brelse(bh_rhs);
+
+    return 0;
+}
+
+static inline int basicbtfs_btree_node_steal_from_previous(struct super_block *sb, uint32_t bno, int index) {
+    struct buffer_head *bh_par = NULL, *bh_lhs = NULL, *bh_rhs = NULL;
+    struct basicbtfs_btree_node *node = NULL, *lhs = NULL, *rhs = NULL;
+    int i = 0;
+
+    bh_par = sb_bread(sb, bno);
+
+    if (!bh_par) return -EIO;
+
+    node = (struct basicbtfs_btree_node *) bh_par->b_data;
+
+    bh_lhs = sb_bread(sb, node->children[index]);
+
+    if (!bh_lhs) {
+        brelse(bh_par);
+        return -EIO;
+    }
+
+    lhs = (struct basicbtfs_btree_node *) bh_lhs->b_data;
+
+    bh_rhs = sb_bread(sb, node->children[index + 1]);
+
+    if (!bh_rhs) {
+        brelse(bh_par);
+        brelse(bh_lhs);
+        return -EIO;
+    }
+
+    rhs = (struct basicbtfs_btree_node *) bh_rhs->b_data;
+
+    for (i = rhs->nr_of_keys - 1; i >= 0; --i) {
+        memcpy(&rhs->entries[i+1], rhs->entries[i], sizeof(struct basicbtfs_entry));
+    }
+
+    if (!rhs->leaf) {
+        for (i = rhs->nr_of_keys; i >= 0; --i) {
+            rhs->children[i+1] = rhs->children[i];
+        }
+    }
+
+    memcpy(&rhs->entries[0], node->entries[index - 1], sizeof(struct basicbtfs_entry));
+
+    if (!rhs->leaf) {
+        rhs->children[0] = lhs->children[lhs->nr_of_keys];
+    }
+
+    memcpy(&node->entries[index - 1], &lhs->entries[lhs->nr_of_keys - 1], sizeof(struct basicbtfs_entry));
+
+    rhs->nr_of_keys++;
+    lhs->nr_of_keys--;
+
+    mark_buffer_dirty(bh_par);
+    mark_buffer_dirty(bh_lhs);
+    mark_buffer_dirty(bh_rhs);
+
+    brelse(bh_par);
+    brelse(bh_lhs);
+    brelse(bh_rhs);
+    return 0;
+}
+
+static inline int basicbtfs_btree_node_steal_from_next(struct super_block *sb, uint32_t bno, int index) {
+    struct buffer_head *bh_par = NULL, *bh_lhs = NULL, *bh_rhs = NULL;
+    struct basicbtfs_btree_node *node = NULL, *lhs = NULL, *rhs = NULL;
+    int i = 0;
+
+    bh_par = sb_bread(sb, bno);
+
+    if (!bh_par) return -EIO;
+
+    node = (struct basicbtfs_btree_node *) bh_par->b_data;
+
+    bh_lhs = sb_bread(sb, node->children[index]);
+
+    if (!bh_lhs) {
+        brelse(bh_par);
+        return -EIO;
+    }
+
+    lhs = (struct basicbtfs_btree_node *) bh_lhs->b_data;
+
+    bh_rhs = sb_bread(sb, node->children[index + 1]);
+
+    if (!bh_rhs) {
+        brelse(bh_par);
+        brelse(bh_lhs);
+        return -EIO;
+    }
+
+    rhs = (struct basicbtfs_btree_node *) bh_rhs->b_data;
+
+    memcpy(&lhs->entries[lhs->nr_of_keys], &node->entries[index], sizeof(struct basicbtfs_entry));
+
+    if (!lhs->leaf) {
+        lhs->children[lhs->nr_of_keys+1] = rhs->children[0];
+    }
+
+    memcpy(&node->entries[index], &rhs->entries[0], sizeof(struct basicbtfs_entry));
+
+    for (i = 1; i < rhs->nr_of_keys; i++) {
+        memcpy(&rhs->entries[i-1], &rhs->entries[i], sizeof(struct basicbtfs_entry));
+    }
+
+    if (!rhs->leaf) {
+        for (i = 1; i <= rhs->nr_of_keys; i++) {
+            rhs->children[i-1] = rhs->children[i];
+        }
+    }
+
+    lhs->nr_of_keys++;
+    rhs->nr_of_keys--;
+
+    mark_buffer_dirty(bh_par);
+    mark_buffer_dirty(bh_lhs);
+    mark_buffer_dirty(bh_rhs);
+
+    brelse(bh_par);
+    brelse(bh_lhs);
+    brelse(bh_rhs);
+    return 0;
+}
+
+static inline int basicbtfs_btree_node_fill(struct super_block *sb, uint32_t bno, int index) {
+    struct buffer_head *bh_par = NULL, *bh_lhs = NULL, *bh_rhs = NULL;
+    struct basicbtfs_btree_node *node = NULL, *lhs = NULL, *rhs = NULL;
+    int ret = 0;
+
+    bh_par = sb_bread(sb, bno);
+
+    if (!bh_par) return -EIO;
+
+    node = (struct basicbtfs_btree_node *) bh_par->b_data;
+
+    bh_lhs = sb_bread(sb, node->children[index]);
+
+    if (!bh_lhs) {
+        brelse(bh_par);
+        return -EIO;
+    }
+
+    lhs = (struct basicbtfs_btree_node *) bh_lhs->b_data;
+
+    bh_rhs = sb_bread(sb, node->children[index + 1]);
+
+    if (!bh_rhs) {
+        brelse(bh_par);
+        brelse(bh_lhs);
+        return -EIO;
+    }
+
+    rhs = (struct basicbtfs_btree_node *) bh_rhs->b_data;
+
+    if (index != 0 && lhs->nr_of_keys >= BASICBTFS_MIN_DEGREE) {
+        ret = basicbtfs_btree_node_steal_from_previous(sb, bno, index);
+    } else if (index != node->nr_of_keys && rhs->nr_of_keys >= BASICBTFS_MIN_DEGREE) {
+        ret = basicbtfs_btree_node_steal_from_next(sb, bno, index);
+    } else {
+        if (index != node->nr_of_keys) {
+            ret = basicbtfs_btree_node_merge(sb, bno, index);
+        } else {
+            ret = basicbtfs_btree_node_merge(sb, bno, index - 1);
+        }
+    }
+
+    brelse(bh_par);
+    brelse(bh_lhs);
+    brelse(bh_rhs);
     return 0;
 }
 
@@ -357,7 +747,36 @@ static inline int basicbtfs_btree_node_delete(struct super_block *sb, uint32_t b
         } else {
             ret = basicbtfs_btree_node_remove_from_nonleaf(sb, bno, index);
         }
+    } else {
+        if (node->leaf) {
+            printk(KERN_INFO "File %s doesn't exist with index $d\n", filename, index);
+        }
+
+        bh2 = sb_bread(sb, node->children[index]);
+
+        if (!bh2) {
+            brelse(bh);
+            return -EIO;
+        }
+
+        child = (struct basicbtfs_btree_node *) bh2->b_data;
+
+        flag = (index == node->nr_of_keys) ? true : false;
+
+        if (child->nr_of_keys < BASICBTFS_MIN_DEGREE) {
+            ret = basicbtfs_btree_node_fill(sb, bno, index);
+
+            if (ret != 0) {
+                brelse(bh);
+                brelse(bh2);
+                return ret;
+            }
+        }
+
+        basicbtfs_btree_node_delete(sb, node->children[index], filename);
+        brelse(bh2);
     }
+    brelse(bh);
     return 0;
 }
 
