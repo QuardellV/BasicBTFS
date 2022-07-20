@@ -439,7 +439,7 @@ static inline int basicbtfs_btree_node_merge(struct super_block *sb, uint32_t bn
 
     rhs = (struct basicbtfs_btree_node *) bh_rhs->b_data;
 
-    memcpy(&lhs->[BASICBTFS_MIN_DEGREE - 1], &node->entries[index], sizeof(struct basicbtfs_entry));
+    memcpy(&lhs->entries[BASICBTFS_MIN_DEGREE - 1], &node->entries[index], sizeof(struct basicbtfs_entry));
 
     for (i  = 0; i < rhs->nr_of_keys; i++) {
         memcpy(&lhs->entries[i + BASICBTFS_MIN_DEGREE], &rhs->entries[i], sizeof(struct basicbtfs_entry));
@@ -528,7 +528,7 @@ static inline int basicbtfs_btree_node_remove_from_nonleaf(struct super_block *s
         }
 
         memcpy(&node->entries[index], &succ, sizeof(struct basicbtfs_entry));
-        mark_buffer_dirty(bh);
+        mark_buffer_dirty(bh_par);
         ret = basicbtfs_btree_node_delete(sb, node->children[index + 1], succ.hash_name);
     } else {
         memcpy(&tmp, &node->entries[index], sizeof(struct basicbtfs_entry));
@@ -582,7 +582,7 @@ static inline int basicbtfs_btree_node_steal_from_previous(struct super_block *s
     rhs = (struct basicbtfs_btree_node *) bh_rhs->b_data;
 
     for (i = rhs->nr_of_keys - 1; i >= 0; --i) {
-        memcpy(&rhs->entries[i+1], rhs->entries[i], sizeof(struct basicbtfs_entry));
+        memcpy(&rhs->entries[i+1], &rhs->entries[i], sizeof(struct basicbtfs_entry));
     }
 
     if (!rhs->leaf) {
@@ -591,7 +591,7 @@ static inline int basicbtfs_btree_node_steal_from_previous(struct super_block *s
         }
     }
 
-    memcpy(&rhs->entries[0], node->entries[index - 1], sizeof(struct basicbtfs_entry));
+    memcpy(&rhs->entries[0], &node->entries[index - 1], sizeof(struct basicbtfs_entry));
 
     if (!rhs->leaf) {
         rhs->children[0] = lhs->children[lhs->nr_of_keys];
@@ -749,7 +749,7 @@ static inline int basicbtfs_btree_node_delete(struct super_block *sb, uint32_t b
         }
     } else {
         if (node->leaf) {
-            printk(KERN_INFO "File %s doesn't exist with index $d\n", filename, index);
+            printk(KERN_INFO "File %s doesn't exist with index %d\n", filename, index);
         }
 
         bh2 = sb_bread(sb, node->children[index]);
