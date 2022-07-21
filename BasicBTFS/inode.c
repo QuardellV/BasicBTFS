@@ -239,7 +239,7 @@ static int basicbtfs_unlink(struct inode *dir ,struct dentry *dentry) {
     struct inode *inode = d_inode(dentry);
     ino = inode->i_ino;
 
-    ret = basicbtfs_delete_entry(dir, inode);
+    ret = basicbtfs_delete_entry(dir, (char *)dentry->d_name.name);
 
     if (ret < 0) return ret;
 

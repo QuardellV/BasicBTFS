@@ -66,8 +66,17 @@ int basicbtfs_add_entry(struct inode *dir, struct inode *inode, struct dentry *d
     return ret;
 }
 
-int basicbtfs_delete_entry(struct inode *dir, struct inode *inode) {
-    return 0;
+int basicbtfs_delete_entry(struct inode *dir, char *filename) {
+    struct basicbtfs_inode_info *inode_info = BASICBTFS_INODE(dir);
+    int ret = 0;
+
+    ret = basicbtfs_btree_delete_entry(dir->i_sb, dir, inode_info->i_bno, filename);
+
+    printk(KERN_INFO "START Debug tree traverse REMOVE: %s\n", filename);
+    basicbtfs_btree_traverse_debug(dir->i_sb, inode_info->i_bno);
+    printk(KERN_INFO "END Debu tree traverse REMOVE\n");
+
+    return ret;
 }
 
 int basicbtfs_update_entry(struct inode *old_dir, struct inode *new_dir, struct dentry *old_dentry, struct dentry *new_dentry, unsigned int flags) {

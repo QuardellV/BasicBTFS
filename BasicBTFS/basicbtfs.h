@@ -88,7 +88,7 @@ struct inode *basicbtfs_iget(struct super_block *sb, unsigned long ino);
 int basicbtfs_add_entry_name(struct inode *dir, struct inode *inode, char *filename);
 int basicbtfs_add_entry(struct inode *dir, struct inode *inode, struct dentry *dentry);
 struct dentry *basicbtfs_search_entry(struct inode *dir, struct dentry *dentry);
-int basicbtfs_delete_entry(struct inode *dir, struct inode *inode);
+int basicbtfs_delete_entry(struct inode *dir, char *filename);
 int basicbtfs_update_entry(struct inode *old_dir, struct inode *new_dir, struct dentry *old_dentry, struct dentry *new_dentry, unsigned int flags);
 int clean_file_block(struct inode *inode);
 
