@@ -80,7 +80,59 @@ int basicbtfs_delete_entry(struct inode *dir, char *filename) {
 }
 
 int basicbtfs_update_entry(struct inode *old_dir, struct inode *new_dir, struct dentry *old_dentry, struct dentry *new_dentry, unsigned int flags) {
-    return  0;
+    struct super_block *sb = old_dir->i_sb;
+    struct inode *old_inode = d_inode(old_dentry);
+    struct inode *new_inode = d_inode(new_dentry);
+    struct basicbtfs_inode_info *new_dir_info = BASICBTFS_INODE(new_dir);
+    struct buffer_head *bh = NULL;
+    struct basicbtfs_btree_node * node = NULL;
+    int ret = 0;
+
+    if (flags & (RENAME_WHITEOUT)) {
+        return -EINVAL;
+    }
+
+    if (flags & (RENAME_EXCHANGE)) {
+        if (!(old_inode && new_inode)) {
+            return -EINVAL;
+        }
+    }
+
+    ret = basicbtfs_btree_node_lookup(sb, new_dir_info->i_bno, new_dentry->d_name.name, 0);
+
+    if (ret != -1 && ret > 0) {
+        if (flags & (RENAME_NOREPLACE) && new_dir == old_dir) {
+            return -EEXIST;
+        } else {
+            if (new_inode) {
+                ret = basicbtfs_delete_entry(new_dir, new_dentry->d_name.name);
+            }
+
+            ret = basicbtfs_btree_node_insert(sb, new_dir, new_dir_info->i_bno, new_dentry->d_name.name, old_inode->i_ino);
+            // ret = basicbtfs_add_entry(new_dir, old_inode, new_dentry);
+
+            if (ret < 0) return -EIO;
+
+            ret = basicbtfs_delete_entry(old_dir, old_dentry->d_name.name);
+            return ret;
+        }
+    }
+
+    bh = sb_bread(sb, new_dir_info->i_bno);
+
+    if (!bh) return -EIO;
+
+    node = (struct basicbtfs_btree_node *) bh->b_data;
+
+    if (node->nr_of_files >= BASICBTFS_ENTRIES_PER_DIR) return -EMLINK;
+
+    brelse(bh);
+
+    ret = basicbtfs_add_entry(new_dir, old_inode, new_dentry);
+
+    if (ret < 0) return ret;
+
+    return basicbtfs_delete_entry(old_dir, old_dentry->d_name.name);
 }
 
 int clean_file_block(struct inode *inode) {
