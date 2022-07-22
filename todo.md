@@ -1,19 +1,24 @@
 # TODO List Basic Version
+- update directory using fat
+  - symlink
+  - hardlink
+  - reflink
 - Cleanup code and remove anything which is redundant
 - Check if we necessarily need to remove during that specific occasion of rename
 - Check what might cause the segmentation fault during clean up when unlink is being executed
+- Current bugs:
+  - Unnecsary removing and adding entry. can also acces specific entry and update it
+  - Fix issues where you can free A.S.A.P in all files
 
 # TODO list Improved version
 - update directory using btree
-  - Traverse
-  - Search
-  - Insert
-  - Delete
-  - Remove
-  - Update
+  - symlink
+  - hardlink
+  - reflink
+- Current bugs:
+  - fix return types
+  - fix issues where you can free A.S.A.P in all files
 - Cleanup code and remove anything which is redundant
-- fix the return types
-- Fix issues where you can free A.S.A.P
 - Update using clusters for at least files
 - Check how we can checksums for data integrity and shorter names. this will be included for the btree
 - Check how we can decrease the length using the checksums/hash and improve the usage of filenames.
