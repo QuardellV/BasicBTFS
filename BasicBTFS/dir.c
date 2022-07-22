@@ -104,11 +104,12 @@ int basicbtfs_update_entry(struct inode *old_dir, struct inode *new_dir, struct 
         if (flags & (RENAME_NOREPLACE) && new_dir == old_dir) {
             return -EEXIST;
         } else {
-            if (new_inode) {
-                ret = basicbtfs_delete_entry(new_dir, (char *)new_dentry->d_name.name);
-            }
+            // if (new_inode) {
+            //     ret = basicbtfs_delete_entry(new_dir, (char *)new_dentry->d_name.name);
+            // }
 
-            ret = basicbtfs_btree_node_insert(sb, new_dir, new_dir_info->i_bno, (char *)new_dentry->d_name.name, old_inode->i_ino);
+            // ret = basicbtfs_btree_node_insert(sb, new_dir, new_dir_info->i_bno, (char *)new_dentry->d_name.name, old_inode->i_ino);
+            ret = basicbtfs_btree_node_update(sb, new_dir_info->i_bno, (char *)new_dentry->d_name.name, 0, old_inode->i_ino);
             // ret = basicbtfs_add_entry(new_dir, old_inode, new_dentry);
 
             if (ret < 0) return -EIO;

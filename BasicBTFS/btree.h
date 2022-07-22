@@ -206,6 +206,40 @@ static inline int basicbtfs_btree_insert_non_full(struct super_block *sb, uint32
     return 0;
 }
 
+static inline int basicbtfs_btree_node_update(struct super_block *sb, uint32_t root_bno, char *filename, int counter, uint32_t inode) {
+    struct buffer_head *bh = NULL;
+    struct basicbtfs_btree_node *btr_node = NULL;
+    uint32_t ret = 0, child = 0;
+    int index = 0;
+
+    bh = sb_bread(sb, root_bno);
+
+    if (!bh) return 0;
+
+    btr_node = (struct basicbtfs_btree_node *) bh->b_data;
+
+    while (index < btr_node->nr_of_keys && strncmp(filename, btr_node->entries[index].hash_name, BASICBTFS_NAME_LENGTH) > 0) {
+        index++;
+        counter++;
+    }
+
+    if (strncmp(btr_node->entries[index].hash_name, filename, BASICBTFS_NAME_LENGTH) == 0) {
+        printk(KERN_INFO "Current counter: %d\n", counter);
+        btr_node->entries[index].ino = inode;
+        mark_buffer_dirty(bh);
+        brelse(bh);
+        return ret;
+    }
+
+    if (btr_node->leaf) {
+        brelse(bh);
+        return 0;
+    }
+    child = btr_node->children[index];
+    brelse(bh);
+    return basicbtfs_btree_node_update(sb, child, filename, counter, inode);
+}
+
 static inline int basicbtfs_btree_node_insert(struct super_block *sb, struct inode *par_inode, uint32_t bno, char *filename, uint32_t inode) {
     struct buffer_head *bh_old = NULL, *bh_new = NULL;
     struct basicbtfs_sb_info *sbi = BASICBTFS_SB(sb);
