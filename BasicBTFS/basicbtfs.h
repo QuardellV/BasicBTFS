@@ -8,10 +8,16 @@
 #define BASICBTFS_HASH_LENGTH          32
 #define BASICBTFS_SALT_LENGTH          8
 #define BASICBTFS_MIN_DEGREE           7
+#define BASICBTFS_MAX_BLOCKS_PER_CLUSTER 4
 #define BASICBTFS_ATABLE_MAX_BLOCKS    ((BASICBTFS_BLOCKSIZE - sizeof(uint32_t)) / sizeof(uint32_t))
+#define BASICBTFS_ATABLE_MAX_CLUSTERS  ((BASICBTFS_BLOCKSIZE - sizeof(uint32_t)) / sizeof(struct basicbtfs_cluster))
+#define BASICBTFS_MAX_BLOCKS_PER_DIR   (BASICBTFS_ATABLE_MAX_CLUSTERS * BASICBTFS_MAX_BLOCKS_PER_CLUSTER)
 #define BASICBTFS_ENTRIES_PER_BLOCK    (BASICBTFS_BLOCKSIZE / sizeof(struct basicbtfs_entry))
 #define BASICBTFS_ENTRIES_PER_DIR      (BASICBTFS_ENTRIES_PER_BLOCK * BASICBTFS_ATABLE_MAX_BLOCKS)
 #define BASICBTFS_FILE_BSIZE           (BASICBTFS_BLOCKSIZE * BASICBTFS_ATABLE_MAX_BLOCKS)
+
+#define BASICBTFS_MAX_BLOCKS_PER_CLUSTER 4
+
 
 
 struct basicbtfs_inode {
@@ -58,6 +64,16 @@ struct basicbtfs_inode_info {
 struct basicbtfs_entry {
     uint32_t ino;
     char hash_name[BASICBTFS_NAME_LENGTH];
+};
+
+struct basicbtfs_cluster {
+    uint32_t start_bno;
+    uint32_t cluster_length;
+};
+
+struct basicbtfs_cluster_table {
+    uint32_t nr_of_clusters;
+    struct basicbtfs_cluster table[BASICBTFS_ATABLE_MAX_CLUSTERS];
 };
 
 struct basicbtfs_alloc_table {
