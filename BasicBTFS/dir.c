@@ -98,22 +98,22 @@ int basicbtfs_update_entry(struct inode *old_dir, struct inode *new_dir, struct 
         }
     }
 
-    ret = basicbtfs_btree_node_lookup(sb, new_dir_info->i_bno, new_dentry->d_name.name, 0);
+    ret = basicbtfs_btree_node_lookup(sb, new_dir_info->i_bno, (char *)new_dentry->d_name.name, 0);
 
     if (ret != -1 && ret > 0) {
         if (flags & (RENAME_NOREPLACE) && new_dir == old_dir) {
             return -EEXIST;
         } else {
             if (new_inode) {
-                ret = basicbtfs_delete_entry(new_dir, new_dentry->d_name.name);
+                ret = basicbtfs_delete_entry(new_dir, (char *)new_dentry->d_name.name);
             }
 
-            ret = basicbtfs_btree_node_insert(sb, new_dir, new_dir_info->i_bno, new_dentry->d_name.name, old_inode->i_ino);
+            ret = basicbtfs_btree_node_insert(sb, new_dir, new_dir_info->i_bno, (char *)new_dentry->d_name.name, old_inode->i_ino);
             // ret = basicbtfs_add_entry(new_dir, old_inode, new_dentry);
 
             if (ret < 0) return -EIO;
 
-            ret = basicbtfs_delete_entry(old_dir, old_dentry->d_name.name);
+            ret = basicbtfs_delete_entry(old_dir, (char *)old_dentry->d_name.name);
             return ret;
         }
     }
@@ -132,7 +132,7 @@ int basicbtfs_update_entry(struct inode *old_dir, struct inode *new_dir, struct 
 
     if (ret < 0) return ret;
 
-    return basicbtfs_delete_entry(old_dir, old_dentry->d_name.name);
+    return basicbtfs_delete_entry(old_dir, (char *)old_dentry->d_name.name);
 }
 
 int clean_file_block(struct inode *inode) {
