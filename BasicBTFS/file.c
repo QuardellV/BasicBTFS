@@ -63,18 +63,18 @@ static int basicbtfs_file_get_block(struct inode *inode, sector_t iblock, struct
     } else {
         bno = cluster_list->table[cluster_index].start_bno + (iblock % cluster_list->table[cluster_index].cluster_length);
     }
-    printk("basicbtfs_file_get_block() sb_bread bno: %d | %lld \n", bno, iblock);
+    // printk("basicbtfs_file_get_block() sb_bread bno: %d | %lld \n", bno, iblock);
     map_bh(bh_result, sb, bno);
     return ret;
 }
 
 static int basicbtfs_readpage(struct file *file, struct page *page) {
-    printk(KERN_INFO "basicftfs_readpage()");
+    // printk(KERN_INFO "basicftfs_readpage()");
     return mpage_readpage(page, basicbtfs_file_get_block);
 }
 
 static int basicbtfs_writepage(struct page *page, struct writeback_control *wbc) {
-    printk(KERN_INFO "basicftfs_write_page()");
+    // printk(KERN_INFO "basicftfs_write_page()");
     return block_write_full_page(page, basicbtfs_file_get_block, wbc);
 }
 

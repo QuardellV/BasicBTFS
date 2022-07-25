@@ -71,9 +71,9 @@ static inline uint32_t basicbtfs_btree_node_lookup(struct super_block *sb, uint3
         brelse(bh);
         return 0;
     }
-    child = btr_node->children[index];
+    ret = basicbtfs_btree_node_lookup(sb, btr_node->children[index], filename, counter);
     brelse(bh);
-    return basicbtfs_btree_node_lookup(sb, child, filename, counter);
+    return ret;
 }
 
 static inline int basicbtfs_btree_split_child(struct super_block *sb, uint32_t par, uint32_t lhs, int index) {
@@ -235,9 +235,9 @@ static inline int basicbtfs_btree_node_update(struct super_block *sb, uint32_t r
         brelse(bh);
         return 0;
     }
-    child = btr_node->children[index];
+    ret =  basicbtfs_btree_node_update(sb, btr_node->children[index], filename, counter, inode);
     brelse(bh);
-    return basicbtfs_btree_node_update(sb, child, filename, counter, inode);
+    return ret;
 }
 
 static inline int basicbtfs_btree_node_insert(struct super_block *sb, struct inode *par_inode, uint32_t bno, char *filename, uint32_t inode) {
@@ -338,7 +338,7 @@ static inline int basicbtfs_btree_node_find_key(struct super_block *sb, uint32_t
         ++index;
     }
     brelse(bh);
-    printk(KERN_INFO "Founded key: %d\n", index);
+    printk(KERN_INFO "Founded key: %d for filename %s\n", index, filename);
     return index;
 }
 
@@ -353,7 +353,7 @@ static inline int basicbtfs_btree_node_remove_from_leaf(struct super_block *sb, 
 
     node = (struct basicbtfs_btree_node *) bh->b_data;
 
-    for (i = index + 1; i < node->nr_of_keys; ++i) {
+    for (i = index + 1; i < node->nr_of_keys; i++) {
         memcpy(&node->entries[i - 1], &node->entries[i], sizeof(struct basicbtfs_entry));
     }
 
@@ -439,6 +439,7 @@ static inline int basicbtfs_btree_node_get_succesor(struct super_block *sb, uint
     }
 
     memcpy(ret, &node->entries[0], sizeof (struct basicbtfs_entry));
+    mark_buffer_dirty(bh);
     brelse(bh);
     return 0;
 }
@@ -761,27 +762,26 @@ static inline int basicbtfs_btree_node_delete(struct super_block *sb, uint32_t b
     int index = basicbtfs_btree_node_find_key(sb, bno, filename);
     int ret = 0;
     bool flag = false;
-    uint32_t bno2 = 0;
 
-    bno2 = basicbtfs_btree_node_lookup(sb, bno, filename, 0);
-
-    if (bno2 != 0 && bno2 != 1) {
-        printk("yes we did it\n");
-    }
-
+    printk("start node delete\n");
+    
     bh = sb_bread(sb, bno);
+    printk("hola, are we still here\n");
 
     if (!bh) return -EIO;
 
     node = (struct basicbtfs_btree_node *) bh->b_data;
-
     if (index < node->nr_of_keys && strncmp(node->entries[index].hash_name, filename,BASICBTFS_NAME_LENGTH) == 0) {
+        printk("here1\n");
         if (node->leaf) {
+            printk("here3\n");
             ret = basicbtfs_btree_node_remove_from_leaf(sb, bno, index);
         } else {
+            printk("here4\n");
             ret = basicbtfs_btree_node_remove_from_nonleaf(sb, bno, index);
         }
     } else {
+        printk("here2\n");
         if (node->leaf) {
             printk(KERN_INFO "File %s doesn't exist with index %d\n", filename, index);
         }

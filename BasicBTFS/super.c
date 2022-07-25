@@ -50,7 +50,7 @@ static int basicbtfs_write_inode(struct inode *inode, struct writeback_control *
 
     if (ino >= sbi->s_ninodes) return 0;
 
-    printk("basicbtfs_write_inode() inode_block: %d\n", inode_block);
+    // printk("basicbtfs_write_inode() inode_block: %d\n", inode_block);
     bh = sb_bread(sb, inode_block);
 
     if (!bh) return -EIO;

@@ -87,8 +87,9 @@ int basicbtfs_update_entry(struct inode *old_dir, struct inode *new_dir, struct 
     struct buffer_head *bh = NULL;
     struct basicbtfs_btree_node * node = NULL;
     int ret = 0;
+    printk("hola1\n");
 
-    if (flags & (RENAME_WHITEOUT)) {
+    if (flags & (RENAME_WHITEOUT | RENAME_NOREPLACE)) {
         return -EINVAL;
     }
 
@@ -99,24 +100,29 @@ int basicbtfs_update_entry(struct inode *old_dir, struct inode *new_dir, struct 
     }
 
     ret = basicbtfs_btree_node_lookup(sb, new_dir_info->i_bno, (char *)new_dentry->d_name.name, 0);
+    printk("hola2\n");
 
     if (ret != -1 && ret > 0) {
-        if (flags & (RENAME_NOREPLACE) && new_dir == old_dir) {
-            return -EEXIST;
-        } else {
-            // if (new_inode) {
-            //     ret = basicbtfs_delete_entry(new_dir, (char *)new_dentry->d_name.name);
-            // }
+        printk("duplicate name\n");
+        return -EEXIST;
+        // if (flags & (RENAME_NOREPLACE) && new_dir == old_dir) {
+        //     return -EEXIST;
+        // } else {
+        //     // if (new_inode) {
+        //     ret = basicbtfs_delete_entry(old_dir, (char *)old_dentry->d_name.name);
+        //     // }
+        //     if (ret < 0) return -EIO;
 
-            // ret = basicbtfs_btree_node_insert(sb, new_dir, new_dir_info->i_bno, (char *)new_dentry->d_name.name, old_inode->i_ino);
-            ret = basicbtfs_btree_node_update(sb, new_dir_info->i_bno, (char *)new_dentry->d_name.name, 0, old_inode->i_ino);
-            // ret = basicbtfs_add_entry(new_dir, old_inode, new_dentry);
+        //     // ret = basicbtfs_btree_node_insert(sb, new_dir, new_dir_info->i_bno, (char *)new_dentry->d_name.name, old_inode->i_ino);
+        //     ret = basicbtfs_btree_node_update(sb, new_dir_info->i_bno, (char *)new_dentry->d_name.name, 0, old_inode->i_ino);
+        //     // ret = basicbtfs_add_entry(new_dir, old_inode, new_dentry);
 
-            if (ret < 0) return -EIO;
+        //     // if (new_dir != old_dir && strncmp) {
+        //     // ret = basicbtfs_delete_entry(old_dir, (char *)old_dentry->d_name.name);
+        //     // }
 
-            ret = basicbtfs_delete_entry(old_dir, (char *)old_dentry->d_name.name);
-            return ret;
-        }
+        //     return ret;
+        // }
     }
 
     bh = sb_bread(sb, new_dir_info->i_bno);
@@ -125,15 +131,23 @@ int basicbtfs_update_entry(struct inode *old_dir, struct inode *new_dir, struct 
 
     node = (struct basicbtfs_btree_node *) bh->b_data;
 
-    if (node->nr_of_files >= BASICBTFS_ENTRIES_PER_DIR) return -EMLINK;
+    if (node->nr_of_files >= BASICBTFS_ENTRIES_PER_DIR) {
+        brelse(bh);
+        return -EMLINK;
+    }
 
     brelse(bh);
 
+    printk("hol2b\n");
+
     ret = basicbtfs_add_entry(new_dir, old_inode, new_dentry);
+    printk("hol3a\n");
 
     if (ret < 0) return ret;
 
-    return basicbtfs_delete_entry(old_dir, (char *)old_dentry->d_name.name);
+    ret = basicbtfs_delete_entry(old_dir, (char *)old_dentry->d_name.name);
+    printk("hola4\n");
+    return ret;
 }
 
 int clean_file_block(struct inode *inode) {
