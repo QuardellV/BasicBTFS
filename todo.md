@@ -19,7 +19,6 @@
   - fix return types
   - fix issues where you can free A.S.A.P in all files
 - Cleanup code and remove anything which is redundant
-- Update using clusters for at least files
 - Check how we can checksums for data integrity and shorter names. this will be included for the btree
 - Check how we can decrease the length using the checksums/hash and improve the usage of filenames.
   Currently we use a default length for each filename, while chances are high that a length of 255 is not necessary.

@@ -71,8 +71,9 @@ static inline uint32_t basicbtfs_btree_node_lookup(struct super_block *sb, uint3
         brelse(bh);
         return 0;
     }
-    ret = basicbtfs_btree_node_lookup(sb, btr_node->children[index], filename, counter);
+    child  = btr_node->children[index];
     brelse(bh);
+    ret = basicbtfs_btree_node_lookup(sb, child, filename, counter);
     return ret;
 }
 
