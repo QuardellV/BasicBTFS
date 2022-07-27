@@ -146,7 +146,7 @@ static inline int basicbtfs_btree_split_child(struct super_block *sb, uint32_t p
     return 0;
 }
 
-static inline int basicbtfs_btree_insert_non_full(struct super_block *sb, uint32_t bno, char *filename, uint32_t inode) {
+static inline int basicbtfs_btree_insert_non_full(struct super_block *sb, uint32_t bno, struct basicbtfs_entry *new_entry) {
     struct buffer_head *bh = NULL, *bh_child = NULL;
     struct basicbtfs_btree_node *node = NULL, *child = NULL;
     int ret = 0;
@@ -160,19 +160,18 @@ static inline int basicbtfs_btree_insert_non_full(struct super_block *sb, uint32
     if (node->leaf) {
         int index = node->nr_of_keys - 1;
 
-        while (index >= 0 && strncmp(node->entries[index].hash_name, filename, BASICBTFS_NAME_LENGTH) > 0) {
+        while (index >= 0 && strncmp(node->entries[index].hash_name, new_entry->hash_name, BASICBTFS_NAME_LENGTH) > 0) {
             memcpy(&node->entries[index + 1], &node->entries[index], sizeof(struct basicbtfs_entry));
             index--;
         }
 
-        strncpy(node->entries[index + 1].hash_name, filename, BASICBTFS_NAME_LENGTH);
-        node->entries[index + 1].ino = inode;
+        memcpy(&node->entries[index + 1], new_entry, sizeof(struct basicbtfs_entry));
         node->nr_of_keys++;
         mark_buffer_dirty(bh);
     } else {
         int index = node->nr_of_keys - 1;
 
-        while (index >= 0 && strncmp(node->entries[index].hash_name, filename, BASICBTFS_NAME_LENGTH) > 0) {
+        while (index >= 0 && strncmp(node->entries[index].hash_name, new_entry->hash_name, BASICBTFS_NAME_LENGTH) > 0) {
             index--;
         }
 
@@ -194,12 +193,12 @@ static inline int basicbtfs_btree_insert_non_full(struct super_block *sb, uint32
                 return ret;
             }
 
-            if (strncmp(node->entries[index + 1].hash_name,filename , BASICBTFS_NAME_LENGTH) < 0) {
+            if (strncmp(node->entries[index + 1].hash_name,new_entry->hash_name , BASICBTFS_NAME_LENGTH) < 0) {
                 index++;
             }
         }
         brelse(bh_child);
-        basicbtfs_btree_insert_non_full(sb, node->children[index + 1], filename, inode);
+        basicbtfs_btree_insert_non_full(sb, node->children[index + 1], new_entry);
 
     }
 
@@ -241,7 +240,7 @@ static inline int basicbtfs_btree_node_update(struct super_block *sb, uint32_t r
     return ret;
 }
 
-static inline int basicbtfs_btree_node_insert(struct super_block *sb, struct inode *par_inode, uint32_t bno, char *filename, uint32_t inode) {
+static inline int basicbtfs_btree_node_insert(struct super_block *sb, struct inode *par_inode, uint32_t bno, struct basicbtfs_entry *entry) {
     struct buffer_head *bh_old = NULL, *bh_new = NULL;
     struct basicbtfs_sb_info *sbi = BASICBTFS_SB(sb);
     struct basicbtfs_btree_node * old_node = NULL, *new_node = NULL;
@@ -252,15 +251,6 @@ static inline int basicbtfs_btree_node_insert(struct super_block *sb, struct ino
     if (!bh_old) return -EIO;
 
     old_node = (struct basicbtfs_btree_node *) bh_old->b_data;
-
-    ret = basicbtfs_btree_node_lookup(sb, bno, filename, 0);
-
-    // This is necessary. Otherwise we would split unnecesary!
-    if (ret != -1 && ret > 0) {
-        printk(KERN_INFO "Filename %s already exists\n", filename);
-        brelse(bh_old);
-        return -EIO;
-    }
 
     if (old_node->nr_of_keys == 2 * BASICBTFS_MIN_DEGREE -1) {
         int index = 0;
@@ -285,11 +275,11 @@ static inline int basicbtfs_btree_node_insert(struct super_block *sb, struct ino
             return ret;
         }
 
-        if (strncmp(new_node->entries[0].hash_name, filename, BASICBTFS_NAME_LENGTH) < 0) {
+        if (strncmp(new_node->entries[0].hash_name, entry->hash_name, BASICBTFS_NAME_LENGTH) < 0) {
             index++;
         }
 
-        ret = basicbtfs_btree_insert_non_full(sb, new_node->children[index], filename, inode);
+        ret = basicbtfs_btree_insert_non_full(sb, new_node->children[index], entry);
 
         if (ret != 0) {
             brelse(bh_old);
@@ -311,7 +301,7 @@ static inline int basicbtfs_btree_node_insert(struct super_block *sb, struct ino
         mark_buffer_dirty(bh_new);
         brelse(bh_new);
     } else {
-        ret = basicbtfs_btree_insert_non_full(sb, bno, filename, inode);
+        ret = basicbtfs_btree_insert_non_full(sb, bno, entry);
 
         if (ret != 0) {
             brelse(bh_old);

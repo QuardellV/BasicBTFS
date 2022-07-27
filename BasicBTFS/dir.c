@@ -44,7 +44,6 @@ static int basicbtfs_iterate(struct file *dir, struct dir_context *ctx) {
     name_bno = node->tree_name_bno;
     brelse(bh);
 
-    // return basicbtfs_btree_traverse(sb, inode_info->i_bno, ctx, ctx->pos - 2, &ctx_index);
     return basicbtfs_nametree_iterate_name(sb, name_bno, ctx, ctx->pos - 2);
 }
 
@@ -73,16 +72,7 @@ int basicbtfs_add_entry(struct inode *dir, struct inode *inode, struct dentry *d
     struct buffer_head *bh = NULL;
     struct basicbtfs_btree_node *node = NULL;
 
-    new_entry.ino = inode->i_ino;
-    strncpy(new_entry.hash_name, dentry->d_name.name, BASICBTFS_NAME_LENGTH);
-    my_get_rand_bytes(new_entry.salt, BASICBTFS_SALT_LENGTH);
-    new_entry.hash = get_hash(dentry, new_entry.salt);
-
-    ret = basicbtfs_btree_node_insert(dir->i_sb, dir, inode_info->i_bno, (char *)dentry->d_name.name, inode->i_ino);
-
-    if (ret < 0) return ret;
-
-    bh = sb_bread(dir->i_sb, inode_info->i_bno);
+     bh = sb_bread(dir->i_sb, inode_info->i_bno);
     
     if (!bh) return -EIO;
 
@@ -90,7 +80,21 @@ int basicbtfs_add_entry(struct inode *dir, struct inode *inode, struct dentry *d
     name_bno = node->tree_name_bno;
     brelse(bh);
 
+    ret = basicbtfs_btree_node_lookup(dir->i_sb, inode_info->i_bno, (char *)dentry->d_name.name, 0);
+
+    if (ret != -1 && ret > 0) {
+        printk(KERN_INFO "Filename %s already exists\n", dentry->d_name.name);
+        return -EIO;
+    }
+
     ret = basicbtfs_nametree_insert_name(dir->i_sb, name_bno, &new_entry, dentry);
+
+    new_entry.ino = inode->i_ino;
+    strncpy(new_entry.hash_name, dentry->d_name.name, BASICBTFS_NAME_LENGTH);
+    my_get_rand_bytes(new_entry.salt, BASICBTFS_SALT_LENGTH);
+    new_entry.hash = get_hash(dentry, new_entry.salt);
+
+    ret = basicbtfs_btree_node_insert(dir->i_sb, dir, inode_info->i_bno, &new_entry);
 
     // printk(KERN_INFO "START Debug btree traverse added: %s\n", dentry->d_name.name);
     // basicbtfs_btree_traverse_debug(dir->i_sb, inode_info->i_bno);
@@ -105,7 +109,7 @@ int basicbtfs_delete_entry(struct inode *dir, char *filename) {
     uint32_t name_bno = 0;
     struct buffer_head *bh = NULL;
     struct basicbtfs_btree_node *node = NULL;
-    struct basicbtfs_entry new_entry; 
+    struct basicbtfs_entry new_entry;
 
     ret = basicbtfs_btree_delete_entry(dir->i_sb, dir, inode_info->i_bno, filename, &new_entry);
 
