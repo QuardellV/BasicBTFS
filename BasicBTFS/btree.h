@@ -54,12 +54,12 @@ static inline uint32_t basicbtfs_btree_node_lookup(struct super_block *sb, uint3
     if (!bh) return 0;
 
     btr_node = (struct basicbtfs_btree_node *) bh->b_data;
-
+    // entry->hash > btr_node->entries[index].hash
     while (index < btr_node->nr_of_keys && strncmp(filename, btr_node->entries[index].hash_name, BASICBTFS_NAME_LENGTH) > 0) {
         index++;
         counter++;
     }
-
+    btr_node->entries[index].hash == entry->hash
     if (strncmp(btr_node->entries[index].hash_name, filename, BASICBTFS_NAME_LENGTH) == 0) {
         printk(KERN_INFO "Current counter: %d\n", counter);
         ret = btr_node->entries[index].ino;
@@ -159,7 +159,7 @@ static inline int basicbtfs_btree_insert_non_full(struct super_block *sb, uint32
 
     if (node->leaf) {
         int index = node->nr_of_keys - 1;
-
+        // node->entries[index].hash > new_entry->hash
         while (index >= 0 && strncmp(node->entries[index].hash_name, new_entry->hash_name, BASICBTFS_NAME_LENGTH) > 0) {
             memcpy(&node->entries[index + 1], &node->entries[index], sizeof(struct basicbtfs_entry));
             index--;
@@ -170,7 +170,7 @@ static inline int basicbtfs_btree_insert_non_full(struct super_block *sb, uint32
         mark_buffer_dirty(bh);
     } else {
         int index = node->nr_of_keys - 1;
-
+        // node->entries[index].hash > new_entry->hash
         while (index >= 0 && strncmp(node->entries[index].hash_name, new_entry->hash_name, BASICBTFS_NAME_LENGTH) > 0) {
             index--;
         }
@@ -192,7 +192,7 @@ static inline int basicbtfs_btree_insert_non_full(struct super_block *sb, uint32
                 brelse(bh_child);
                 return ret;
             }
-
+            // node->entries[index+1].hash < new_entry->hash
             if (strncmp(node->entries[index + 1].hash_name,new_entry->hash_name , BASICBTFS_NAME_LENGTH) < 0) {
                 index++;
             }
@@ -217,12 +217,12 @@ static inline int basicbtfs_btree_node_update(struct super_block *sb, uint32_t r
     if (!bh) return 0;
 
     btr_node = (struct basicbtfs_btree_node *) bh->b_data;
-
+    // new_entry->hash > node->entries[index].hash
     while (index < btr_node->nr_of_keys && strncmp(filename, btr_node->entries[index].hash_name, BASICBTFS_NAME_LENGTH) > 0) {
         index++;
         counter++;
     }
-
+    // node->entries[index].hash == new_entry->hash
     if (strncmp(btr_node->entries[index].hash_name, filename, BASICBTFS_NAME_LENGTH) == 0) {
         printk(KERN_INFO "Current counter: %d\n", counter);
         btr_node->entries[index].ino = inode;
@@ -274,7 +274,7 @@ static inline int basicbtfs_btree_node_insert(struct super_block *sb, struct ino
             brelse(bh_new);
             return ret;
         }
-
+        // node->entries[index].hash < new_entry->hash
         if (strncmp(new_node->entries[0].hash_name, entry->hash_name, BASICBTFS_NAME_LENGTH) < 0) {
             index++;
         }
@@ -325,7 +325,7 @@ static inline int basicbtfs_btree_node_find_key(struct super_block *sb, uint32_t
     if (!bh) return -1;
 
     node = (struct basicbtfs_btree_node *) bh->b_data;
-
+    // node->entries[index].hash < new_entry->hash
     while (index < node->nr_of_keys && strncmp(node->entries[index].hash_name, filename, BASICBTFS_NAME_LENGTH) < 0) {
         ++index;
     }
@@ -764,7 +764,8 @@ static inline int basicbtfs_btree_node_delete(struct super_block *sb, uint32_t b
     if (!bh) return -EIO;
 
     node = (struct basicbtfs_btree_node *) bh->b_data;
-    if (index < node->nr_of_keys && strncmp(node->entries[index].hash_name, filename,BASICBTFS_NAME_LENGTH) == 0) {
+    // node->entries[index].hash == new_entry->hash
+    if (index < node->nr_of_keys && strncmp(node->entries[index].hash_name, filename, BASICBTFS_NAME_LENGTH) == 0) {
         memcpy(&buffer, &node->entries[index], sizeof(struct basicbtfs_entry));
         printk("here1\n");
         if (node->leaf) {
