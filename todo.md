@@ -1,12 +1,12 @@
 # TODO List Basic Version
-- update directory using fat
+- update directory using fat // In two weeks
   - symlink
   - hardlink
   - reflink
-- Cleanup code and remove anything which is redundant
-- Check if we necessarily need to remove during that specific occasion of rename
-- Check what might cause the segmentation fault during clean up when unlink is being executed
-- Current bugs:
+- Cleanup code and remove anything which is redundant // In two weeks
+- Check if we necessarily need to remove during that specific occasion of rename // In two weeks
+- Check what might cause the segmentation fault during clean up when unlink is being executed In two weeks
+- Current bugs: // In two weeks
   - Unnecsary removing and adding entry. can also acces specific entry and update it
   - Fix issues where you can free A.S.A.P in all files
 
@@ -18,6 +18,7 @@
 - Current bugs:
   - fix return types
   - fix issues where you can free A.S.A.P in all files
+  - Fix issues with rename where you have a double fault
 - Cleanup code and remove anything which is redundant
 - Check how we can checksums for data integrity and shorter names. this will be included for the btree
 - Check how we can decrease the length using the checksums/hash and improve the usage of filenames.
@@ -31,11 +32,11 @@
 - free space management using buddy slab allocator/ pre-allocation // Next week
 
 # TODO List Measurement/Robustness
-- Improve mkfs in c, including flags other options
-- Create tests in c for the fsck. If necessary also let this fsck repair the filesystem in case of any wrongdoings
-- Check what the durability/performance trade-off is for all these features
-- Check why dot files aren't recognized by the root directory
-- Use iozone, fxmark, iostat to check the scalability and performance of the different filesystems. More reliable than doing it manually. Moreover, we won't reinvent the wheel. See paper, for more information.
+- Improve mkfs in c, including flags other options // In two weeks
+- Create tests in c for the fsck. If necessary also let this fsck repair the filesystem in case of any wrongdoings // In two tweeks
+- Check what the durability/performance trade-off is for all these features // In two weeks
+- Check why dot files aren't recognized by the root directory // In two weeks
+- Use iozone, fxmark, iostat to check the scalability and performance of the different filesystems. More reliable than doing it manually. Moreover, we won't reinvent the wheel. See paper, for more information. // In two weeks
 
 
 # TODO List Thesis
