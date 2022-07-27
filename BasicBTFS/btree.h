@@ -210,7 +210,7 @@ static inline int basicbtfs_btree_insert_non_full(struct super_block *sb, uint32
 static inline int basicbtfs_btree_node_update(struct super_block *sb, uint32_t root_bno, char *filename, int counter, uint32_t inode) {
     struct buffer_head *bh = NULL;
     struct basicbtfs_btree_node *btr_node = NULL;
-    uint32_t ret = 0, child = 0;
+    uint32_t ret = 0;
     int index = 0;
 
     bh = sb_bread(sb, root_bno);
@@ -307,6 +307,7 @@ static inline int basicbtfs_btree_node_insert(struct super_block *sb, struct ino
 
         new_node->nr_of_files = old_node->nr_of_files + 1;
         new_node->nr_times_done = old_node->nr_times_done + 1;
+        new_node->tree_name_bno = old_node->tree_name_bno;
         mark_buffer_dirty(bh_new);
         brelse(bh_new);
     } else {
@@ -858,6 +859,7 @@ static inline int basicbtfs_btree_delete_entry(struct super_block *sb, struct in
             new_root_node = (struct basicbtfs_btree_node *) bh2->b_data;
             new_root_node->nr_of_files = node->nr_of_files - 1;
             new_root_node->nr_times_done = node->nr_times_done;
+            new_root_node->tree_name_bno = node->tree_name_bno;
             mark_buffer_dirty(bh2);
             brelse(bh2);
         }

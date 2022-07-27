@@ -8,6 +8,7 @@
 #include "io.h"
 #include "init.h"
 #include "btree.h"
+#include "nametree.h"
 
 static int basicbtfs_iterate(struct file *dir, struct dir_context *ctx) {
     struct inode *inode = file_inode(dir);
@@ -56,8 +57,29 @@ struct dentry *basicbtfs_search_entry(struct inode *dir, struct dentry *dentry) 
 int basicbtfs_add_entry(struct inode *dir, struct inode *inode, struct dentry *dentry) {
     struct basicbtfs_inode_info *inode_info = BASICBTFS_INODE(dir);
     int ret = 0;
+    struct basicbtfs_entry new_entry;
+    uint32_t name_bno = 0;
+    struct buffer_head *bh = NULL;
+    struct basicbtfs_btree_node *node = NULL;
+
+    new_entry.ino = inode->i_ino;
+    strncpy(new_entry.hash_name, dentry->d_name.name, BASICBTFS_NAME_LENGTH);
+    my_get_rand_bytes(new_entry.salt, BASICBTFS_SALT_LENGTH);
+    new_entry.hash = get_hash(dentry, new_entry.salt);
 
     ret = basicbtfs_btree_node_insert(dir->i_sb, dir, inode_info->i_bno, (char *)dentry->d_name.name, inode->i_ino);
+
+    if (ret < 0) return ret;
+
+    bh = sb_bread(dir->i_sb, inode_info->i_bno);
+    
+    if (!bh) return -EIO;
+
+    node = (struct basicbtfs_btree_node *) bh->b_data;
+    name_bno = node->tree_name_bno;
+    brelse(bh);
+
+    ret = basicbtfs_nametree_insert_name(dir->i_sb, name_bno, &new_entry, dentry);
 
     // printk(KERN_INFO "START Debug btree traverse added: %s\n", dentry->d_name.name);
     // basicbtfs_btree_traverse_debug(dir->i_sb, inode_info->i_bno);

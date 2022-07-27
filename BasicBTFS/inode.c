@@ -129,7 +129,8 @@ static int basicbtfs_create(struct inode *dir, struct dentry *dentry, umode_t mo
     struct inode *inode = NULL;
     struct basicbtfs_inode_info *bfs_inode_info_dir = NULL;
     struct basicbtfs_btree_node *node = NULL;
-    struct buffer_head *bh_dir = NULL, *bh = NULL;
+    struct basicbtfs_name_tree *name_tree = NULL;
+    struct buffer_head *bh_dir = NULL, *bh = NULL, *bh_name_table = NULL;
     int ret = 0;
 
     if (strlen(dentry->d_name.name) > BASICBTFS_NAME_LENGTH) return -ENAMETOOLONG;
@@ -179,6 +180,23 @@ static int basicbtfs_create(struct inode *dir, struct dentry *dentry, umode_t mo
         node->leaf = true;
         node->nr_of_files = 0;
         node->nr_of_keys = 0;
+
+        if (node->tree_name_bno == 0) {
+            node->tree_name_bno = get_free_blocks(BASICBTFS_SB(sb), 1);
+            bh_name_table = sb_bread(sb, node->tree_name_bno);
+
+            if (!bh_name_table) {
+                brelse(bh);
+                put_blocks(BASICBTFS_SB(sb), node->tree_name_bno, 1);
+                return -EIO;
+            }
+
+            name_tree = (struct basicbtfs_name_tree *)bh_name_table->b_data;
+            name_tree->free_bytes = BASICBTFS_EMPTY_NAME_TREE;
+            name_tree->next_block = 0;
+            mark_buffer_dirty(bh_name_table);
+            brelse(bh_name_table);
+        }
         mark_buffer_dirty(bh);
         brelse(bh);
     }

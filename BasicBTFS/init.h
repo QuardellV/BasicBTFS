@@ -39,4 +39,27 @@ static inline void init_inode_mode(struct inode *vfs_inode, struct basicbtfs_ino
     }
 }
 
+static inline void my_get_rand_bytes(char *buffer, int num) {
+    get_random_bytes(buffer, num);
+
+    printk(KERN_INFO "random bytes: %hhn\n", buffer);
+}
+
+static inline unsigned long get_hash(struct dentry *dentry, const char *salt) {
+    const int length = BASICBTFS_NAME_LENGTH + strlen(salt);
+    char *tmp_buffer = kzalloc(sizeof(char) * length, GFP_KERNEL);
+    u32 crc = 0;
+
+    memcpy(tmp_buffer, dentry->d_name.name, BASICBTFS_NAME_LENGTH);
+    memcpy(tmp_buffer + BASICBTFS_NAME_LENGTH, salt, strlen(salt));
+
+    crc = crc32(crc, tmp_buffer, length);
+
+    printk(KERN_INFO "Current unsigned long: %hhx", crc);
+
+    kfree(tmp_buffer);
+
+    return crc;
+}
+
 #endif
