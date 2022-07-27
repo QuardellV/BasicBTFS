@@ -21,14 +21,14 @@
 - Cleanup code and remove anything which is redundant
 - Check how we can checksums for data integrity and shorter names. this will be included for the btree
 - Check how we can decrease the length using the checksums/hash and improve the usage of filenames.
-  Currently we use a default length for each filename, while chances are high that a length of 255 is not necessary. Almost done. W.I.P.
+  Currently we use a default length for each filename, while chances are high that a length of 255 is not necessary. Almost done. W.I.P. This week
 - Check for possibility to use btree for everything instead of using bitmap. See: Btrfs paper: https://dominoweb.draco.res.ibm.com/reports/rj10501.pdf
-  - Check where it actually would make sense. Definitely not for the bitmap for the inode/blocks
-- Check how the filesystem can be defragmented also including garbage collection
-- check how we can use cache to reduce the I/O costs. LRU which is around 10% of the total memory
-- Check how the filesystem can truncate/shrink during write_begin/end
-- Check how a snapshot can be made using reflink
-- free space management using buddy slab allocator/ pre-allocation
+  - Check where it actually would make sense. Definitely not for the bitmap for the inode/blocks // Next week
+- Check how the filesystem can be defragmented also including garbage collection // Next week
+- check how we can use cache to reduce the I/O costs. LRU which is around 10% of the total memory // This week
+- Check how the filesystem can truncate/shrink during write_begin/end // Next week
+- Check how a snapshot can be made using reflink // Next week
+- free space management using buddy slab allocator/ pre-allocation // Next week
 
 # TODO List Measurement/Robustness
 - Improve mkfs in c, including flags other options
