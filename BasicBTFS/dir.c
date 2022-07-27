@@ -14,7 +14,9 @@ static int basicbtfs_iterate(struct file *dir, struct dir_context *ctx) {
     struct inode *inode = file_inode(dir);
     struct basicbtfs_inode_info *inode_info = BASICBTFS_INODE(inode);
     struct super_block *sb = inode->i_sb;
-    loff_t ctx_index = 0;
+    uint32_t name_bno = 0;
+    struct buffer_head *bh = NULL;
+    struct basicbtfs_btree_node *node = NULL;
 
     if (!S_ISDIR(inode->i_mode)) {
         printk(KERN_ERR "This file is not a directory\n");
@@ -34,7 +36,16 @@ static int basicbtfs_iterate(struct file *dir, struct dir_context *ctx) {
     // basicbtfs_btree_traverse_debug(sb, inode_info->i_bno);
     // printk(KERN_INFO "END Debug btree iterate\n");
 
-    return basicbtfs_btree_traverse(sb, inode_info->i_bno, ctx, ctx->pos - 2, &ctx_index);
+    bh = sb_bread(sb, inode_info->i_bno);
+    
+    if (!bh) return -EIO;
+
+    node = (struct basicbtfs_btree_node *) bh->b_data;
+    name_bno = node->tree_name_bno;
+    brelse(bh);
+
+    // return basicbtfs_btree_traverse(sb, inode_info->i_bno, ctx, ctx->pos - 2, &ctx_index);
+    return basicbtfs_nametree_iterate_name(sb, name_bno, ctx, ctx->pos - 2);
 }
 
 struct dentry *basicbtfs_search_entry(struct inode *dir, struct dentry *dentry) {
@@ -91,8 +102,20 @@ int basicbtfs_add_entry(struct inode *dir, struct inode *inode, struct dentry *d
 int basicbtfs_delete_entry(struct inode *dir, char *filename) {
     struct basicbtfs_inode_info *inode_info = BASICBTFS_INODE(dir);
     int ret = 0;
+    uint32_t name_bno = 0;
+    struct buffer_head *bh = NULL;
+    struct basicbtfs_btree_node *node = NULL;
+    struct basicbtfs_entry new_entry; 
 
-    ret = basicbtfs_btree_delete_entry(dir->i_sb, dir, inode_info->i_bno, filename);
+    ret = basicbtfs_btree_delete_entry(dir->i_sb, dir, inode_info->i_bno, filename, &new_entry);
+
+    if (ret < 0) return ret;
+
+    node = (struct basicbtfs_btree_node *) bh->b_data;
+    name_bno = node->tree_name_bno;
+    brelse(bh);
+
+    ret = basicbtfs_nametree_delete_name(dir->i_sb, new_entry.name_bno, new_entry.block_index);
 
     printk(KERN_INFO "START Debug tree traverse REMOVE: %s\n", filename);
     basicbtfs_btree_traverse_debug(dir->i_sb, inode_info->i_bno);

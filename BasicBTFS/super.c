@@ -8,6 +8,7 @@
 #include "basicbtfs.h"
 #include "io.h"
 #include "init.h"
+#include "bitmap.h"
 
 static struct kmem_cache *basicbtfs_inode_cache;
 
@@ -153,7 +154,7 @@ int init_bitmap(struct super_block *sb, unsigned long *bitmap, uint32_t map_nr_b
 /* Fill the struct superblock from partition superblock */
 int basicbtfs_fill_super(struct super_block *sb, void *data, int silent)
 {
-    struct buffer_head *bh = NULL, *bh_name_table = NULL;;
+    struct buffer_head *bh = NULL, *bh_name_table = NULL;
     struct basicbtfs_sb_info *csb = NULL;
     struct basicbtfs_sb_info *sbi = NULL;
     struct inode *root_inode = NULL;
