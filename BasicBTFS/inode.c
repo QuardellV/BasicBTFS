@@ -194,6 +194,7 @@ static int basicbtfs_create(struct inode *dir, struct dentry *dentry, umode_t mo
             name_tree = (struct basicbtfs_name_tree *)bh_name_table->b_data;
             name_tree->free_bytes = BASICBTFS_EMPTY_NAME_TREE;
             name_tree->next_block = 0;
+            name_tree->nr_of_entries = 0;
             mark_buffer_dirty(bh_name_table);
             brelse(bh_name_table);
         }

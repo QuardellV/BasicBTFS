@@ -96,6 +96,8 @@ static inline int basicbtfs_nametree_insert_name(struct super_block *sb, uint32_
     uint32_t next_bno;
     char *block = NULL;
     char *filename = NULL;
+
+    printk("hello\n");
     
     bh = sb_bread(sb, name_bno);
 
@@ -110,11 +112,14 @@ static inline int basicbtfs_nametree_insert_name(struct super_block *sb, uint32_
         dir_entry->name_bno = name_bno;
         name_entry = (struct basicbtfs_name_entry *) block;
         name_entry->ino = dir_entry->ino;
-        name_entry->name_length = dentry->d_name.len;
-        name_tree->free_bytes -= dentry->d_name.len;
+        name_entry->name_length = dentry->d_name.len + 1;
+        name_tree->free_bytes -= (sizeof(struct basicbtfs_name_entry) + dentry->d_name.len + 1);
         name_entry += 1;
         filename = (char *) name_entry;
         strncpy(filename, (char *)dentry->d_name.name, dentry->d_name.len);
+        filename[dentry->d_name.len] = '\0';
+        printk("inserted filename: %s\n", filename);
+        name_tree->nr_of_entries++;
         mark_buffer_dirty(bh);
         brelse(bh);
         return 0;
@@ -134,14 +139,17 @@ static inline int basicbtfs_nametree_insert_name(struct super_block *sb, uint32_
             block = (char *) bh->b_data;
             block += (BASICBTFS_BLOCKSIZE - name_tree->free_bytes);
             dir_entry->block_index = BASICBTFS_BLOCKSIZE - name_tree->free_bytes;
-            dir_entry->name_bno = next_bno;
+            dir_entry->name_bno = name_bno;
             name_entry = (struct basicbtfs_name_entry *) block;
             name_entry->ino = dir_entry->ino;
-            name_entry->name_length = dentry->d_name.len;
-            name_tree->free_bytes -= dentry->d_name.len;
+            name_entry->name_length = dentry->d_name.len + 1;
+            name_tree->free_bytes -= (sizeof(struct basicbtfs_name_entry) + dentry->d_name.len + 1);
             name_entry += 1;
             filename = (char *) name_entry;
             strncpy(filename, (char *)dentry->d_name.name, dentry->d_name.len);
+            filename[dentry->d_name.len] = '\0';
+            printk("inserted filename: %s | %x\n", filename, filename[16]);
+            name_tree->nr_of_entries++;
             mark_buffer_dirty(bh);
             brelse(bh);
             return 0;
@@ -166,14 +174,17 @@ static inline int basicbtfs_nametree_insert_name(struct super_block *sb, uint32_
         block = (char *) bh->b_data;
         block += (BASICBTFS_BLOCKSIZE - name_tree->free_bytes);
         dir_entry->block_index = BASICBTFS_BLOCKSIZE - name_tree->free_bytes;
-        dir_entry->name_bno = next_bno;
+        dir_entry->name_bno = name_bno;
         name_entry = (struct basicbtfs_name_entry *) block;
         name_entry->ino = dir_entry->ino;
-        name_entry->name_length = dentry->d_name.len;
-        name_tree->free_bytes -= dentry->d_name.len;
+        name_entry->name_length = dentry->d_name.len + 1;
+        name_tree->free_bytes -= (sizeof(struct basicbtfs_name_entry) + dentry->d_name.len + 1);
         name_entry += 1;
         filename = (char *) name_entry;
         strncpy(filename, (char *)dentry->d_name.name, dentry->d_name.len);
+        filename[dentry->d_name.len] = '\0';
+        printk("inserted filename: %s | %x\n", filename, filename[16]);
+        name_tree->nr_of_entries++;
         mark_buffer_dirty(bh);
         brelse(bh);
         return 0;
@@ -237,8 +248,8 @@ static inline int basicbtfs_nametree_iterate_name_debug(struct super_block *sb, 
     for (i = 0; i < name_tree->nr_of_entries; i++) {
         block += sizeof(struct basicbtfs_name_entry);
         filename = kzalloc(sizeof(char) * cur_entry->name_length, GFP_KERNEL);
-        memcpy(filename, block, cur_entry->name_length);
-        printk("Current filename: %s\n", filename);
+        strncpy(filename, block, cur_entry->name_length);
+        printk("Current filename: %d | %s\n", cur_entry->name_length, filename);
         kfree(filename);
 
         block += cur_entry->name_length;
@@ -261,7 +272,7 @@ static inline int basicbtfs_nametree_iterate_name_debug(struct super_block *sb, 
             block += sizeof(struct basicbtfs_name_entry);
             filename = kzalloc(sizeof(char) * cur_entry->name_length, GFP_KERNEL);
             memcpy(filename, block, cur_entry->name_length);
-            printk("Current filename: %s\n", filename);
+            printk("Current filename: %d | %s\n", cur_entry->name_length, filename);
             kfree(filename);
 
             block += cur_entry->name_length;

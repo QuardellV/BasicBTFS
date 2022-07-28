@@ -17,6 +17,7 @@ static int basicbtfs_iterate(struct file *dir, struct dir_context *ctx) {
     uint32_t name_bno = 0;
     struct buffer_head *bh = NULL;
     struct basicbtfs_btree_node *node = NULL;
+    loff_t ctx_index = 0;
 
     if (!S_ISDIR(inode->i_mode)) {
         printk(KERN_ERR "This file is not a directory\n");
@@ -43,8 +44,9 @@ static int basicbtfs_iterate(struct file *dir, struct dir_context *ctx) {
     node = (struct basicbtfs_btree_node *) bh->b_data;
     name_bno = node->tree_name_bno;
     brelse(bh);
-
-    return basicbtfs_nametree_iterate_name(sb, name_bno, ctx, ctx->pos - 2);
+    basicbtfs_nametree_iterate_name_debug(sb, name_bno);
+    return basicbtfs_btree_traverse(sb, inode_info->i_bno, ctx, ctx->pos - 2, &ctx_index);
+    // return basicbtfs_nametree_iterate_name(sb, name_bno, ctx, ctx->pos - 2);
 }
 
 struct dentry *basicbtfs_search_entry(struct inode *dir, struct dentry *dentry) {
@@ -87,12 +89,12 @@ int basicbtfs_add_entry(struct inode *dir, struct inode *inode, struct dentry *d
         return -EIO;
     }
 
-    ret = basicbtfs_nametree_insert_name(dir->i_sb, name_bno, &new_entry, dentry);
-
     new_entry.ino = inode->i_ino;
     strncpy(new_entry.hash_name, dentry->d_name.name, BASICBTFS_NAME_LENGTH);
     my_get_rand_bytes(new_entry.salt, BASICBTFS_SALT_LENGTH);
     new_entry.hash = get_hash(dentry, new_entry.salt);
+
+    ret = basicbtfs_nametree_insert_name(dir->i_sb, name_bno, &new_entry, dentry);
 
     ret = basicbtfs_btree_node_insert(dir->i_sb, dir, inode_info->i_bno, &new_entry);
 
