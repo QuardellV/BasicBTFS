@@ -113,19 +113,25 @@ int basicbtfs_delete_entry(struct inode *dir, char *filename) {
     struct basicbtfs_btree_node *node = NULL;
     struct basicbtfs_entry new_entry;
 
-    ret = basicbtfs_btree_delete_entry(dir->i_sb, dir, inode_info->i_bno, filename, &new_entry);
-
     if (ret < 0) return ret;
 
     node = (struct basicbtfs_btree_node *) bh->b_data;
     name_bno = node->tree_name_bno;
     brelse(bh);
 
-    ret = basicbtfs_nametree_delete_name(dir->i_sb, new_entry.name_bno, new_entry.block_index);
-
     printk(KERN_INFO "START Debug tree traverse REMOVE: %s\n", filename);
-    basicbtfs_btree_traverse_debug(dir->i_sb, inode_info->i_bno);
+    basicbtfs_nametree_iterate_name_debug(dir->i_sb, name_bno);
+    // basicbtfs_btree_traverse_debug(dir->i_sb, inode_info->i_bno);
     printk(KERN_INFO "END Debu tree traverse REMOVE\n");
+
+    ret = basicbtfs_btree_delete_entry(dir->i_sb, dir, inode_info->i_bno, filename, &new_entry);
+
+    // ret = basicbtfs_nametree_delete_name(dir->i_sb, new_entry.name_bno, new_entry.block_index);
+
+    // printk(KERN_INFO "START Debug tree traverse REMOVE: %s\n", filename);
+    // basicbtfs_nametree_iterate_name_debug(dir->i_sb, name_bno);
+    // // basicbtfs_btree_traverse_debug(dir->i_sb, inode_info->i_bno);
+    // printk(KERN_INFO "END Debu tree traverse REMOVE\n");
 
     return ret;
 }

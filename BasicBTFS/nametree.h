@@ -198,7 +198,7 @@ static inline int basicbtfs_nametree_delete_name(struct super_block *sb, uint32_
     char *block = NULL;
     struct basicbtfs_name_entry *name_entry = NULL;
     struct basicbtfs_name_tree *name_tree = NULL;
-    uint32_t need_to_move = 0, need_to_clear;
+    uint32_t need_to_move = 0, need_to_clear = 0, old_free_bytes = 0;
 
     bh = sb_bread(sb, name_bno);
 
@@ -208,14 +208,16 @@ static inline int basicbtfs_nametree_delete_name(struct super_block *sb, uint32_
     block = (char *) bh->b_data;
     block += block_index;
     name_entry = (struct basicbtfs_name_entry *) block;
-    need_to_move = (BASICBTFS_BLOCKSIZE - name_tree->free_bytes) - block_index;
+    old_free_bytes = name_tree->free_bytes;
+    name_tree->free_bytes += (sizeof(struct basicbtfs_name_entry) + name_entry->name_length);
+    need_to_move = (BASICBTFS_BLOCKSIZE - old_free_bytes) - block_index;
 
     memset(block, 0, sizeof(struct basicbtfs_name_entry) + name_entry->name_length);
 
     memcpy(block, block + sizeof(struct basicbtfs_name_entry) + name_entry->name_length, need_to_move);
 
     block = (char *) bh->b_data;
-    need_to_clear = BASICBTFS_BLOCKSIZE - name_tree->free_bytes - (sizeof(struct basicbtfs_name_entry) + name_entry->name_length);
+    need_to_clear = BASICBTFS_BLOCKSIZE - old_free_bytes - (sizeof(struct basicbtfs_name_entry) + name_entry->name_length);
     memset(block + need_to_clear, 0, sizeof(struct basicbtfs_name_entry) + name_entry->name_length);
     name_tree->nr_of_entries--;
 

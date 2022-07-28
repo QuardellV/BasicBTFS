@@ -833,23 +833,7 @@ test_rm_empty() {
         ((test_passed++))
     fi
 
-    # test_create_file 'touch test/'$filename2'' $F_MOD "1" $filename2 "" "FILE EMPTY" $filename2 "1"
-    # ret=$?
-
-    # if [ "$ret" == 0 ]
-    # then
-    #     ((test_passed++))
-    # fi
-
-    # test_create_file 'touch test/'$filename3'' $F_MOD "1" $filename3 "" "FILE EMPTY" $filename3 "1"
-    # ret=$?
-
-    # if [ "$ret" == 0 ]
-    # then
-    #     ((test_passed++))
-    # fi
-
-    test_rmfile 'rm -rf test/'$filename'' $F_MOD "1" $filename "1"
+    test_create_file 'touch test/'$filename2'' $F_MOD "1" $filename2 "" "FILE EMPTY" $filename2 "1"
     ret=$?
 
     if [ "$ret" == 0 ]
@@ -857,13 +841,29 @@ test_rm_empty() {
         ((test_passed++))
     fi
 
-    test_rmfile 'rm -rf test/'$filename'' $F_MOD "1" $filename "0"
+    test_create_file 'touch test/'$filename3'' $F_MOD "1" $filename3 "" "FILE EMPTY" $filename3 "1"
     ret=$?
 
     if [ "$ret" == 0 ]
     then
         ((test_passed++))
     fi
+
+    # test_rmfile 'rm -rf test/'$filename'' $F_MOD "1" $filename "1"
+    # ret=$?
+
+    # if [ "$ret" == 0 ]
+    # then
+    #     ((test_passed++))
+    # fi
+
+    # test_rmfile 'rm -rf test/'$filename'' $F_MOD "1" $filename "0"
+    # ret=$?
+
+    # if [ "$ret" == 0 ]
+    # then
+    #     ((test_passed++))
+    # fi
 
     echo "REMOVE FILE EMPTY: "$test_passed"/"$test_count""
 }
@@ -2072,12 +2072,12 @@ test_create_root $D_MOD "2" "test" "root"
 # test_write_small
 # test_write_advanced
 
-test_rm_empty
+# test_rm_empty
 # test_rm_small
 # test_rm_large
 
 # test_rmdir_empty
-# test_rmdir_nonempty
+test_rmdir_nonempty
 
 # test_rm_in_subdir
 # test_rm_subdir
