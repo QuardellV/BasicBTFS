@@ -37,16 +37,16 @@ static int basicbtfs_iterate(struct file *dir, struct dir_context *ctx) {
     // basicbtfs_btree_traverse_debug(sb, inode_info->i_bno);
     // printk(KERN_INFO "END Debug btree iterate\n");
 
-    bh = sb_bread(sb, inode_info->i_bno);
+    // bh = sb_bread(sb, inode_info->i_bno);
     
-    if (!bh) return -EIO;
+    // if (!bh) return -EIO;
 
-    node = (struct basicbtfs_btree_node *) bh->b_data;
-    name_bno = node->tree_name_bno;
-    brelse(bh);
-    basicbtfs_nametree_iterate_name_debug(sb, name_bno);
-    // return basicbtfs_btree_traverse(sb, inode_info->i_bno, ctx, ctx->pos - 2, &ctx_index);
-    return basicbtfs_nametree_iterate_name(sb, name_bno, ctx, ctx->pos - 2);
+    // node = (struct basicbtfs_btree_node *) bh->b_data;
+    // name_bno = node->tree_name_bno;
+    // brelse(bh);
+    // basicbtfs_nametree_iterate_name_debug(sb, name_bno);
+    return basicbtfs_btree_traverse(sb, inode_info->i_bno, ctx, ctx->pos - 2, &ctx_index);
+    // return basicbtfs_nametree_iterate_name(sb, name_bno, ctx, ctx->pos - 2);
 }
 
 struct dentry *basicbtfs_search_entry(struct inode *dir, struct dentry *dentry) {
@@ -74,13 +74,14 @@ int basicbtfs_add_entry(struct inode *dir, struct inode *inode, struct dentry *d
     struct buffer_head *bh = NULL;
     struct basicbtfs_btree_node *node = NULL;
 
-     bh = sb_bread(dir->i_sb, inode_info->i_bno);
-    
+    bh = sb_bread(dir->i_sb, inode_info->i_bno);
     if (!bh) return -EIO;
 
     node = (struct basicbtfs_btree_node *) bh->b_data;
     name_bno = node->tree_name_bno;
     brelse(bh);
+
+    printk("name bno add: %d\n", name_bno);
 
     ret = basicbtfs_btree_node_lookup(dir->i_sb, inode_info->i_bno, (char *)dentry->d_name.name, 0);
 
@@ -98,9 +99,9 @@ int basicbtfs_add_entry(struct inode *dir, struct inode *inode, struct dentry *d
 
     ret = basicbtfs_btree_node_insert(dir->i_sb, dir, inode_info->i_bno, &new_entry);
 
-    // printk(KERN_INFO "START Debug btree traverse added: %s\n", dentry->d_name.name);
-    // basicbtfs_btree_traverse_debug(dir->i_sb, inode_info->i_bno);
-    // printk(KERN_INFO "END Debug btree traverse\n");
+    printk(KERN_INFO "START Debug btree traverse added: %s\n", dentry->d_name.name);
+    basicbtfs_nametree_iterate_name_debug(dir->i_sb, name_bno);
+    printk(KERN_INFO "END Debug btree traverse\n");
 
     return ret;
 }
@@ -108,21 +109,25 @@ int basicbtfs_add_entry(struct inode *dir, struct inode *inode, struct dentry *d
 int basicbtfs_delete_entry(struct inode *dir, char *filename) {
     struct basicbtfs_inode_info *inode_info = BASICBTFS_INODE(dir);
     int ret = 0;
-    uint32_t name_bno = 0;
+    uint32_t name_bno = 0, block_index;
     struct buffer_head *bh = NULL;
     struct basicbtfs_btree_node *node = NULL;
     struct basicbtfs_entry new_entry;
 
-    if (ret < 0) return ret;
+    bh = sb_bread(dir->i_sb, inode_info->i_bno);
+    if (!bh) return -EIO;
 
     node = (struct basicbtfs_btree_node *) bh->b_data;
     name_bno = node->tree_name_bno;
     brelse(bh);
 
-    printk(KERN_INFO "START Debug tree traverse REMOVE: %s\n", filename);
+    printk("name bno delete: %d\n", name_bno);
+
+
+    // printk(KERN_INFO "START Debug tree traverse REMOVE: %s\n", filename);
     basicbtfs_nametree_iterate_name_debug(dir->i_sb, name_bno);
-    // basicbtfs_btree_traverse_debug(dir->i_sb, inode_info->i_bno);
-    printk(KERN_INFO "END Debu tree traverse REMOVE\n");
+    // // // basicbtfs_btree_traverse_debug(dir->i_sb, inode_info->i_bno);
+    // printk(KERN_INFO "END Debu tree traverse REMOVE\n");
 
     ret = basicbtfs_btree_delete_entry(dir->i_sb, dir, inode_info->i_bno, filename, &new_entry);
 
