@@ -213,4 +213,64 @@ static inline int basicbtfs_nametree_delete_name(struct super_block *sb, uint32_
     return 0;
 }
 
+static inline int basicbtfs_nametree_iterate_name_debug(struct super_block *sb, uint32_t name_bno) {
+    struct buffer_head *bh = NULL;
+    struct basicbtfs_name_tree *name_tree = NULL;
+    struct basicbtfs_name_entry *cur_entry = NULL;
+    uint32_t next_bno;
+    char *block = NULL;
+    char *filename = NULL;
+    uint32_t current_index = 0;
+    uint32_t total_nr_entries = 0;
+    int i = 0;
+    
+    bh = sb_bread(sb, name_bno);
+
+    if (!bh) return -EIO;
+
+    name_tree = (struct basicbtfs_name_tree *) bh->b_data;
+    block = (char *) bh->b_data;
+    block += sizeof(struct basicbtfs_name_tree);
+    cur_entry = (struct basicbtfs_name_entry *) block;
+    total_nr_entries = name_tree->nr_of_entries;
+
+    for (i = 0; i < name_tree->nr_of_entries; i++) {
+        block += sizeof(struct basicbtfs_name_entry);
+        filename = kzalloc(sizeof(char) * cur_entry->name_length, GFP_KERNEL);
+        memcpy(filename, block, cur_entry->name_length);
+        printk("Current filename: %s\n", filename);
+        kfree(filename);
+
+        block += cur_entry->name_length;
+        cur_entry = (struct basicbtfs_name_entry *) block;
+        current_index++;
+    }
+
+    while (name_tree->next_block != 0) {
+        next_bno = name_tree->next_block;
+        brelse(bh);
+
+        bh = sb_bread(sb, next_bno);
+
+        if (!bh) return -EIO;
+
+        name_tree = (struct basicbtfs_name_tree *) bh->b_data;
+
+        total_nr_entries += name_tree->nr_of_entries;
+        for (i = 0; i < name_tree->nr_of_entries; i++) {
+            block += sizeof(struct basicbtfs_name_entry);
+            filename = kzalloc(sizeof(char) * cur_entry->name_length, GFP_KERNEL);
+            memcpy(filename, block, cur_entry->name_length);
+            printk("Current filename: %s\n", filename);
+            kfree(filename);
+
+            block += cur_entry->name_length;
+            cur_entry = (struct basicbtfs_name_entry *) block;
+            current_index++;
+        }
+    }
+
+    return 0;
+}
+
 #endif

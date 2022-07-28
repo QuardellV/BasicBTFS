@@ -59,7 +59,7 @@ static inline uint32_t basicbtfs_btree_node_lookup(struct super_block *sb, uint3
         index++;
         counter++;
     }
-    btr_node->entries[index].hash == entry->hash
+    // btr_node->entries[index].hash == entry->hash
     if (strncmp(btr_node->entries[index].hash_name, filename, BASICBTFS_NAME_LENGTH) == 0) {
         printk(KERN_INFO "Current counter: %d\n", counter);
         ret = btr_node->entries[index].ino;
