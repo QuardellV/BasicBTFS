@@ -44,7 +44,7 @@ static inline int basicbtfs_nametree_iterate_name(struct super_block *sb, uint32
                 }
                 kfree(filename);
             }
-
+            ctx->pos++;
             block += cur_entry->name_length;
             cur_entry = (struct basicbtfs_name_entry *) block;
             current_index++;
@@ -217,6 +217,7 @@ static inline int basicbtfs_nametree_delete_name(struct super_block *sb, uint32_
     block = (char *) bh->b_data;
     need_to_clear = BASICBTFS_BLOCKSIZE - name_tree->free_bytes - (sizeof(struct basicbtfs_name_entry) + name_entry->name_length);
     memset(block + need_to_clear, 0, sizeof(struct basicbtfs_name_entry) + name_entry->name_length);
+    name_tree->nr_of_entries--;
 
     mark_buffer_dirty(bh);
     brelse(bh);
@@ -271,7 +272,7 @@ static inline int basicbtfs_nametree_iterate_name_debug(struct super_block *sb, 
         for (i = 0; i < name_tree->nr_of_entries; i++) {
             block += sizeof(struct basicbtfs_name_entry);
             filename = kzalloc(sizeof(char) * cur_entry->name_length, GFP_KERNEL);
-            memcpy(filename, block, cur_entry->name_length);
+            strncpy(filename, block, cur_entry->name_length);
             printk("Current filename: %d | %s\n", cur_entry->name_length, filename);
             kfree(filename);
 

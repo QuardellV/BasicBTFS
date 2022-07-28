@@ -40,6 +40,7 @@ static inline void init_inode_mode(struct inode *vfs_inode, struct basicbtfs_ino
 }
 
 static inline void my_get_rand_bytes(char *buffer, int num) {
+    memset(buffer, 0, num);
     get_random_bytes(buffer, num);
 
     printk(KERN_INFO "random bytes: %s\n", buffer);
@@ -55,7 +56,7 @@ static inline unsigned long get_hash(struct dentry *dentry, const char *salt) {
 
     crc = crc32(crc, tmp_buffer, length);
 
-    printk(KERN_INFO "Current unsigned long: %hhx\n", crc);
+    printk(KERN_INFO "Current unsigned long: %d\n", crc);
 
     kfree(tmp_buffer);
 
