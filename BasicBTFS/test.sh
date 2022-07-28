@@ -2072,12 +2072,12 @@ test_create_root $D_MOD "2" "test" "root"
 # test_write_small
 # test_write_advanced
 
-# test_rm_empty
-# test_rm_small
-# test_rm_large
+test_rm_empty
+test_rm_small
+test_rm_large
 
 # test_rmdir_empty
-test_rmdir_nonempty
+# test_rmdir_nonempty
 
 # test_rm_in_subdir
 # test_rm_subdir

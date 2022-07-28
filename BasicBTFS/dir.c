@@ -124,17 +124,17 @@ int basicbtfs_delete_entry(struct inode *dir, char *filename) {
     printk("name bno delete: %d\n", name_bno);
 
 
-    // printk(KERN_INFO "START Debug tree traverse REMOVE: %s\n", filename);
+    printk(KERN_INFO "START Debug tree traverse BEFORE REMOVE: %s\n", filename);
     basicbtfs_nametree_iterate_name_debug(dir->i_sb, name_bno);
     // // // basicbtfs_btree_traverse_debug(dir->i_sb, inode_info->i_bno);
     // printk(KERN_INFO "END Debu tree traverse REMOVE\n");
 
     ret = basicbtfs_btree_delete_entry(dir->i_sb, dir, inode_info->i_bno, filename, &new_entry);
 
-    // ret = basicbtfs_nametree_delete_name(dir->i_sb, new_entry.name_bno, new_entry.block_index);
+    ret = basicbtfs_nametree_delete_name(dir->i_sb, new_entry.name_bno, new_entry.block_index);
 
-    // printk(KERN_INFO "START Debug tree traverse REMOVE: %s\n", filename);
-    // basicbtfs_nametree_iterate_name_debug(dir->i_sb, name_bno);
+    printk(KERN_INFO "START Debug tree traverse AFTER REMOVE: %s\n", filename);
+    basicbtfs_nametree_iterate_name_debug(dir->i_sb, name_bno);
     // // basicbtfs_btree_traverse_debug(dir->i_sb, inode_info->i_bno);
     // printk(KERN_INFO "END Debu tree traverse REMOVE\n");
 
