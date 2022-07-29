@@ -19,6 +19,8 @@
   - fix return types
   - fix issues where you can free A.S.A.P in all files
   - Fix issues with rename where you have a double fault
+  - Fix issue where we change move names in nametree. Make it lazy. Only defragment once we don't have sufficient space.
+  - cleanup nametree
 - Cleanup code and remove anything which is redundant
 - Check how we can checksums for data integrity and shorter names. this will be included for the btree
 - Check how we can decrease the length using the checksums/hash and improve the usage of filenames.
