@@ -817,7 +817,7 @@ test_rmdir_nonempty() {
 }
 
 test_rm_empty() {
-    local test_count=3
+    local test_count=5
     local test_passed=0
     local filename=$(tr -dc A-Za-z </dev/urandom | head -c 16)
     local filename2=$(tr -dc A-Za-z </dev/urandom | head -c 16)
@@ -849,21 +849,21 @@ test_rm_empty() {
         ((test_passed++))
     fi
 
-    # test_rmfile 'rm -rf test/'$filename'' $F_MOD "1" $filename "1"
-    # ret=$?
+    test_rmfile 'rm -rf test/'$filename'' $F_MOD "1" $filename "1"
+    ret=$?
 
-    # if [ "$ret" == 0 ]
-    # then
-    #     ((test_passed++))
-    # fi
+    if [ "$ret" == 0 ]
+    then
+        ((test_passed++))
+    fi
 
-    # test_rmfile 'rm -rf test/'$filename'' $F_MOD "1" $filename "0"
-    # ret=$?
+    test_rmfile 'rm -rf test/'$filename'' $F_MOD "1" $filename "0"
+    ret=$?
 
-    # if [ "$ret" == 0 ]
-    # then
-    #     ((test_passed++))
-    # fi
+    if [ "$ret" == 0 ]
+    then
+        ((test_passed++))
+    fi
 
     echo "REMOVE FILE EMPTY: "$test_passed"/"$test_count""
 }
@@ -2056,31 +2056,31 @@ init() {
 }
 
 test_create_root $D_MOD "2" "test" "root"
-# test_create_file_empty
-# test_create_file_nonempty
-# test_create_file_toolong
-# test_create_already_exist
+test_create_file_empty
+test_create_file_nonempty
+test_create_file_toolong
+test_create_already_exist
 
-# test_mkdir_depth_1
-# test_mkdir_depth_n
-# test_mkdir_toolong
+test_mkdir_depth_1
+test_mkdir_depth_n
+test_mkdir_toolong
 
-# test_create_file_subdir_1
-# test_create_file_subdir_n
-# test_create_nfiles_subdir_1
+test_create_file_subdir_1
+test_create_file_subdir_n
+test_create_nfiles_subdir_1
 
-# test_write_small
+test_write_small
 # test_write_advanced
 
 test_rm_empty
-# test_rm_small
-# test_rm_large
+test_rm_small
+test_rm_large
 
-# test_rmdir_empty
-# test_rmdir_nonempty
+test_rmdir_empty
+test_rmdir_nonempty
 
-# test_rm_in_subdir
-# test_rm_subdir
+test_rm_in_subdir
+test_rm_subdir
 
 # # test_move_file_simple
 # # test_move_file_noreplace
@@ -2091,7 +2091,7 @@ test_rm_empty
 # # test_move_dir_simple
 # # test_move_dir_in_dir
 
-# test_advanced_sequence_1
-# test_advanced_sequence_2
-# test_advanced_sequence_3
-# test_advanced_sequence_4
+test_advanced_sequence_1
+test_advanced_sequence_2
+test_advanced_sequence_3
+test_advanced_sequence_4
