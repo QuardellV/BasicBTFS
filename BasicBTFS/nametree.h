@@ -114,9 +114,9 @@ static inline int basicbtfs_nametree_insert_name(struct super_block *sb, uint32_
 
     name_tree = (struct basicbtfs_name_tree *) bh->b_data;
 
-    if (name_tree->free_bytes >= dentry->d_name.len) {
+    if ((BASICBTFS_BLOCKSIZE - name_tree->start_unused_area) >= dentry->d_name.len) {
         block = (char *) bh->b_data;
-        block += (BASICBTFS_BLOCKSIZE - name_tree->free_bytes);
+        block += name_tree->start_unused_area;
         dir_entry->block_index = name_tree->start_unused_area;
         dir_entry->name_bno = name_bno;
         name_entry = (struct basicbtfs_name_entry *) block;
@@ -145,9 +145,9 @@ static inline int basicbtfs_nametree_insert_name(struct super_block *sb, uint32_
 
         name_tree = (struct basicbtfs_name_tree *) bh->b_data;
 
-        if (name_tree->free_bytes >= dentry->d_name.len) {
+        if ((BASICBTFS_BLOCKSIZE - name_tree->start_unused_area) >= dentry->d_name.len) {
             block = (char *) bh->b_data;
-            block += (BASICBTFS_BLOCKSIZE - name_tree->free_bytes);
+            block += name_tree->start_unused_area;
             dir_entry->block_index = name_tree->start_unused_area;
             dir_entry->name_bno = name_bno;
             name_entry = (struct basicbtfs_name_entry *) block;
@@ -181,9 +181,9 @@ static inline int basicbtfs_nametree_insert_name(struct super_block *sb, uint32_
     name_tree->free_bytes = BASICBTFS_EMPTY_NAME_TREE;
     name_tree->next_block = 0;
 
-    if (name_tree->free_bytes >= dentry->d_name.len) {
+    if ((BASICBTFS_BLOCKSIZE - name_tree->start_unused_area) >= dentry->d_name.len) {
         block = (char *) bh->b_data;
-        block += (BASICBTFS_BLOCKSIZE - name_tree->free_bytes);
+        block += name_tree->start_unused_area;
         dir_entry->block_index = name_tree->start_unused_area;
         dir_entry->name_bno = name_bno;
         name_entry = (struct basicbtfs_name_entry *) block;
@@ -265,6 +265,8 @@ static inline int basicbtfs_nametree_iterate_name_debug(struct super_block *sb, 
             strncpy(filename, block, cur_entry->name_length);
             printk("Current filename: %d | %s\n", cur_entry->name_length, filename);
             kfree(filename);
+        } else {
+            i--;
         }
 
         block += cur_entry->name_length;
@@ -290,6 +292,8 @@ static inline int basicbtfs_nametree_iterate_name_debug(struct super_block *sb, 
                 strncpy(filename, block, cur_entry->name_length);
                 printk("Current filename: %d | %s\n", cur_entry->name_length, filename);
                 kfree(filename);
+            } else {
+                i--;
             }
 
             block += cur_entry->name_length;
