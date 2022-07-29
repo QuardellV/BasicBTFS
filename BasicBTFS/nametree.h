@@ -20,8 +20,6 @@ static inline int basicbtfs_nametree_iterate_name(struct super_block *sb, uint32
     uint32_t current_index = 0;
     uint32_t total_nr_entries = 0;
     int i = 0;
-
-    printk("start iteration: %d\n", ctx->pos);
     
     bh = sb_bread(sb, name_bno);
 
@@ -32,7 +30,6 @@ static inline int basicbtfs_nametree_iterate_name(struct super_block *sb, uint32
     block += sizeof(struct basicbtfs_name_tree);
     cur_entry = (struct basicbtfs_name_entry *) block;
     total_nr_entries = name_tree->nr_of_entries;
-    printk("total nr entries: %d\n", total_nr_entries);
 
     if (start_pos < total_nr_entries) {
         for (i = 0; i < name_tree->nr_of_entries; i++) {
@@ -165,7 +162,7 @@ static inline int basicbtfs_nametree_insert_name(struct super_block *sb, uint32_
             filename = (char *) name_entry;
             strncpy(filename, (char *)dentry->d_name.name, dentry->d_name.len);
             filename[dentry->d_name.len] = '\0';
-            printk("inserted filename: %s\n", filename);
+            printk("inserted filename: %s | %d | %d\n", filename, dir_entry->name_bno, dir_entry->block_index);
             name_tree->nr_of_entries++;
             mark_buffer_dirty(bh);
             brelse(bh);
@@ -203,7 +200,7 @@ static inline int basicbtfs_nametree_insert_name(struct super_block *sb, uint32_
         filename = (char *) name_entry;
         strncpy(filename, (char *)dentry->d_name.name, dentry->d_name.len);
         filename[dentry->d_name.len] = '\0';
-        printk("inserted filename: %s\n", filename);
+        printk("inserted filename: %s | %d | %d\n", filename, dir_entry->name_bno, dir_entry->block_index);
         name_tree->nr_of_entries++;
         mark_buffer_dirty(bh);
         brelse(bh);
@@ -218,7 +215,7 @@ static inline int basicbtfs_nametree_delete_name(struct super_block *sb, uint32_
     char *block = NULL;
     struct basicbtfs_name_entry *name_entry = NULL;
     struct basicbtfs_name_tree *name_tree = NULL;
-    uint32_t need_to_move = 0, need_to_clear = 0, old_free_bytes = 0;
+    uint32_t need_to_clear = 0, old_free_bytes = 0;
 
     bh = sb_bread(sb, name_bno);
 
@@ -230,7 +227,6 @@ static inline int basicbtfs_nametree_delete_name(struct super_block *sb, uint32_
     name_entry = (struct basicbtfs_name_entry *) block;
     old_free_bytes = name_tree->free_bytes;
     name_tree->free_bytes += (sizeof(struct basicbtfs_name_entry) + name_entry->name_length);
-    need_to_move = (BASICBTFS_BLOCKSIZE - old_free_bytes) - block_index;
 
     name_entry->ino = 0;
     block += sizeof(struct basicbtfs_name_entry);

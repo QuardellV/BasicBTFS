@@ -756,8 +756,6 @@ static inline int basicbtfs_btree_node_delete(struct super_block *sb, uint32_t b
     bool flag = false;
     struct basicbtfs_entry buffer;
 
-    printk("start node delete\n");
-
     bh = sb_bread(sb, bno);
 
     if (!bh) return -EIO;
@@ -765,16 +763,19 @@ static inline int basicbtfs_btree_node_delete(struct super_block *sb, uint32_t b
     node = (struct basicbtfs_btree_node *) bh->b_data;
     // node->entries[index].hash == new_entry->hash
     if (index < node->nr_of_keys && strncmp(node->entries[index].hash_name, filename, BASICBTFS_NAME_LENGTH) == 0) {
-        memcpy(&buffer, &node->entries[index], sizeof(struct basicbtfs_entry));
+        memcpy(new_entry, &node->entries[index], sizeof(struct basicbtfs_entry));
         if (node->leaf) {
+            printk("leaf\n");
             ret = basicbtfs_btree_node_remove_from_leaf(sb, bno, index);
         } else {
+            printk("no leaf\n");
             ret = basicbtfs_btree_node_remove_from_nonleaf(sb, bno, index, new_entry);
         }
     } else {
         if (node->leaf) {
             printk(KERN_INFO "File %s doesn't exist with index %d\n", filename, index);
         }
+        printk("not correct level\n");
 
         bh2 = sb_bread(sb, node->children[index]);
 
@@ -801,7 +802,7 @@ static inline int basicbtfs_btree_node_delete(struct super_block *sb, uint32_t b
         brelse(bh2);
     }
     brelse(bh);
-    memcpy(new_entry, &buffer, sizeof(struct basicbtfs_entry));
+    printk("check name bno and block index end: %d | %d\n", new_entry->name_bno, new_entry->block_index);
     return 0;
 }
 
@@ -816,7 +817,9 @@ static inline int basicbtfs_btree_delete_entry(struct super_block *sb, struct in
 
     node = (struct basicbtfs_btree_node *) bh->b_data;
 
+    printk("start node delete\n");
     ret = basicbtfs_btree_node_delete(sb, root_bno, filename, new_entry);
+    printk("end node delete\n");
 
     if (ret == 1) {
         brelse(bh);
