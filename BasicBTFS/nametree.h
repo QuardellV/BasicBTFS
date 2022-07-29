@@ -88,8 +88,12 @@ static inline int basicbtfs_nametree_iterate_name(struct super_block *sb, uint32
     return 0;
 }
 
-// static inline int basicbtfs_nametree_insert_entry_in_list(struct buffer_head *bh) {
-//     block = (char *) bh->b_data;
+// static inline int basicbtfs_nametree_insert_entry_in_list(struct basicbtfs_name_tree *name_tree, uint32_t name_bno, struct dentry *dentry) {
+//     char *block = NULL, *filename = NULL;
+//     struct basicbtfs_entry *dir_entry = NULL;
+//     struct basicbtfs_name_entry *name_entry = NULL;
+
+//     block = (char *) name_tree;
 //     block += name_tree->start_unused_area;
 //     dir_entry->block_index = name_tree->start_unused_area;
 //     dir_entry->name_bno = name_bno;
@@ -104,8 +108,6 @@ static inline int basicbtfs_nametree_iterate_name(struct super_block *sb, uint32
 //     filename[dentry->d_name.len] = '\0';
 //     printk("inserted filename: %s | %d | %d\n", filename, dir_entry->name_bno, dir_entry->block_index);
 //     name_tree->nr_of_entries++;
-//     mark_buffer_dirty(bh);
-//     brelse(bh);
 //     return 0;
 // }
 
@@ -116,6 +118,7 @@ static inline int basicbtfs_nametree_insert_name(struct super_block *sb, uint32_
     uint32_t next_bno;
     char *block = NULL;
     char *filename = NULL;
+    int ret = 0;
 
     printk("hello\n");
     
@@ -126,7 +129,7 @@ static inline int basicbtfs_nametree_insert_name(struct super_block *sb, uint32_
     name_tree = (struct basicbtfs_name_tree *) bh->b_data;
 
     if ((BASICBTFS_BLOCKSIZE - name_tree->start_unused_area) >= dentry->d_name.len) {
-        block = (char *) bh->b_data;
+        block = (char *) name_tree;
         block += name_tree->start_unused_area;
         dir_entry->block_index = name_tree->start_unused_area;
         dir_entry->name_bno = name_bno;
@@ -324,7 +327,6 @@ static inline int basicbtfs_nametree_iterate_name_debug(struct super_block *sb, 
             current_index++;
         }
     }
-    
 
     return 0;
 }

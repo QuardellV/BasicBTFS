@@ -22,13 +22,16 @@
   - Fix issue where we change move names in nametree. Make it lazy. Only defragment once we don't have sufficient space.
   - cleanup nametree
 - Cleanup code and remove anything which is redundant
-- Check how we can checksums for data integrity and shorter names. this will be included for the btree
-- Check how we can decrease the length using the checksums/hash and improve the usage of filenames.
-  Currently we use a default length for each filename, while chances are high that a length of 255 is not necessary. Almost done. W.I.P. This week
+- use pseudo salt for hash: collision possibility is equal 1 / 2^32
 - Check for possibility to use btree for everything instead of using bitmap. See: Btrfs paper: https://dominoweb.draco.res.ibm.com/reports/rj10501.pdf
   - Check where it actually would make sense. Definitely not for the bitmap for the inode/blocks // Next week
 - Check how the filesystem can be defragmented also including garbage collection // Next week
 - check how we can use cache to reduce the I/O costs. LRU which is around 10% of the total memory // This week
+  - Makes sense to use it for things with much space and/or a lot of I/O interactions
+  - files
+  - frequent entries
+  - It is possible to make a simple btree starting from the root of the last 100 entries
+  - It is posssible to make a simple linked list of the last 100 files
 - Check how the filesystem can truncate/shrink during write_begin/end // Next week
 - Check how a snapshot can be made using reflink // Next week
 - free space management using buddy slab allocator/ pre-allocation // Next week
@@ -43,4 +46,5 @@
 
 # TODO List Thesis
 - Read more about log-structured filesystems: including lectures of storage systems
+- make kgdb ready to use: https://www.youtube.com/watch?v=67cxIXLCfUk
 - Report about all of this in the paper
