@@ -49,14 +49,13 @@ static inline void my_get_rand_bytes(char *buffer, int num) {
     }
 }
 
-static inline unsigned long get_hash(struct dentry *dentry, const char *salt) {
-    const int length = dentry->d_name.len + strlen(salt) + 2;
+static inline unsigned long get_hash(struct dentry *dentry) {
+    const int length = dentry->d_name.len + 1;
     char *tmp_buffer = kzalloc(sizeof(char) * length, GFP_KERNEL);
     u32 crc = 0;
 
     memcpy(tmp_buffer, dentry->d_name.name, dentry->d_name.len);
     tmp_buffer[dentry->d_name.len] = '\0';
-    memcpy(tmp_buffer + dentry->d_name.len + 2, salt, strlen(salt));
 
     crc = crc32(crc, tmp_buffer, length);
 

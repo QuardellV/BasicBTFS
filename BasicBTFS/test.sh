@@ -2067,12 +2067,12 @@ test_create_root $D_MOD "2" "test" "root"
 
 # test_create_file_subdir_1
 # test_create_file_subdir_n
-test_create_nfiles_subdir_1
+# test_create_nfiles_subdir_1
 
 # test_write_small
 # test_write_advanced
 
-# test_rm_empty
+test_rm_empty
 # test_rm_small
 # test_rm_large
 
