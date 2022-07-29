@@ -30,8 +30,8 @@
   - Makes sense to use it for things with much space and/or a lot of I/O interactions
   - files
   - frequent entries
-  - It is possible to make a simple btree starting from the root of the last 100 entries
-  - It is posssible to make a simple linked list of the last 100 files
+  - It is possible to make a simple btree starting from the root of the last 100 directories. in this way we can search and iterate last hundred directories
+  - It is posssible to make a simple linked list of the last 100 files/ or basically allocate memory for n amount of bytes. same applies for the directories
 - Check how the filesystem can truncate/shrink during write_begin/end // Next week
 - Check how a snapshot can be made using reflink // Next week
 - free space management using buddy slab allocator/ pre-allocation // Next week
