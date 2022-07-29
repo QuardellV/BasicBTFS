@@ -754,7 +754,6 @@ static inline int basicbtfs_btree_node_delete(struct super_block *sb, uint32_t b
     int index = basicbtfs_btree_node_find_key(sb, bno, filename);
     int ret = 0;
     bool flag = false;
-    struct basicbtfs_entry buffer;
 
     bh = sb_bread(sb, bno);
 
@@ -868,51 +867,6 @@ static inline int basicbtfs_btree_clear(struct super_block *sb, uint32_t bno) {
     return 0;
 }
 
-static inline int basicbtfs_btree_traverse(struct super_block *sb, uint32_t bno, struct dir_context *ctx, loff_t start_ctx, loff_t *ctx_index) {
-    struct buffer_head *bh = NULL;
-    struct basicbtfs_btree_node *node = NULL;
-    int index = 0, ret = 0;
-
-    bh = sb_bread(sb, bno);
-
-    if (!bh) return -EIO;
-
-    node = (struct basicbtfs_btree_node *) bh->b_data;
-
-    for (index = 0; index < node->nr_of_keys; index++) {
-        if (!node->leaf) {
-            ret = basicbtfs_btree_traverse(sb, node->children[index], ctx, start_ctx, ctx_index);
-
-            if (ret != 0) {
-                brelse(bh);
-                return ret;
-            }
-        }
-        if (*ctx_index < start_ctx) {
-            *ctx_index += 1;
-            continue;
-        }
-
-        // printk(KERN_INFO "file: %s | ino: %d\n", node->entries[index].hash_name, node->entries[index].ino);
-
-        if (!dir_emit(ctx, node->entries[index].hash_name, BASICBTFS_NAME_LENGTH, node->entries[index].ino, DT_UNKNOWN)) {
-            printk(KERN_INFO "No files available anymore\n");
-            break;
-        }
-
-
-        ctx->pos++;
-        *ctx_index = *ctx_index + 1;
-    }
-
-    if (!node->leaf) {
-        ret = basicbtfs_btree_traverse(sb, node->children[index], ctx, start_ctx, ctx_index);
-    }
-
-    brelse(bh);
-    return 0;
-}
-
 static inline int basicbtfs_btree_traverse_debug(struct super_block *sb, uint32_t bno) {
     struct buffer_head *bh = NULL;
     struct basicbtfs_btree_node *node = NULL;
@@ -933,7 +887,7 @@ static inline int basicbtfs_btree_traverse_debug(struct super_block *sb, uint32_
                 return ret;
             }
         }
-        printk(KERN_INFO "file: %s | ino: %d\n", node->entries[index].hash_name, node->entries[index].ino);
+        printk(KERN_INFO "file: %d | ino: %d\n", node->entries[index].hash, node->entries[index].ino);
     }
 
     if (!node->leaf) {

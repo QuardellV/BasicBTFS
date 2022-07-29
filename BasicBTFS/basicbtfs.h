@@ -67,8 +67,8 @@ struct basicbtfs_entry {
     uint32_t hash;
     uint32_t name_bno;
     uint32_t block_index;
-    char salt[BASICBTFS_HASH_LENGTH];
-    char hash_name[BASICBTFS_NAME_LENGTH];
+    char salt[BASICBTFS_SALT_LENGTH];
+    // char hash_name[BASICBTFS_NAME_LENGTH];
 };
 
 struct basicbtfs_name_entry {

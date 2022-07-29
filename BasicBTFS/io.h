@@ -86,30 +86,6 @@ static inline int flush_bitmap(struct super_block *sb, unsigned long *bitmap, ui
     return 0;
 }
 
-static inline int emit_dots(struct super_block *sb, struct basicbtfs_alloc_table *a_table, struct dir_context *ctx) {
-    struct buffer_head *bh_block = NULL;
-    struct basicbtfs_entry *entry = NULL;
-    int i = 0;
-
-    if (ctx->pos > 0) return 0;
-    bh_block = sb_bread(sb, a_table->table[0]);
-    if (!bh_block) return -EIO;
-
-    entry = (struct basicbtfs_entry *) bh_block->b_data;
-
-    for (i = 0; i < 2; i++) {
-        if (!dir_emit(ctx, entry->hash_name, BASICBTFS_NAME_LENGTH, entry->ino, DT_DIR)){
-            break;
-        }
-        entry++;
-        ctx->pos++;
-    }
-
-    brelse(bh_block);
-
-    return 0;
-}
-
 static inline void move_files(struct basicbtfs_entry *fblock_prev, struct basicbtfs_entry *fblock_cur) {
     memmove(fblock_prev + BASICBTFS_ENTRIES_PER_BLOCK - 1, fblock_cur, sizeof(struct basicbtfs_entry));
     memmove(fblock_cur, fblock_cur + 1, (BASICBTFS_ENTRIES_PER_BLOCK - 1) * sizeof(struct basicbtfs_entry));

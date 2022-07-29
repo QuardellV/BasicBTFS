@@ -40,19 +40,23 @@ static inline void init_inode_mode(struct inode *vfs_inode, struct basicbtfs_ino
 }
 
 static inline void my_get_rand_bytes(char *buffer, int num) {
+    int i = 0;
     memset(buffer, 0, num);
     get_random_bytes(buffer, num);
 
-    printk(KERN_INFO "random bytes: %s\n", buffer);
+    for (i = 0; i < num; i++) {
+        printk(KERN_INFO "random byte %d: %x | %c\n", i, buffer[i], buffer[i]);
+    }
 }
 
 static inline unsigned long get_hash(struct dentry *dentry, const char *salt) {
-    const int length = BASICBTFS_NAME_LENGTH + strlen(salt);
+    const int length = dentry->d_name.len + strlen(salt) + 2;
     char *tmp_buffer = kzalloc(sizeof(char) * length, GFP_KERNEL);
     u32 crc = 0;
 
-    memcpy(tmp_buffer, dentry->d_name.name, BASICBTFS_NAME_LENGTH);
-    memcpy(tmp_buffer + BASICBTFS_NAME_LENGTH, salt, strlen(salt));
+    memcpy(tmp_buffer, dentry->d_name.name, dentry->d_name.len);
+    tmp_buffer[dentry->d_name.len] = '\0';
+    memcpy(tmp_buffer + dentry->d_name.len + 2, salt, strlen(salt));
 
     crc = crc32(crc, tmp_buffer, length);
 

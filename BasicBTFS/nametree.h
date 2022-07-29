@@ -215,7 +215,7 @@ static inline int basicbtfs_nametree_delete_name(struct super_block *sb, uint32_
     char *block = NULL;
     struct basicbtfs_name_entry *name_entry = NULL;
     struct basicbtfs_name_tree *name_tree = NULL;
-    uint32_t need_to_clear = 0, old_free_bytes = 0;
+    uint32_t old_free_bytes = 0;
 
     bh = sb_bread(sb, name_bno);
 
