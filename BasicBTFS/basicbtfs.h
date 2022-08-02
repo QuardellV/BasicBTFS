@@ -109,6 +109,35 @@ struct basicbtfs_btree_node {
     bool leaf;
 };
 
+struct basicbtfs_file_block {
+    char block[BASICBTFS_BLOCKSIZE];
+};
+
+struct basicbtfs_btree_dir_cache_list {
+    struct list_head list;
+    uint32_t hash;
+    struct basicbtfs_dir_cache *btree_dir_cache;
+};
+
+struct basicbtfs_btree_dir_cache {
+    struct list_head list;
+    uint32_t bno;
+    struct basicbtfs_btree_node *node;
+};
+
+struct basicbtfs_file_cache_list {
+    struct list_head list;
+    uint32_t hash;
+    struct basicbtfs_file_cache file_cache;
+};
+
+struct basicbtfs_file_cache {
+    struct list_head list;
+    uint32_t cluster_index;
+    uint32_t block_index;
+    struct basicbtfs_file_block *data;
+};
+
 /* Cache functions for basic_inode_info*/
 int basicbtfs_init_inode_cache(void);
 void basicbtfs_destroy_inode_cache(void);

@@ -11,6 +11,22 @@
 #include "bitmap.h"
 
 static struct kmem_cache *basicbtfs_inode_cache;
+static struct kmem_cache *basicbtfs_btree_dir_cache;
+static struct kmem_cache *basicbtfs_file_cache;
+
+int basicbtfs_init_btree_dir_cache(void) {
+    basicbtfs_btree_dir_cache = kmem_cache_create("basicbtfs_btree_dir_cache", sizeof(struct basicbtfs_btree_node), 0, 0, NULL);
+
+    if (!basicbtfs_btree_dir_cache) return -ENOMEM;
+    return 0;
+}
+
+int basicbtfs_init_file_cache(void) {
+    basicbtfs_btree_dir_cache = kmem_cache_create("basicbtfs_file_cache", sizeof(struct basicbtfs_file_block), 0, 0, NULL);
+
+    if (!basicbtfs_btree_dir_cache) return -ENOMEM;
+    return 0;
+}
 
 int basicbtfs_init_inode_cache(void) {
     basicbtfs_inode_cache = kmem_cache_create("basicbtfs_cache", sizeof(struct basicbtfs_inode_info), 0, 0, NULL);
@@ -21,6 +37,14 @@ int basicbtfs_init_inode_cache(void) {
 
 void basicbtfs_destroy_inode_cache(void) {
     kmem_cache_destroy(basicbtfs_inode_cache);
+}
+
+void basicbtfs_destroy_btree_dir_cache(void) {
+    kmem_cache_destroy(basicbtfs_btree_dir_cache);
+}
+
+void basicbtfs_destroy_file_cache(void) {
+    kmem_cache_destroy(basicbtfs_file_cache);
 }
 
 static void basicbtfs_put_super(struct super_block *sb) {
@@ -38,6 +62,20 @@ static struct inode *basicbtfs_alloc_inode(struct super_block *sb) {
 
     inode_init_once(&ci->vfs_inode);
     return &ci->vfs_inode;
+}
+
+static struct basicbtfs_btree_node *basicbtfs_alloc_btree_node(struct super_block *sb) {
+    struct basicbtfs_btree_node *cache_node = kmem_cache_alloc(basicbtfs_btree_dir_cache, GFP_KERNEL);
+    if (!cache_node) return NULL;
+
+    return cache_node;
+}
+
+static struct basicbtfs_file_block *basicbtfs_alloc_file(struct super_block *sb) {
+    struct basicbtfs_file_block *cache_file_block = kmem_cache_alloc(basicbtfs_file_cache, GFP_KERNEL);
+    if (!cache_file_block) return NULL;
+
+    return cache_file_block;
 }
 
 static int basicbtfs_write_inode(struct inode *inode, struct writeback_control *wbc) {
@@ -70,6 +108,14 @@ static int basicbtfs_write_inode(struct inode *inode, struct writeback_control *
 static void basicbtfs_destroy_inode(struct inode *inode) {
     struct basicbtfs_inode_info *ci = BASICBTFS_INODE(inode);
     kmem_cache_free(basicbtfs_inode_cache, ci);
+}
+
+static void basicbtfs_destroy_btree_node(struct basicbtfs_btree_node *cache_node) {
+    kmem_cache_free(basicbtfs_btree_dir_cache, cache_node);
+}
+
+static void basicbtfs_destroy_file_block(struct basicbtfs_file_block *cache_file_block) {
+    kmem_cache_free(basicbtfs_file_cache, cache_file_block);
 }
 
 static int basicbtfs_sync_fs(struct super_block *sb, int wait)
