@@ -19,6 +19,8 @@
 
 #define BASICBTFS_MAX_BLOCKS_PER_CLUSTER 4
 
+#define BASICBTFS_MAX_CACHE_DIR_ENTRIES 100
+
 
 
 struct basicbtfs_inode {
@@ -116,10 +118,10 @@ struct basicbtfs_file_block {
 struct basicbtfs_btree_dir_cache_list {
     struct list_head list;
     uint32_t hash;
-    struct basicbtfs_dir_cache *btree_dir_cache;
+    struct basicbtfs_btree_node_hdr_cache *btree_dir_cache;
 };
 
-struct basicbtfs_btree_dir_cache {
+struct basicbtfs_btree_node_hdr_cache {
     struct list_head list;
     uint32_t bno;
     struct basicbtfs_btree_node *node;
@@ -142,6 +144,11 @@ struct basicbtfs_file_cache {
 int basicbtfs_init_inode_cache(void);
 void basicbtfs_destroy_inode_cache(void);
 
+struct basicbtfs_btree_dir_cache_list *basicbtfs_alloc_btree_dir(struct super_block *sb);
+struct basicbtfs_btree_node *basicbtfs_alloc_btree_node_data(struct super_block *sb);
+struct basicbtfs_btree_node_hdr_cache *basicbtfs_alloc_btree_node_hdr(struct super_block *sb);
+
+
 /* Superblock functions*/
 int basicbtfs_fill_super(struct super_block *sb, void *data, int silent);
 
@@ -161,6 +168,8 @@ extern const struct file_operations basicbtfs_file_ops;
 extern const struct file_operations basicbtfs_dir_ops;
 extern const struct address_space_operations basicbtfs_aops;
 extern const struct inode_operations basicbtfs_inode_ops;
+extern struct list_head dir_cache_list;
+
 
 /* Getter functions for disk info*/
 #define BASICBTFS_SB(sb) (sb->s_fs_info)
