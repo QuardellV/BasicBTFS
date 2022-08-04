@@ -30,13 +30,13 @@
   - Makes sense to use it for things with much space and/or a lot of I/O interactions
   - files
   - frequent entries
-  - make it circular linked lists. Make separate cache for each btree dir entry, and its info itself.
+  - make it circular linked lists. Make separate cache for each btree dir entry, and its info itself. most likely need to implement btree_node in cache as well
   - Make separate for each file entry, and its info itself
   - It is possible to make a simple btree starting from the root of the last 100 directories. in this way we can search and iterate last hundred directories
   - It is posssible to make a simple linked list of the last 100 files/ or basically allocate memory for n amount of bytes. same applies for the directories
 - Check how the filesystem can truncate/shrink during write_begin/end // Next week
 - Check how a snapshot can be made using reflink // Next week
-- free space management using buddy slab allocator/ pre-allocation // Next week
+<!-- - free space management using buddy slab allocator/ pre-allocation? // Next week -->
 
 # TODO List Measurement/Robustness
 - Improve mkfs in c, including flags other options // In two weeks
