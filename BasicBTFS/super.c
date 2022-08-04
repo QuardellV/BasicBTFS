@@ -88,28 +88,28 @@ static struct inode *basicbtfs_alloc_inode(struct super_block *sb) {
     return &ci->vfs_inode;
 }
 
-static struct basicbtfs_btree_node_hdr_cache *basicbtfs_alloc_btree_node_hdr(struct super_block *sb) {
+struct basicbtfs_btree_node_hdr_cache *basicbtfs_alloc_btree_node_hdr(struct super_block *sb) {
     struct basicbtfs_btree_node_hdr_cache *cache_node = kmem_cache_alloc(basicbtfs_btree_node_hdr_cache, GFP_KERNEL);
     if (!cache_node) return NULL;
 
     return cache_node;
 }
 
-static struct basicbtfs_btree_node *basicbtfs_alloc_btree_node_data(struct super_block *sb) {
+struct basicbtfs_btree_node *basicbtfs_alloc_btree_node_data(struct super_block *sb) {
     struct basicbtfs_btree_node *cache_node = kmem_cache_alloc(basicbtfs_btree_node_data_cache, GFP_KERNEL);
     if (!cache_node) return NULL;
 
     return cache_node;
 }
 
-static struct basicbtfs_btree_dir_cache_list *basicbtfs_alloc_btree_dir(struct super_block *sb) {
+struct basicbtfs_btree_dir_cache_list *basicbtfs_alloc_btree_dir(struct super_block *sb) {
     struct basicbtfs_btree_dir_cache_list *cache_dir = kmem_cache_alloc(basicbtfs_btree_dir_cache, GFP_KERNEL);
     if (!cache_dir) return NULL;
 
     return cache_dir;
 }
 
-static struct basicbtfs_file_block *basicbtfs_alloc_file(struct super_block *sb) {
+struct basicbtfs_file_block *basicbtfs_alloc_file(struct super_block *sb) {
     struct basicbtfs_file_block *cache_file_block = kmem_cache_alloc(basicbtfs_file_cache, GFP_KERNEL);
     if (!cache_file_block) return NULL;
 
@@ -148,19 +148,19 @@ static void basicbtfs_destroy_inode(struct inode *inode) {
     kmem_cache_free(basicbtfs_inode_cache, ci);
 }
 
-static void basicbtfs_destroy_btree_node_hdr(struct basicbtfs_btree_node_hdr_cache *cache_node) {
+void basicbtfs_destroy_btree_node_hdr(struct basicbtfs_btree_node_hdr_cache *cache_node) {
     kmem_cache_free(basicbtfs_btree_node_hdr_cache, cache_node);
 }
 
-static void basicbtfs_destroy_btree_node_hdr(struct basicbtfs_btree_node *cache_node) {
+void basicbtfs_destroy_btree_node_data(struct basicbtfs_btree_node *cache_node) {
     kmem_cache_free(basicbtfs_btree_node_data_cache, cache_node);
 }
 
-static void basicbtfs_destroy_btree_dir(struct basicbtfs_btree_dir_cache_list *cache_dir) {
+void basicbtfs_destroy_btree_dir(struct basicbtfs_btree_dir_cache_list *cache_dir) {
     kmem_cache_free(basicbtfs_btree_dir_cache, cache_dir);
 }
 
-static void basicbtfs_destroy_file_block(struct basicbtfs_file_block *cache_file_block) {
+void basicbtfs_destroy_file_block(struct basicbtfs_file_block *cache_file_block) {
     kmem_cache_free(basicbtfs_file_cache, cache_file_block);
 }
 

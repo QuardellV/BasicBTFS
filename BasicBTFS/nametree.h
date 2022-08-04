@@ -118,7 +118,6 @@ static inline int basicbtfs_nametree_insert_name(struct super_block *sb, uint32_
     uint32_t next_bno;
     char *block = NULL;
     char *filename = NULL;
-    int ret = 0;
 
     printk("hello\n");
     
@@ -226,11 +225,9 @@ static inline int basicbtfs_nametree_insert_name(struct super_block *sb, uint32_
 static inline int basicbtfs_nametree_delete_name(struct super_block *sb, uint32_t name_bno, uint32_t block_index) {
     struct buffer_head *bh = NULL;
     char *block = NULL;
-    char *filename = NULL;
     struct basicbtfs_name_entry *name_entry = NULL;
     struct basicbtfs_name_tree *name_tree = NULL;
     uint32_t old_free_bytes = 0;
-    int name_length = 0;
 
     bh = sb_bread(sb, name_bno);
 
@@ -243,7 +240,6 @@ static inline int basicbtfs_nametree_delete_name(struct super_block *sb, uint32_
     name_entry->ino = 0;
     old_free_bytes = name_tree->free_bytes;
     name_tree->free_bytes += (sizeof(struct basicbtfs_name_entry) + name_entry->name_length);
-    name_length = name_entry;
 
     block += sizeof(struct basicbtfs_name_entry);
     // memset(block, 0, name_entry->name_length);
