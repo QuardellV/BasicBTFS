@@ -207,7 +207,7 @@ static int basicbtfs_create(struct inode *dir, struct dentry *dentry, umode_t mo
             return -EIO;
         }
 
-        basicbtfs_cache_add_dir(sb, BASICBTFS_INODE(inode)->i_bno, node);
+        basicbtfs_cache_add_dir(sb, BASICBTFS_INODE(inode)->i_bno, node, (struct basicbtfs_block *) bh->b_data);
 
         mark_buffer_dirty(bh);
         brelse(bh);

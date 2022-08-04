@@ -9,6 +9,7 @@
 
 #include "basicbtfs.h"
 #include "bitmap.h"
+#include "nametree.h"
 
 static inline void basicbtfs_cache_add_dir(struct super_block *sb, uint32_t bno, struct basicbtfs_btree_node *node, struct basicbtfs_block *name_block) {
     struct basicbtfs_btree_dir_cache_list *new_cache_dir_entry = basicbtfs_alloc_btree_dir(sb);
@@ -138,16 +139,71 @@ static inline void basicbtfs_cache_delete_dir(struct super_block *sb, uint32_t h
 
 static inline void basicbtfs_cache_iterate_dir(struct super_block *sb, uint32_t hash, struct dir_context *ctx, loff_t start_pos) {
     struct basicbtfs_btree_dir_cache_list *dir_cache;
+    struct basicbtfs_name_tree_cache *nametree_hdr_cache;
+    uint32_t current_index = 0;
+    uint32_t total_nr_entries = 0;
+
+    list_for_each_entry(dir_cache, &dir_cache_list, list) {
+        if (dir_cache->bno == hash) {
+            list_for_each_entry(nametree_hdr_cache, &dir_cache->name_tree_cache->list, list) {
+                basicbtfs_nametree_emit_block(bh, &total_nr_entries, &current_index, ctx, start_pos);
+            }
+
+            break;
+        }
+    }
+}
+
+static inline uint32_t basicbtfs_btreecache_node_lookup(struct super_block *sb, struct basicbtfs_btree_node *btr_node, uint32_t hash, int counter,
+    struct list_head dir_cache) {
+    uint32_t ret = 0, child = 0;
+    struct basicbtfs_btree_node *child_node = NULL;
     struct basicbtfs_btree_node_hdr_cache *node_hdr_cache;
-    uint32_t index = 0;
+    int index = 0;
+
+
+    // hash > btr_node->entries[index].hash
+    while (index < btr_node->nr_of_keys && hash > btr_node->entries[index].hash) {
+        index++;
+        counter++;
+    }
+    // btr_node->entries[index].hash == hash
+    if (btr_node->entries[index].hash == hash) {
+        printk(KERN_INFO "Current counter: %d of %d\n", counter, hash);
+        ret = btr_node->entries[index].ino;
+        brelse(bh);
+        return ret;
+    }
+
+    if (btr_node->leaf) {
+        brelse(bh);
+        return 0;
+    }
+    child  = btr_node->children[index];
+    list_for_each_entry(node_hdr_cache, &dir_cache, list) {
+        if (node_hdr_cache->bno == child) {
+            child_node = node_hdr_cache;
+            return;
+        }
+    }
+
+    brelse(bh);
+    ret = basicbtfs_btreecache_node_lookup(sb, child_node, hash, counter, dir_cache);
+    return ret;
+}
+
+static inline void basicbtfs_cache_lookup(struct super_block *sb, uint32_t root_bno, uint32_t hash, int counter) {
+    struct basicbtfs_btree_dir_cache_list *dir_cache;
+    struct basicbtfs_btree_node_hdr_cache *node_hdr_cache;
 
     list_for_each_entry(dir_cache, &dir_cache_list, list) {
         if (dir_cache->bno == hash) {
             list_for_each_entry(node_hdr_cache, &dir_cache->btree_dir_cache->list, list) {
-                if ()
+                if (node_hdr_cache->bno == bno) {
+                    basicbtfs_btreecache_node_lookup(sb, )
+                    return;
+                }
             }
-
-            break;
         }
     }
 }
@@ -163,6 +219,24 @@ static inline void basicbtfs_cache_delete_node(struct super_block *sb, uint32_t 
                     list_del(&node_hdr_cache->list);
                     basicbtfs_destroy_btree_node_data(node_hdr_cache->node);
                     basicbtfs_destroy_btree_node_hdr(node_hdr_cache);
+                    return;
+                }
+            }
+        }
+    }
+}
+
+static inline void basicbtfs_cache_delete_node(struct super_block *sb, uint32_t hash, uint32_t bno) {
+    struct basicbtfs_btree_dir_cache_list *dir_cache;
+    struct basicbtfs_name_tree_cache *nametree_hdr_cache;
+
+    list_for_each_entry(dir_cache, &dir_cache_list, list) {
+        if (dir_cache->bno == hash) {
+            list_for_each_entry(nametree_hdr_cache, &dir_cache->btree_dir_cache->list, list) {
+                if (nametree_hdr_cache->bno == bno) {
+                    list_del(&nametree_hdr_cache->list);
+                    basicbtfs_destroy_btree_node_data(nametree_hdr_cache->name_tree_block);
+                    basicbtfs_destroy_btree_node_hdr(nametree_hdr_cache);
                     return;
                 }
             }
