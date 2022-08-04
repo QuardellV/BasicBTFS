@@ -37,6 +37,8 @@ static int basicbtfs_iterate(struct file *dir, struct dir_context *ctx) {
     // basicbtfs_btree_traverse_debug(sb, inode_info->i_bno);
     // printk(KERN_INFO "END Debug btree iterate\n");
 
+
+
     bh = sb_bread(sb, inode_info->i_bno);
     
     if (!bh) return -EIO;
@@ -99,7 +101,7 @@ int basicbtfs_add_entry(struct inode *dir, struct inode *inode, struct dentry *d
     printk(KERN_INFO "current filename and hash: %s | %d\n", dentry->d_name.name, new_entry.hash);
 
 
-    ret = basicbtfs_nametree_insert_name(dir->i_sb, name_bno, &new_entry, dentry);
+    ret = basicbtfs_nametree_insert_name(dir->i_sb, name_bno, &new_entry, dentry, inode_info->i_bno);
 
 
     ret = basicbtfs_btree_node_insert(dir->i_sb, dir, inode_info->i_bno, &new_entry);

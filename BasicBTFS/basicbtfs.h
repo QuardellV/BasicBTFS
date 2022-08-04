@@ -111,7 +111,7 @@ struct basicbtfs_btree_node {
     bool leaf;
 };
 
-struct basicbtfs_file_block {
+struct basicbtfs_block {
     char block[BASICBTFS_BLOCKSIZE];
 };
 
@@ -119,6 +119,12 @@ struct basicbtfs_btree_dir_cache_list {
     struct list_head list;
     uint32_t bno;
     struct basicbtfs_btree_node_hdr_cache *btree_dir_cache;
+    struct basicbtfs_name_tree_cache *name_tree_cache;
+};
+
+struct basicbtfs_name_tree_cache {
+    struct list_head list;
+    struct basicbtfs_block *name_tree_block;
 };
 
 struct basicbtfs_btree_node_hdr_cache {
@@ -131,7 +137,7 @@ struct basicbtfs_file_cache {
     struct list_head list;
     uint32_t cluster_index;
     uint32_t block_index;
-    struct basicbtfs_file_block *data;
+    struct basicbtfs_block *data;
 };
 
 struct basicbtfs_file_cache_list {
@@ -145,20 +151,25 @@ int basicbtfs_init_inode_cache(void);
 int basicbtfs_init_btree_dir_cache(void);
 int basicbtfs_init_btree_node_hdr_cache(void);
 int basicbtfs_init_btree_node_data_cache(void);
+int basicbtfs_init_nametree_hdr_cache(void);
 
 void basicbtfs_destroy_inode_cache(void);
 void basicbtfs_destroy_btree_dir_cache(void);
 void basicbtfs_destroy_btree_node_hdr_cache(void);
 void basicbtfs_destroy_btree_node_data_cache(void);
+void basicbtfs_destroy_nametree_hdr_cache(void);
 
 void basicbtfs_destroy_btree_node_hdr(struct basicbtfs_btree_node_hdr_cache *cache_node);
 void basicbtfs_destroy_btree_node_data(struct basicbtfs_btree_node *cache_node);
+void basicbtfs_destroy_nametree_hdr(struct basicbtfs_nametree_cache *cache_node);
 void basicbtfs_destroy_btree_dir(struct basicbtfs_btree_dir_cache_list *cache_dir);
+void basicbtfs_destroy_file_block(struct basicbtfs_block *cache_file_block);
 
 struct basicbtfs_btree_dir_cache_list *basicbtfs_alloc_btree_dir(struct super_block *sb);
 struct basicbtfs_btree_node *basicbtfs_alloc_btree_node_data(struct super_block *sb);
 struct basicbtfs_btree_node_hdr_cache *basicbtfs_alloc_btree_node_hdr(struct super_block *sb);
-
+struct basicbtfs_nametree_cache *basicbtfs_alloc_nametree_hdr(struct super_block *sb);
+struct basicbtfs_block *basicbtfs_alloc_file(struct super_block *sb);
 
 /* Superblock functions*/
 int basicbtfs_fill_super(struct super_block *sb, void *data, int silent);

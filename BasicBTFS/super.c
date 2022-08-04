@@ -15,6 +15,8 @@ static struct kmem_cache *basicbtfs_inode_cache;
 static struct kmem_cache *basicbtfs_btree_dir_cache;
 static struct kmem_cache *basicbtfs_btree_node_hdr_cache;
 static struct kmem_cache *basicbtfs_btree_node_data_cache;
+static struct kmem_cache *basicbtfs_nametree_hdr_cache;
+static struct kmem_cache *basicbtfs_nametree_data_cache;
 static struct kmem_cache *basicbtfs_file_cache;
 
 int basicbtfs_init_btree_dir_cache(void) {
@@ -25,21 +27,35 @@ int basicbtfs_init_btree_dir_cache(void) {
 }
 
 int basicbtfs_init_btree_node_hdr_cache(void) {
-    basicbtfs_btree_node_hdr_cache = kmem_cache_create("basicbtfs_btree_node_cache", sizeof(struct basicbtfs_btree_node_hdr_cache), 0, 0, NULL);
+    basicbtfs_btree_node_hdr_cache = kmem_cache_create("basicbtfs_btree_node_hdr_cache", sizeof(struct basicbtfs_btree_node_hdr_cache), 0, 0, NULL);
 
     if (!basicbtfs_btree_node_hdr_cache) return -ENOMEM;
     return 0;
 }
 
 int basicbtfs_init_btree_node_data_cache(void) {
-    basicbtfs_btree_node_data_cache = kmem_cache_create("basicbtfs_btree_node_cache", sizeof(struct basicbtfs_btree_node), 0, 0, NULL);
+    basicbtfs_btree_node_data_cache = kmem_cache_create("basicbtfs_btree_node_data_cache", sizeof(struct basicbtfs_btree_node), 0, 0, NULL);
 
     if (!basicbtfs_btree_node_data_cache) return -ENOMEM;
     return 0;
 }
 
+int basicbtfs_init_nametree_hdr_cache(void) {
+    basicbtfs_nametree_hdr_cache = kmem_cache_create("basicbtfs_nametree_hdr_cache", sizeof(struct basicbtfs_name_tree_cache), 0, 0, NULL);
+
+    if (!basicbtfs_nametree_hdr_cache) return -ENOMEM;
+    return 0;
+}
+
+int basicbtfs_init_nametree_data_cache(void) {
+    basicbtfs_nametree_data_cache = kmem_cache_create("basicbtfs_nametree_data_cache", sizeof(struct basicbtfs_name_tree), 0, 0, NULL);
+
+    if (!basicbtfs_nametree_data_cache) return -ENOMEM;
+    return 0;
+}
+
 int basicbtfs_init_file_cache(void) {
-    basicbtfs_btree_dir_cache = kmem_cache_create("basicbtfs_file_cache", sizeof(struct basicbtfs_file_block), 0, 0, NULL);
+    basicbtfs_btree_dir_cache = kmem_cache_create("basicbtfs_file_cache", sizeof(struct basicbtfs_block), 0, 0, NULL);
 
     if (!basicbtfs_btree_dir_cache) return -ENOMEM;
     return 0;
@@ -62,6 +78,14 @@ void basicbtfs_destroy_btree_node_hdr_cache(void) {
 
 void basicbtfs_destroy_btree_node_data_cache(void) {
     kmem_cache_destroy(basicbtfs_btree_node_data_cache);
+}
+
+void basicbtfs_destroy_nametree_hdr_cache(void) {
+    kmem_cache_destroy(basicbtfs_nametree_hdr_cache);
+}
+
+void basicbtfs_destroy_nametree_data_cache(void) {
+    kmem_cache_destroy(basicbtfs_nametree_data_cache);
 }
 
 void basicbtfs_destroy_btree_dir_cache(void) {
@@ -103,6 +127,13 @@ struct basicbtfs_btree_node *basicbtfs_alloc_btree_node_data(struct super_block 
     return cache_node;
 }
 
+struct basicbtfs_nametree_cache *basicbtfs_alloc_nametree_hdr(struct super_block *sb) {
+    struct basicbtfs_nametree_cache *cache_node = kmem_cache_alloc(basicbtfs_nametree_hdr_cache, GFP_KERNEL);
+    if (!cache_node) return NULL;
+
+    return cache_node;
+}
+
 struct basicbtfs_btree_dir_cache_list *basicbtfs_alloc_btree_dir(struct super_block *sb) {
     struct basicbtfs_btree_dir_cache_list *cache_dir = kmem_cache_alloc(basicbtfs_btree_dir_cache, GFP_KERNEL);
     if (!cache_dir) return NULL;
@@ -110,8 +141,8 @@ struct basicbtfs_btree_dir_cache_list *basicbtfs_alloc_btree_dir(struct super_bl
     return cache_dir;
 }
 
-struct basicbtfs_file_block *basicbtfs_alloc_file(struct super_block *sb) {
-    struct basicbtfs_file_block *cache_file_block = kmem_cache_alloc(basicbtfs_file_cache, GFP_KERNEL);
+struct basicbtfs_block *basicbtfs_alloc_file(struct super_block *sb) {
+    struct basicbtfs_block *cache_file_block = kmem_cache_alloc(basicbtfs_file_cache, GFP_KERNEL);
     if (!cache_file_block) return NULL;
 
     return cache_file_block;
@@ -157,11 +188,15 @@ void basicbtfs_destroy_btree_node_data(struct basicbtfs_btree_node *cache_node) 
     kmem_cache_free(basicbtfs_btree_node_data_cache, cache_node);
 }
 
+void basicbtfs_destroy_nametree_hdr(struct basicbtfs_nametree_cache *cache_node) {
+    kmem_cache_free(basicbtfs_nametree_hdr_cache, cache_node);
+}
+
 void basicbtfs_destroy_btree_dir(struct basicbtfs_btree_dir_cache_list *cache_dir) {
     kmem_cache_free(basicbtfs_btree_dir_cache, cache_dir);
 }
 
-void basicbtfs_destroy_file_block(struct basicbtfs_file_block *cache_file_block) {
+void basicbtfs_destroy_file_block(struct basicbtfs_block *cache_file_block) {
     kmem_cache_free(basicbtfs_file_cache, cache_file_block);
 }
 

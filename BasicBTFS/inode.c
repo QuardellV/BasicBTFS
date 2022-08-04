@@ -201,9 +201,17 @@ static int basicbtfs_create(struct inode *dir, struct dentry *dentry, umode_t mo
             brelse(bh_name_table);
         }
 
+        bh_name_table = sb_bread(sb, node->tree_name_bno);
+        if (!bh_name_table) {
+            brelse(bh);
+            return -EIO;
+        }
+
         basicbtfs_cache_add_dir(sb, BASICBTFS_INODE(inode)->i_bno, node);
+
         mark_buffer_dirty(bh);
         brelse(bh);
+
     }
 
     ret = basicbtfs_add_entry(dir, inode, dentry);
@@ -287,6 +295,7 @@ static int basicbtfs_unlink(struct inode *dir ,struct dentry *dentry) {
         clean_inode(inode);
         put_blocks(sbi, bno, 1);
         put_inode(sbi, ino);
+        basicbtfs_cache_delete_dir(sb, BASICBTFS_INODE(inode)->i_bno);
         //TODO: Bug
     } else if (S_ISREG(inode->i_mode)) {
         // clean_file_block(inode);

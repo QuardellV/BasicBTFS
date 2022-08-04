@@ -63,6 +63,13 @@ static int __init basicbtfs_init(void) {
         return ret;
     }
 
+    ret = basicbtfs_init_nametree_hdr_cache();
+
+    if (ret) {
+        printk(KERN_ERR "btree node header cache creation failed\n");
+        return ret;
+    }
+
     ret = register_filesystem(&basicftfs_file_system_type);
     if (ret) {
         printk(KERN_ERR "Failed registration of filesystem\n");
@@ -83,6 +90,7 @@ static void __exit basicbtfs_exit(void) {
     basicbtfs_destroy_btree_dir_cache();
     basicbtfs_destroy_btree_node_hdr_cache();
     basicbtfs_destroy_btree_node_data_cache();
+    basicbtfs_destroy_btree_node_hdr_cache();
 
     printk(KERN_INFO "Module unregistered succesfully\n");
 }
