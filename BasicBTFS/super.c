@@ -127,8 +127,8 @@ struct basicbtfs_btree_node *basicbtfs_alloc_btree_node_data(struct super_block 
     return cache_node;
 }
 
-struct basicbtfs_nametree_cache *basicbtfs_alloc_nametree_hdr(struct super_block *sb) {
-    struct basicbtfs_nametree_cache *cache_node = kmem_cache_alloc(basicbtfs_nametree_hdr_cache, GFP_KERNEL);
+struct basicbtfs_name_tree_cache *basicbtfs_alloc_nametree_hdr(struct super_block *sb) {
+    struct basicbtfs_name_tree_cache *cache_node = kmem_cache_alloc(basicbtfs_nametree_hdr_cache, GFP_KERNEL);
     if (!cache_node) return NULL;
 
     return cache_node;
@@ -188,7 +188,7 @@ void basicbtfs_destroy_btree_node_data(struct basicbtfs_btree_node *cache_node) 
     kmem_cache_free(basicbtfs_btree_node_data_cache, cache_node);
 }
 
-void basicbtfs_destroy_nametree_hdr(struct basicbtfs_nametree_cache *cache_node) {
+void basicbtfs_destroy_nametree_hdr(struct basicbtfs_name_tree_cache *cache_node) {
     kmem_cache_free(basicbtfs_nametree_hdr_cache, cache_node);
 }
 
@@ -373,7 +373,7 @@ int basicbtfs_fill_super(struct super_block *sb, void *data, int silent)
         mark_buffer_dirty(bh_name_table);
         brelse(bh_name_table);
     }
-    basicbtfs_cache_add_dir(sb, BASICBTFS_INODE(root_inode)->i_bno, node);
+    basicbtfs_cache_add_dir(sb, BASICBTFS_INODE(root_inode)->i_bno, node, (struct basicbtfs_block *)bh_name_table->b_data);
     mark_buffer_dirty(bh);
     brelse(bh);
 
