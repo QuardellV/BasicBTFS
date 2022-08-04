@@ -8,6 +8,7 @@
 #include "destroy.h"
 #include "io.h"
 #include "init.h"
+#include "cache.h"
 
 static int init_vfs_inode(struct super_block *sb, struct inode *inode, unsigned long ino) {
     struct basicbtfs_sb_info *sbi = BASICBTFS_SB(sb);
@@ -199,6 +200,8 @@ static int basicbtfs_create(struct inode *dir, struct dentry *dentry, umode_t mo
             mark_buffer_dirty(bh_name_table);
             brelse(bh_name_table);
         }
+
+        basicbtfs_cache_add_dir(sb, BASICBTFS_INODE(inode)->i_bno, node);
         mark_buffer_dirty(bh);
         brelse(bh);
     }

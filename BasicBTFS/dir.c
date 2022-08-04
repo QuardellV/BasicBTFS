@@ -9,6 +9,7 @@
 #include "init.h"
 #include "btree.h"
 #include "nametree.h"
+#include "cache.h"
 
 static int basicbtfs_iterate(struct file *dir, struct dir_context *ctx) {
     struct inode *inode = file_inode(dir);

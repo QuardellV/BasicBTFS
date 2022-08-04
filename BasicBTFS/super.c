@@ -9,6 +9,7 @@
 #include "io.h"
 #include "init.h"
 #include "bitmap.h"
+#include "cache.h"
 
 static struct kmem_cache *basicbtfs_inode_cache;
 static struct kmem_cache *basicbtfs_btree_dir_cache;
@@ -206,6 +207,8 @@ static struct super_operations basicftfs_super_ops = {
     .statfs = basicbtfs_statfs,
 };
 
+struct list_head dir_cache_list = { &dir_cache_list, &dir_cache_list};
+
 int init_super_block(struct super_block *sb) {
     int ret = 0;
     sb->s_magic = BASICBTFS_MAGIC_NUMBER;
@@ -335,6 +338,7 @@ int basicbtfs_fill_super(struct super_block *sb, void *data, int silent)
         mark_buffer_dirty(bh_name_table);
         brelse(bh_name_table);
     }
+    basicbtfs_cache_add_dir(sb, BASICBTFS_INODE(root_inode)->i_bno, node);
     mark_buffer_dirty(bh);
     brelse(bh);
 

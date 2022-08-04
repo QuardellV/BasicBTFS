@@ -117,7 +117,7 @@ struct basicbtfs_file_block {
 
 struct basicbtfs_btree_dir_cache_list {
     struct list_head list;
-    uint32_t hash;
+    uint32_t bno;
     struct basicbtfs_btree_node_hdr_cache *btree_dir_cache;
 };
 

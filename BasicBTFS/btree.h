@@ -8,13 +8,15 @@
 
 #include "basicbtfs.h"
 #include "bitmap.h"
+#include "cache.h"
 
 static inline int basicbtfs_btree_node_delete(struct super_block *sb, uint32_t bno, uint32_t hash);
 
-static inline void basicbtfs_btree_node_init(struct basicbtfs_btree_node *node, bool leaf) {
+static inline void basicbtfs_btree_node_init(struct super_block *sb, struct basicbtfs_btree_node *node, bool leaf, uint32_t dir_bno, uint32_t bno) {
     memset(node, 0, sizeof(struct basicbtfs_btree_node));
     node->nr_of_keys = 0;
     node->leaf = leaf;
+    basicbtfs_cache_add_node(sb, dir_bno, bno, node);
 }
 
 static inline int basicbtfs_btree_update_root(struct inode *inode, uint32_t bno) {
@@ -33,11 +35,14 @@ static inline int basicbtfs_btree_update_root(struct inode *inode, uint32_t bno)
 
     if (!bh) return -EIO;
 
+    basicbtfs_cache_update_root_node(sb, inode_info->i_bno, bno);
+
     disk_inode = (struct basicbtfs_inode *) bh->b_data;
     disk_inode += inode_offset;
 
     inode_info->i_bno = bno;
     disk_inode->i_bno = bno;
+
     mark_buffer_dirty(bh);
     brelse(bh);
     return 0;
@@ -112,7 +117,7 @@ static inline uint32_t basicbtfs_btree_node_lookup_with_entry(struct super_block
     return ret;
 }
 
-static inline int basicbtfs_btree_split_child(struct super_block *sb, uint32_t par, uint32_t lhs, int index) {
+static inline int basicbtfs_btree_split_child(struct super_block *sb, uint32_t par, uint32_t lhs, int index, uint32_t dir_bno) {
     struct basicbtfs_sb_info *sbi = BASICBTFS_SB(sb);
     struct buffer_head *bh_par = NULL, *bh_lhs = NULL, *bh_rhs = NULL;
     struct basicbtfs_btree_node *node_par = NULL, *node_lhs = NULL, *node_rhs = NULL;
@@ -144,7 +149,7 @@ static inline int basicbtfs_btree_split_child(struct super_block *sb, uint32_t p
 
     node_rhs = (struct basicbtfs_btree_node *) bh_rhs->b_data;
 
-    basicbtfs_btree_node_init(node_rhs, node_lhs->leaf);
+    basicbtfs_btree_node_init(sb, node_rhs, node_lhs->leaf, dir_bno, rhs);
     node_rhs->nr_of_keys = BASICBTFS_MIN_DEGREE - 1;
 
     for (i = 0; i < node_rhs->nr_of_keys; i++) {
@@ -181,7 +186,7 @@ static inline int basicbtfs_btree_split_child(struct super_block *sb, uint32_t p
     return 0;
 }
 
-static inline int basicbtfs_btree_insert_non_full(struct super_block *sb, uint32_t bno, struct basicbtfs_entry *new_entry) {
+static inline int basicbtfs_btree_insert_non_full(struct super_block *sb, uint32_t bno, struct basicbtfs_entry *new_entry, uint32_t dir_bno) {
     struct buffer_head *bh = NULL, *bh_child = NULL;
     struct basicbtfs_btree_node *node = NULL, *child = NULL;
     int ret = 0;
@@ -220,7 +225,7 @@ static inline int basicbtfs_btree_insert_non_full(struct super_block *sb, uint32
         child = (struct basicbtfs_btree_node *) bh_child->b_data;
 
         if (child->nr_of_keys == 2 * BASICBTFS_MIN_DEGREE - 1) {
-            ret = basicbtfs_btree_split_child(sb, bno, node->children[index + 1], index + 1);
+            ret = basicbtfs_btree_split_child(sb, bno, node->children[index + 1], index + 1, dir_bno);
 
             if (ret != 0) {
                 brelse(bh);
@@ -233,7 +238,7 @@ static inline int basicbtfs_btree_insert_non_full(struct super_block *sb, uint32
             }
         }
         brelse(bh_child);
-        basicbtfs_btree_insert_non_full(sb, node->children[index + 1], new_entry);
+        basicbtfs_btree_insert_non_full(sb, node->children[index + 1], new_entry, dir_bno);
 
     }
 
@@ -299,10 +304,10 @@ static inline int basicbtfs_btree_node_insert(struct super_block *sb, struct ino
         }
 
         new_node = (struct basicbtfs_btree_node *) bh_new->b_data;
-        basicbtfs_btree_node_init(new_node, false);
+        basicbtfs_btree_node_init(sb, new_node, false, bno, bno_new_root);
         new_node->children[0] = bno;
 
-        ret = basicbtfs_btree_split_child(sb, bno_new_root, bno, 0);
+        ret = basicbtfs_btree_split_child(sb, bno_new_root, bno, 0, bno);
 
         if (ret != 0) {
             brelse(bh_old);
@@ -314,7 +319,7 @@ static inline int basicbtfs_btree_node_insert(struct super_block *sb, struct ino
             index++;
         }
 
-        ret = basicbtfs_btree_insert_non_full(sb, new_node->children[index], entry);
+        ret = basicbtfs_btree_insert_non_full(sb, new_node->children[index], entry, bno);
 
         if (ret != 0) {
             brelse(bh_old);
@@ -336,7 +341,7 @@ static inline int basicbtfs_btree_node_insert(struct super_block *sb, struct ino
         mark_buffer_dirty(bh_new);
         brelse(bh_new);
     } else {
-        ret = basicbtfs_btree_insert_non_full(sb, bno, entry);
+        ret = basicbtfs_btree_insert_non_full(sb, bno, entry, bno);
 
         if (ret != 0) {
             brelse(bh_old);
@@ -885,6 +890,7 @@ static inline int basicbtfs_btree_delete_entry(struct super_block *sb, struct in
             new_root_node->nr_of_files = node->nr_of_files - 1;
             new_root_node->nr_times_done = node->nr_times_done;
             new_root_node->tree_name_bno = node->tree_name_bno;
+            basicbtfs_cache_delete_node(sb, node->children[0], root_bno);
             mark_buffer_dirty(bh2);
             brelse(bh2);
         }
