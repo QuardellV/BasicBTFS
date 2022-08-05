@@ -9,6 +9,7 @@
 #include "io.h"
 #include "init.h"
 #include "cache.h"
+#include "btreecache.h"
 
 static int init_vfs_inode(struct super_block *sb, struct inode *inode, unsigned long ino) {
     struct basicbtfs_sb_info *sbi = BASICBTFS_SB(sb);
@@ -130,6 +131,7 @@ static int basicbtfs_create(struct inode *dir, struct dentry *dentry, umode_t mo
     struct inode *inode = NULL;
     struct basicbtfs_inode_info *bfs_inode_info_dir = NULL;
     struct basicbtfs_btree_node *node = NULL;
+    struct basicbtfs_btree_node_cache *node_cache = NULL;
     struct basicbtfs_name_tree *name_tree = NULL;
     struct buffer_head *bh_dir = NULL, *bh = NULL, *bh_name_table = NULL;
     int ret = 0;
@@ -207,7 +209,10 @@ static int basicbtfs_create(struct inode *dir, struct dentry *dentry, umode_t mo
             return -EIO;
         }
 
-        basicbtfs_cache_add_dir(sb, BASICBTFS_INODE(inode)->i_bno, node, (struct basicbtfs_block *) bh->b_data);
+        node_cache = basicbtfs_alloc_btree_node_data(sb);
+        basicbtfs_btree_node_cache_init(sb, node_cache, true);
+        basicbtfs_cache_add_dir(sb, bfs_inode_info_dir->i_bno, node_cache, (struct basicbtfs_block *)bh_name_table->b_data, node->tree_name_bno);
+        // basicbtfs_cache_add_dir(sb, BASICBTFS_INODE(inode)->i_bno, node, (struct basicbtfs_block *) bh->b_data);
 
         mark_buffer_dirty(bh);
         brelse(bh);

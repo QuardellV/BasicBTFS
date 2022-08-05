@@ -8,6 +8,7 @@
 #include "io.h"
 #include "init.h"
 #include "btree.h"
+#include "btreecache.h"
 #include "nametree.h"
 #include "cache.h"
 
@@ -37,12 +38,12 @@ static int basicbtfs_iterate(struct file *dir, struct dir_context *ctx) {
     // basicbtfs_btree_traverse_debug(sb, inode_info->i_bno);
     // printk(KERN_INFO "END Debug btree iterate\n");
 
-    if (basicbtfs_cache_iterate_dir(sb, inode_info->i_bno, ctx, ctx->pos - 2)) {
-        return 0;
-    }
+    // if (basicbtfs_cache_iterate_dir(sb, inode_info->i_bno, ctx, ctx->pos - 2)) {
+    //     return 0;
+    // }
 
     bh = sb_bread(sb, inode_info->i_bno);
-    
+
     if (!bh) return -EIO;
 
     node = (struct basicbtfs_btree_node *) bh->b_data;
@@ -61,12 +62,20 @@ struct dentry *basicbtfs_search_entry(struct inode *dir, struct dentry *dentry) 
 
     hash = get_hash(dentry);
 
+    ino = basicbtfs_cache_lookup_entry(sb, inode_info->i_bno, hash);
+
+    if (ino != 0 && ino != -1) {
+        inode = basicbtfs_iget(sb, ino);
+        goto end;
+    }
+
     ino = basicbtfs_btree_node_lookup(sb, inode_info->i_bno, hash, 0);
 
     if (ino != 0 && ino != -1) {
         inode = basicbtfs_iget(sb, ino);
     }
 
+    end:
     dir->i_atime = current_time(dir);
     d_add(dentry, inode);
     return NULL;
@@ -107,6 +116,7 @@ int basicbtfs_add_entry(struct inode *dir, struct inode *inode, struct dentry *d
 
 
     ret = basicbtfs_btree_node_insert(dir->i_sb, dir, inode_info->i_bno, &new_entry);
+    ret = basicbtfs_btree_node_cache_insert(dir->i_sb, dir, basicbtfs_cache_get_root_node(inode_info->i_bno), &new_entry);
 
     // printk(KERN_INFO "START Debug btree traverse added: %s\n", dentry->d_name.name);
     // // basicbtfs_nametree_iterate_name_debug(dir->i_sb, name_bno);
@@ -148,8 +158,9 @@ int basicbtfs_delete_entry(struct inode *dir, struct dentry *dentry) {
     }
 
     ret = basicbtfs_btree_delete_entry(dir->i_sb, dir, inode_info->i_bno, hash);
+    ret = basicbtfs_btree_cache_delete_entry(dir->i_sb, dir, basicbtfs_cache_get_root_node(inode_info->i_bno), hash);
 
-    ret = basicbtfs_nametree_delete_name(dir->i_sb, new_entry.name_bno, new_entry.block_index);
+    ret = basicbtfs_nametree_delete_name(dir->i_sb, new_entry.name_bno, new_entry.block_index, inode_info->i_bno);
 
     printk(KERN_INFO "START Debug tree traverse AFTER REMOVE: %s\n", dentry->d_name.name);
     // basicbtfs_nametree_iterate_name_debug(dir->i_sb, name_bno);

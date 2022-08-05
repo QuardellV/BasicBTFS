@@ -16,7 +16,7 @@ static inline void basicbtfs_btree_node_init(struct super_block *sb, struct basi
     memset(node, 0, sizeof(struct basicbtfs_btree_node));
     node->nr_of_keys = 0;
     node->leaf = leaf;
-    basicbtfs_cache_add_node(sb, dir_bno, bno, node);
+    // basicbtfs_cache_add_node(sb, dir_bno, bno, node);
 }
 
 static inline int basicbtfs_btree_update_root(struct inode *inode, uint32_t bno) {
@@ -35,7 +35,7 @@ static inline int basicbtfs_btree_update_root(struct inode *inode, uint32_t bno)
 
     if (!bh) return -EIO;
 
-    basicbtfs_cache_update_root_node(sb, inode_info->i_bno, bno);
+    // basicbtfs_cache_update_root_node(sb, inode_info->i_bno, bno);
 
     disk_inode = (struct basicbtfs_inode *) bh->b_data;
     disk_inode += inode_offset;
@@ -890,7 +890,7 @@ static inline int basicbtfs_btree_delete_entry(struct super_block *sb, struct in
             new_root_node->nr_of_files = node->nr_of_files - 1;
             new_root_node->nr_times_done = node->nr_times_done;
             new_root_node->tree_name_bno = node->tree_name_bno;
-            basicbtfs_cache_delete_node(sb, node->children[0], root_bno);
+            // basicbtfs_cache_delete_node(sb, node->children[0], root_bno);
             mark_buffer_dirty(bh2);
             brelse(bh2);
         }
