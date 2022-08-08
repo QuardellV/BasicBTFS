@@ -83,6 +83,7 @@ struct dentry *basicbtfs_search_entry(struct inode *dir, struct dentry *dentry) 
 
 int basicbtfs_add_entry(struct inode *dir, struct inode *inode, struct dentry *dentry) {
     struct basicbtfs_inode_info *inode_info = BASICBTFS_INODE(dir);
+    uint32_t old_bno = inode_info->i_bno;
     int ret = 0;
     struct basicbtfs_entry new_entry;
     uint32_t name_bno = 0, hash = 0;
@@ -100,7 +101,7 @@ int basicbtfs_add_entry(struct inode *dir, struct inode *inode, struct dentry *d
     hash = get_hash(dentry);
     printk("added hash: %d\n", hash);
 
-    ret = basicbtfs_btree_node_lookup(dir->i_sb, inode_info->i_bno, hash, 0);
+    ret = basicbtfs_btree_node_lookup(dir->i_sb, old_bno, hash, 0);
 
     if (ret != -1 && ret > 0) {
         printk(KERN_INFO "Filename %s already exists\n", dentry->d_name.name);
@@ -109,28 +110,30 @@ int basicbtfs_add_entry(struct inode *dir, struct inode *inode, struct dentry *d
 
     new_entry.ino = inode->i_ino;
     new_entry.hash = hash;
-    printk(KERN_INFO "current filename and hash: %s | %d\n", dentry->d_name.name, new_entry.hash);
+    printk(KERN_INFO "current filename and hash: %s | %d\n", dentry->d_name.name, old_bno);
 
 
-    ret = basicbtfs_nametree_insert_name(dir->i_sb, name_bno, &new_entry, dentry, inode_info->i_bno);
+    ret = basicbtfs_nametree_insert_name(dir->i_sb, name_bno, &new_entry, dentry, old_bno);
+    printk("added to nametree succesfully\n");
 
-
-    ret = basicbtfs_btree_node_insert(dir->i_sb, dir, inode_info->i_bno, &new_entry);
-    ret = basicbtfs_btree_node_cache_insert(dir->i_sb, dir, basicbtfs_cache_get_root_node(inode_info->i_bno), &new_entry);
+    ret = basicbtfs_btree_node_insert(dir->i_sb, dir, old_bno, &new_entry);
+    printk("added to btree succesfully: %d\n", old_bno);
+    ret = basicbtfs_btree_node_cache_insert(dir->i_sb, dir, basicbtfs_cache_get_root_node(old_bno), &new_entry, old_bno);
+    printk("added to btree cache succesfully\n");
     
-    printk(KERN_INFO "START Debug btree traverse added: %s\n", dentry->d_name.name);
-    basicbtfs_nametree_iterate_name_debug(dir->i_sb, name_bno);
-    printk(KERN_INFO "CACHE\n");
-    basicbtfs_cache_iterate_dir_debug(dir->i_sb, inode_info->i_bno);
-    printk(KERN_INFO "END Debug btree traverse\n");
-
+    // printk(KERN_INFO "START Debug btree traverse added: %s\n", dentry->d_name.name);
+    // basicbtfs_nametree_iterate_name_debug(dir->i_sb, name_bno);
+    // printk(KERN_INFO "CACHE\n");
+    // basicbtfs_cache_iterate_dir_debug(dir->i_sb, inode_info->i_bno);
+    // printk(KERN_INFO "END Debug btree traverse\n");
+    printk("bye :)\n");
     return ret;
 }
 
 int basicbtfs_delete_entry(struct inode *dir, struct dentry *dentry) {
     struct basicbtfs_inode_info *inode_info = BASICBTFS_INODE(dir);
     int ret = 0;
-    uint32_t name_bno = 0, ino = 0;
+    uint32_t name_bno = 0, ino = 0, old_bno = inode_info->i_bno;
     uint32_t hash = 0;
     struct buffer_head *bh = NULL;
     struct basicbtfs_btree_node *node = NULL;
@@ -159,8 +162,8 @@ int basicbtfs_delete_entry(struct inode *dir, struct dentry *dentry) {
         printk("yes it exists: %d | %d\n", new_entry.name_bno, new_entry.block_index);
     }
 
-    ret = basicbtfs_btree_delete_entry(dir->i_sb, dir, inode_info->i_bno, hash);
-    // ret = basicbtfs_btree_cache_delete_entry(dir->i_sb, dir, basicbtfs_cache_get_root_node(inode_info->i_bno), hash);
+    ret = basicbtfs_btree_delete_entry(dir->i_sb, dir, old_bno, hash);
+    ret = basicbtfs_btree_cache_delete_entry(dir->i_sb, dir, basicbtfs_cache_get_root_node(old_bno), hash, old_bno);
 
     ret = basicbtfs_nametree_delete_name(dir->i_sb, new_entry.name_bno, new_entry.block_index, inode_info->i_bno);
 

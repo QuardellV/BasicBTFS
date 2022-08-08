@@ -51,7 +51,7 @@ static inline void basicbtfs_cache_add_node(struct super_block *sb, uint32_t dir
     list_for_each_entry(dir_cache, &dir_cache_list, list) {
         if (dir_cache->bno == dir_bno) {
             INIT_LIST_HEAD(&node->list);
-            list_add(&node->list, &dir_cache->root_node_cache->list);
+            list_add_tail(&node->list, &dir_cache->root_node_cache->list);
             break;
         }
     }
@@ -59,6 +59,8 @@ static inline void basicbtfs_cache_add_node(struct super_block *sb, uint32_t dir
 
 static inline void basicbtfs_cache_add_name_block(struct super_block *sb, uint32_t dir_bno, struct basicbtfs_block *name_block, uint32_t name_bno) {
     struct basicbtfs_btree_dir_cache_list *dir_cache;
+
+    printk("add name block\n");
 
     struct basicbtfs_name_tree_cache *nametree_hdr = basicbtfs_alloc_nametree_hdr(sb);
     nametree_hdr->name_tree_block = basicbtfs_alloc_file(sb);
@@ -107,12 +109,14 @@ static inline void basicbtfs_cache_update_block(struct super_block *sb, uint32_t
     }
 }
 
-static inline void basicbtfs_cache_update_root_node(uint32_t dir_bno, struct basicbtfs_btree_node_cache *new_node) {
+static inline void basicbtfs_cache_update_root_node(uint32_t dir_bno, struct basicbtfs_btree_node_cache *new_node, struct inode *inode) {
     struct basicbtfs_btree_dir_cache_list *dir_cache;
 
     list_for_each_entry(dir_cache, &dir_cache_list, list) {
         if (dir_cache->bno == dir_bno) {
-            dir_cache->root_node_cache = new_node;
+            list_del(&new_node->list);
+            list_add(&new_node->list, &dir_cache->root_node_cache->list);
+            dir_cache->bno = BASICBTFS_INODE(inode)->i_bno;
         }
     }
 }
@@ -120,6 +124,8 @@ static inline void basicbtfs_cache_update_root_node(uint32_t dir_bno, struct bas
 static inline struct basicbtfs_btree_node_cache * basicbtfs_cache_get_root_node(uint32_t dir_bno) {
     struct basicbtfs_btree_dir_cache_list *dir_cache;
     struct basicbtfs_btree_node_cache *node_cache;
+
+    printk("current dir_bno: %d\n", dir_bno);
 
     list_for_each_entry(dir_cache, &dir_cache_list, list) {
         if (dir_cache->bno == dir_bno) {
@@ -318,7 +324,7 @@ static inline int basicbtfs_cache_lookup_entry(struct super_block *sb, uint32_t 
 static inline void basicbtfs_cache_delete_node(struct super_block *sb, uint32_t hash, struct basicbtfs_btree_node_cache *node_cache) {
 
     list_del(&node_cache->list);
-    // basicbtfs_destroy_btree_node_data(node_cache);
+    basicbtfs_destroy_btree_node_data(node_cache);
 }
 
 #endif

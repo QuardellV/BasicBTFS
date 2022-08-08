@@ -2056,7 +2056,7 @@ init() {
 }
 
 test_create_root $D_MOD "2" "test" "root"
-test_create_file_empty
+# test_create_file_empty
 # test_create_file_nonempty
 # test_create_file_toolong
 # test_create_already_exist
@@ -2072,15 +2072,15 @@ test_create_file_empty
 # test_write_small
 # test_write_advanced
 
-# test_rm_empty
-# test_rm_small
-# test_rm_large
+test_rm_empty
+test_rm_small
+test_rm_large
 
-# test_rmdir_empty
-# test_rmdir_nonempty
+test_rmdir_empty
+test_rmdir_nonempty
 
-# test_rm_in_subdir
-# test_rm_subdir
+test_rm_in_subdir
+test_rm_subdir
 
 # # test_move_file_simple
 # # test_move_file_noreplace
@@ -2091,7 +2091,7 @@ test_create_file_empty
 # # test_move_dir_simple
 # # test_move_dir_in_dir
 
-# test_advanced_sequence_1
-# test_advanced_sequence_2
-# test_advanced_sequence_3
-# test_advanced_sequence_4
+test_advanced_sequence_1
+test_advanced_sequence_2
+test_advanced_sequence_3
+test_advanced_sequence_4

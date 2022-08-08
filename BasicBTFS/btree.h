@@ -28,6 +28,7 @@ static inline int basicbtfs_btree_update_root(struct inode *inode, uint32_t bno)
     uint32_t ino = inode->i_ino;
     uint32_t inode_block = BASICBTFS_GET_INODE_BLOCK(ino, sbi->s_imap_blocks, sbi->s_bmap_blocks);
     uint32_t inode_offset = BASICBTFS_GET_INODE_BLOCK_IDX(ino);
+    printk("update non cache root\n");
 
     if (ino >= sbi->s_ninodes) return -1;
 
@@ -291,6 +292,8 @@ static inline int basicbtfs_btree_node_insert(struct super_block *sb, struct ino
     if (!bh_old) return -EIO;
 
     old_node = (struct basicbtfs_btree_node *) bh_old->b_data;
+
+    printk("nr of keys non cache: %d\n", old_node->nr_of_keys);
 
     if (old_node->nr_of_keys == 2 * BASICBTFS_MIN_DEGREE -1) {
         int index = 0;

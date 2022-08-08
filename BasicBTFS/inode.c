@@ -224,7 +224,7 @@ static int basicbtfs_create(struct inode *dir, struct dentry *dentry, umode_t mo
     }
 
     ret = basicbtfs_add_entry(dir, inode, dentry);
-
+    printk("ended add entry :)\n");
     if (ret < 0) {
         put_blocks(BASICBTFS_SB(sb), BASICBTFS_INODE(inode)->i_bno, 1);
         // dir->i_blocks--;
@@ -243,7 +243,6 @@ static int basicbtfs_create(struct inode *dir, struct dentry *dentry, umode_t mo
 
     mark_inode_dirty(dir);
     d_instantiate(dentry, inode);
-
     return 0;
 }
 
