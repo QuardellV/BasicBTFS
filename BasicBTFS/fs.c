@@ -3,8 +3,10 @@
 #include <linux/init.h>
 #include <linux/version.h>
 #include <linux/fs.h>
+#include <linux/slab.h>
 
 #include "basicbtfs.h"
+#include "cache.h"
 
 MODULE_LICENSE("GPL");
 MODULE_AUTHOR("quardell");
@@ -50,12 +52,7 @@ static int __init basicbtfs_init(void) {
         printk(KERN_ERR "btree directory cache creation failed\n");
         return ret;
     }
-    ret = basicbtfs_init_btree_node_hdr_cache();
 
-    if (ret) {
-        printk(KERN_ERR "btree node header cache creation failed\n");
-        return ret;
-    }
     ret = basicbtfs_init_btree_node_data_cache();
 
     if (ret) {
@@ -66,7 +63,14 @@ static int __init basicbtfs_init(void) {
     ret = basicbtfs_init_nametree_hdr_cache();
 
     if (ret) {
-        printk(KERN_ERR "btree node header cache creation failed\n");
+        printk(KERN_ERR "btree nametree header cache creation failed\n");
+        return ret;
+    }
+
+    ret = basicbtfs_init_file_cache();
+
+    if (ret) {
+        printk(KERN_ERR "btree file block cache creation failed\n");
         return ret;
     }
 
@@ -86,12 +90,13 @@ static void __exit basicbtfs_exit(void) {
         printk(KERN_ERR "Failed unregistration of filesystem\n");
     }
 
-    basicbtfs_destroy_inode_cache();
-    basicbtfs_destroy_btree_dir_cache();
-    basicbtfs_destroy_btree_node_hdr_cache();
-    basicbtfs_destroy_btree_node_data_cache();
-    basicbtfs_destroy_btree_node_hdr_cache();
+    // basicbtfs_cache_delete_dir_cache();
 
+    basicbtfs_destroy_inode_cache();
+    basicbtfs_destroy_btree_node_data_cache();
+    basicbtfs_destroy_btree_dir_cache();
+    basicbtfs_destroy_nametree_hdr_cache();
+    basicbtfs_destroy_file_cache();
     printk(KERN_INFO "Module unregistered succesfully\n");
 }
 

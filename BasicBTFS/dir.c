@@ -62,12 +62,12 @@ struct dentry *basicbtfs_search_entry(struct inode *dir, struct dentry *dentry) 
 
     hash = get_hash(dentry);
 
-    ino = basicbtfs_cache_lookup_entry(sb, inode_info->i_bno, hash);
+    // ino = basicbtfs_cache_lookup_entry(sb, inode_info->i_bno, hash);
 
-    if (ino != 0 && ino != -1) {
-        inode = basicbtfs_iget(sb, ino);
-        goto end;
-    }
+    // if (ino != 0 && ino != -1) {
+    //     inode = basicbtfs_iget(sb, ino);
+    //     goto end;
+    // }
 
     ino = basicbtfs_btree_node_lookup(sb, inode_info->i_bno, hash, 0);
 
@@ -75,7 +75,7 @@ struct dentry *basicbtfs_search_entry(struct inode *dir, struct dentry *dentry) 
         inode = basicbtfs_iget(sb, ino);
     }
 
-    end:
+    // end:
     dir->i_atime = current_time(dir);
     d_add(dentry, inode);
     return NULL;
@@ -117,7 +117,7 @@ int basicbtfs_add_entry(struct inode *dir, struct inode *inode, struct dentry *d
 
     ret = basicbtfs_btree_node_insert(dir->i_sb, dir, inode_info->i_bno, &new_entry);
     ret = basicbtfs_btree_node_cache_insert(dir->i_sb, dir, basicbtfs_cache_get_root_node(inode_info->i_bno), &new_entry);
-
+    
     // printk(KERN_INFO "START Debug btree traverse added: %s\n", dentry->d_name.name);
     // // basicbtfs_nametree_iterate_name_debug(dir->i_sb, name_bno);
     // printk(KERN_INFO "END Debug btree traverse\n");
@@ -158,7 +158,7 @@ int basicbtfs_delete_entry(struct inode *dir, struct dentry *dentry) {
     }
 
     ret = basicbtfs_btree_delete_entry(dir->i_sb, dir, inode_info->i_bno, hash);
-    ret = basicbtfs_btree_cache_delete_entry(dir->i_sb, dir, basicbtfs_cache_get_root_node(inode_info->i_bno), hash);
+    // ret = basicbtfs_btree_cache_delete_entry(dir->i_sb, dir, basicbtfs_cache_get_root_node(inode_info->i_bno), hash);
 
     ret = basicbtfs_nametree_delete_name(dir->i_sb, new_entry.name_bno, new_entry.block_index, inode_info->i_bno);
 

@@ -145,7 +145,7 @@ static inline int basicbtfs_nametree_insert_name(struct super_block *sb, uint32_
         printk("inserted filename: %s | %d | %d\n", filename, dir_entry->name_bno, dir_entry->block_index);
         name_tree->nr_of_entries++;
         mark_buffer_dirty(bh);
-        basicbtfs_cache_update_block(sb, dir_bno, (struct basicbtfs_block *) bh->b_data, name_bno);
+        // basicbtfs_cache_update_block(sb, dir_bno, (struct basicbtfs_block *) bh->b_data, name_bno);
         // basicbtfs_cache_update_block(sb, dir_bno, next_bno, (struct basicbtfs_block *) bh->b_data, cur_block_index);
         brelse(bh);
         return 0;
@@ -180,7 +180,7 @@ static inline int basicbtfs_nametree_insert_name(struct super_block *sb, uint32_
             printk("inserted filename: %s | %d | %d\n", filename, dir_entry->name_bno, dir_entry->block_index);
             name_tree->nr_of_entries++;
             mark_buffer_dirty(bh);
-            basicbtfs_cache_update_block(sb, dir_bno, (struct basicbtfs_block *) bh->b_data, next_bno);
+            // basicbtfs_cache_update_block(sb, dir_bno, (struct basicbtfs_block *) bh->b_data, next_bno);
             brelse(bh);
             return 0;
         }
@@ -219,7 +219,7 @@ static inline int basicbtfs_nametree_insert_name(struct super_block *sb, uint32_
         printk("inserted filename: %s | %d | %d\n", filename, dir_entry->name_bno, dir_entry->block_index);
         name_tree->nr_of_entries++;
         mark_buffer_dirty(bh);
-        basicbtfs_cache_add_name_block(sb, dir_bno, (struct basicbtfs_block *)bh->b_data, next_bno);
+        // basicbtfs_cache_add_name_block(sb, dir_bno, (struct basicbtfs_block *)bh->b_data, next_bno);
         // basicbtfs_cache_add_name_block(sb, dir_bno, (struct basicbtfs_block *)bh->b_data);
         brelse(bh);
         return 0;
@@ -254,7 +254,7 @@ static inline int basicbtfs_nametree_delete_name(struct super_block *sb, uint32_
     name_tree->nr_of_entries--;
 
     mark_buffer_dirty(bh);
-    basicbtfs_cache_update_block(sb, dir_bno, (struct basicbtfs_block *)bh->b_data, name_bno);
+    // basicbtfs_cache_update_block(sb, dir_bno, (struct basicbtfs_block *)bh->b_data, name_bno);
     brelse(bh);
 
     return 0;

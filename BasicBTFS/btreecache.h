@@ -97,42 +97,42 @@ static inline int basicbtfs_btree_cache_split_child(struct super_block *sb, stru
 }
 
 static inline int basicbtfs_btree_cache_insert_non_full(struct super_block *sb, struct basicbtfs_btree_node_cache *node, struct basicbtfs_entry *new_entry, struct inode *inode) {
-    struct basicbtfs_btree_node_cache *child = NULL;
-    int ret = 0;
+    // struct basicbtfs_btree_node_cache *child = NULL;
+    // int ret = 0;
 
-    if (node->leaf) {
-        int index = node->nr_of_keys - 1;
-        // node->entries[index].hash > new_entry->hash
-        while (index >= 0 && node->entries[index].hash > new_entry->hash) {
-            memcpy(&node->entries[index + 1], &node->entries[index], sizeof(struct basicbtfs_entry));
-            index--;
-        }
+    // if (node->leaf) {
+    //     int index = node->nr_of_keys - 1;
+    //     // node->entries[index].hash > new_entry->hash
+    //     while (index >= 0 && node->entries[index].hash > new_entry->hash) {
+    //         memcpy(&node->entries[index + 1], &node->entries[index], sizeof(struct basicbtfs_entry));
+    //         index--;
+    //     }
 
-        memcpy(&node->entries[index + 1], new_entry, sizeof(struct basicbtfs_entry));
-        node->nr_of_keys++;
-    } else {
-        int index = node->nr_of_keys - 1;
-        // node->entries[index].hash > new_entry->hash
-        while (index >= 0 && node->entries[index].hash > new_entry->hash) {
-            index--;
-        }
+    //     memcpy(&node->entries[index + 1], new_entry, sizeof(struct basicbtfs_entry));
+    //     node->nr_of_keys++;
+    // } else {
+    //     int index = node->nr_of_keys - 1;
+    //     // node->entries[index].hash > new_entry->hash
+    //     while (index >= 0 && node->entries[index].hash > new_entry->hash) {
+    //         index--;
+    //     }
 
-        child = node->children[index + 1];
+    //     child = node->children[index + 1];
 
-        if (child->nr_of_keys == 2 * BASICBTFS_MIN_DEGREE - 1) {
-            ret = basicbtfs_btree_cache_split_child(sb, node, node->children[index + 1], index + 1, inode);
+    //     if (child->nr_of_keys == 2 * BASICBTFS_MIN_DEGREE - 1) {
+    //         ret = basicbtfs_btree_cache_split_child(sb, node, node->children[index + 1], index + 1, inode);
 
-            if (ret != 0) {
-                return ret;
-            }
-            // node->entries[index+1].hash < new_entry->hash
-            if (node->entries[index+1].hash < new_entry->hash) {
-                index++;
-            }
-        }
-        basicbtfs_btree_cache_insert_non_full(sb, node->children[index + 1], new_entry, inode);
+    //         if (ret != 0) {
+    //             return ret;
+    //         }
+    //         // node->entries[index+1].hash < new_entry->hash
+    //         if (node->entries[index+1].hash < new_entry->hash) {
+    //             index++;
+    //         }
+    //     }
+    //     basicbtfs_btree_cache_insert_non_full(sb, node->children[index + 1], new_entry, inode);
 
-    }
+    // }
 
     return 0;
 }
@@ -144,7 +144,7 @@ static inline int basicbtfs_btree_node_cache_insert(struct super_block *sb, stru
     if (old_node->nr_of_keys == 2 * BASICBTFS_MIN_DEGREE -1) {
         int index = 0;
 
-        new_node = (struct basicbtfs_btree_node_cache *) basicbtfs_alloc_btree_node_data(sb);
+        new_node = (struct basicbtfs_btree_node_cache *)basicbtfs_alloc_file(sb);
         basicbtfs_btree_node_cache_init(sb, new_node, false);
         new_node->children[0] = old_node;
         basicbtfs_cache_add_node(sb, BASICBTFS_INODE(par_inode)->i_bno, new_node);
