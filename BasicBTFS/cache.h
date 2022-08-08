@@ -23,15 +23,15 @@ static inline void basicbtfs_cache_add_dir(struct super_block *sb, uint32_t bno,
     new_cache_dir_entry->name_tree_cache = basicbtfs_alloc_nametree_hdr(sb);
     name_tree_cache = basicbtfs_alloc_nametree_hdr(sb);
 
-    // new_cache_dir_entry->name_tree_cache->name_tree_block = basicbtfs_alloc_file(sb);
-    // name_tree_cache->name_tree_block = basicbtfs_alloc_file(sb);
+    new_cache_dir_entry->name_tree_cache->name_tree_block = basicbtfs_alloc_file(sb);
+    name_tree_cache->name_tree_block = basicbtfs_alloc_file(sb);
 
-    // name_tree_cache->name_bno = name_bno;
-    // memcpy(name_tree_cache->name_tree_block, name_block, sizeof(struct basicbtfs_block));
+    name_tree_cache->name_bno = name_bno;
+    memcpy(name_tree_cache->name_tree_block, name_block, sizeof(struct basicbtfs_block));
 
-    // INIT_LIST_HEAD(&new_cache_dir_entry->name_tree_cache->list);
-    // INIT_LIST_HEAD(&name_tree_cache->list);
-    // list_add(&name_tree_cache->list, &new_cache_dir_entry->name_tree_cache->list);
+    INIT_LIST_HEAD(&new_cache_dir_entry->name_tree_cache->list);
+    INIT_LIST_HEAD(&name_tree_cache->list);
+    list_add(&name_tree_cache->list, &new_cache_dir_entry->name_tree_cache->list);
 
     // list_add(&new_cache_dir_entry->name_tree_cache->list, &new_cache_dir_entry->name_tree_cache->list);
     INIT_LIST_HEAD(&new_cache_dir_entry->root_node_cache->list);
@@ -160,7 +160,6 @@ static inline void basicbtfs_cache_delete_dir_cache(void) {
 
     list_for_each_entry(dir_cache, &dir_cache_list, list) {
         list_for_each_entry(node_cache, &dir_cache->root_node_cache->list, list) {
-            printk("hi\n");
             // list_del(&node_cache->list);
             // basicbtfs_destroy_btree_node_data(node_cache);
         }
@@ -220,6 +219,59 @@ static inline bool basicbtfs_cache_iterate_dir(struct super_block *sb, uint32_t 
         if (dir_cache->bno == hash) {
             list_for_each_entry(nametree_hdr_cache, &dir_cache->name_tree_cache->list, list) {
                 basicbtfs_cache_emit_block(nametree_hdr_cache->name_tree_block, &total_nr_entries, &current_index, ctx, start_pos);
+            }
+
+            return true;
+        }
+    }
+    return false;
+}
+
+static inline int basicbtfs_cache_emit_block_debug(struct basicbtfs_block *btfs_block, int *total_nr_entries, int *current_index) {
+    struct basicbtfs_name_tree *name_tree = NULL;
+    struct basicbtfs_name_entry *cur_entry = NULL;
+    char *block = NULL;
+    char *filename = NULL;
+    int i = 0;
+    
+    name_tree = (struct basicbtfs_name_tree *) btfs_block;
+    block = (char *) btfs_block;
+    block += sizeof(struct basicbtfs_name_tree);
+    cur_entry = (struct basicbtfs_name_entry *) block;
+    *total_nr_entries += name_tree->nr_of_entries;
+
+    if (0 < *total_nr_entries) {
+        for (i = 0; i < name_tree->nr_of_entries; i++) {
+            block += sizeof(struct basicbtfs_name_entry);
+            if (cur_entry->ino != 0) {
+                filename = kzalloc(sizeof(char) * cur_entry->name_length, GFP_KERNEL);
+                strncpy(filename, block, cur_entry->name_length);
+                printk("current filename: %s\n", filename);
+                kfree(filename);
+            } else {
+                i--;
+            }
+
+            block += cur_entry->name_length;
+            cur_entry = (struct basicbtfs_name_entry *) block;
+            // *current_index++;
+        }
+    }
+
+    printk("current index: %d\n", *current_index);
+    return 0;
+}
+
+static inline bool basicbtfs_cache_iterate_dir_debug(struct super_block *sb, uint32_t hash) {
+    struct basicbtfs_btree_dir_cache_list *dir_cache;
+    struct basicbtfs_name_tree_cache *nametree_hdr_cache;
+    uint32_t current_index = 0;
+    uint32_t total_nr_entries = 0;
+
+    list_for_each_entry(dir_cache, &dir_cache_list, list) {
+        if (dir_cache->bno == hash) {
+            list_for_each_entry(nametree_hdr_cache, &dir_cache->name_tree_cache->list, list) {
+                basicbtfs_cache_emit_block_debug(nametree_hdr_cache->name_tree_block, &total_nr_entries, &current_index);
             }
 
             return true;

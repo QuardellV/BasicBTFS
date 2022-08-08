@@ -118,9 +118,11 @@ int basicbtfs_add_entry(struct inode *dir, struct inode *inode, struct dentry *d
     ret = basicbtfs_btree_node_insert(dir->i_sb, dir, inode_info->i_bno, &new_entry);
     ret = basicbtfs_btree_node_cache_insert(dir->i_sb, dir, basicbtfs_cache_get_root_node(inode_info->i_bno), &new_entry);
     
-    // printk(KERN_INFO "START Debug btree traverse added: %s\n", dentry->d_name.name);
-    // // basicbtfs_nametree_iterate_name_debug(dir->i_sb, name_bno);
-    // printk(KERN_INFO "END Debug btree traverse\n");
+    printk(KERN_INFO "START Debug btree traverse added: %s\n", dentry->d_name.name);
+    basicbtfs_nametree_iterate_name_debug(dir->i_sb, name_bno);
+    printk(KERN_INFO "CACHE\n");
+    basicbtfs_cache_iterate_dir_debug(dir->i_sb, inode_info->i_bno);
+    printk(KERN_INFO "END Debug btree traverse\n");
 
     return ret;
 }
