@@ -119,8 +119,6 @@ static inline int basicbtfs_nametree_insert_name(struct super_block *sb, uint32_
     uint32_t next_bno;
     char *block = NULL;
     char *filename = NULL;
-
-    printk("hello\n");
     
     bh = sb_bread(sb, name_bno);
 
@@ -284,7 +282,6 @@ static inline int basicbtfs_nametree_iterate_name_debug(struct super_block *sb, 
     total_nr_entries = name_tree->nr_of_entries;
 
     for (i = 0; i < name_tree->nr_of_entries; i++) {
-        printk("next entry: %d\n", i);
         block += sizeof(struct basicbtfs_name_entry);
         if (cur_entry->ino != 0) {
             filename = kzalloc(sizeof(char) * cur_entry->name_length, GFP_KERNEL);

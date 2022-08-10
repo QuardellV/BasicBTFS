@@ -28,7 +28,7 @@ static inline int basicbtfs_btree_cache_update_root(struct inode *inode, uint32_
     printk("update root\n");
 
     if (ino >= sbi->s_ninodes) return -1;
-    basicbtfs_cache_update_root_node(old_bno, node_cache, inode);
+    basicbtfs_cache_update_root_node(inode_info->i_bno, node_cache);
     // basicbtfs_cache_update_root_node(sb, inode_info->i_bno, bno);
 
     return 0;
@@ -62,7 +62,7 @@ static inline int basicbtfs_btree_cache_split_child(struct super_block *sb, stru
     struct basicbtfs_btree_node_cache *node_rhs = NULL;
     int i = 0;
 
-    node_rhs = (struct basicbtfs_btree_node_cache *) basicbtfs_alloc_btree_node_data(sb);
+    node_rhs = (struct basicbtfs_btree_node_cache *) basicbtfs_alloc_file(sb);
 
     basicbtfs_btree_node_cache_init(sb, node_rhs, node_lhs->leaf);
     node_rhs->nr_of_keys = BASICBTFS_MIN_DEGREE - 1;
@@ -141,10 +141,7 @@ static inline int basicbtfs_btree_node_cache_insert(struct super_block *sb, stru
     struct basicbtfs_btree_node_cache *new_node = NULL;
     int ret = 0;
 
-    printk("nr of keys cache: %d\n", old_node->nr_of_keys);
-
     if (old_node->nr_of_keys == 2 * BASICBTFS_MIN_DEGREE -1) {
-        printk("first case: %d\n", BASICBTFS_INODE(par_inode)->i_bno);
         int index = 0;
 
         new_node = (struct basicbtfs_btree_node_cache *)basicbtfs_alloc_file(sb);
@@ -178,7 +175,6 @@ static inline int basicbtfs_btree_node_cache_insert(struct super_block *sb, stru
         new_node->nr_times_done = old_node->nr_times_done + 1;
         new_node->tree_name_bno = old_node->tree_name_bno;
     } else {
-        printk("second case\n");
         ret = basicbtfs_btree_cache_insert_non_full(sb, old_node, entry, par_inode, old_bno);
 
         if (ret != 0) {
@@ -426,10 +422,8 @@ static inline int basicbtfs_btree_node_cache_delete(struct super_block *sb, stru
     // node->entries[index].hash == new_entry->hash
     if (index < node->nr_of_keys && node->entries[index].hash == hash) {
         if (node->leaf) {
-            printk("leaf\n");
             ret = basicbtfs_btree_node_cache_remove_from_leaf(sb, node, index);
         } else {
-            printk("no leaf\n");
             ret = basicbtfs_btree_node_cache_remove_from_nonleaf(sb, node, index, inode);
         }
     } else {

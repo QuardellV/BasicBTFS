@@ -36,7 +36,18 @@ static inline int basicbtfs_btree_update_root(struct inode *inode, uint32_t bno)
 
     if (!bh) return -EIO;
 
+    printk(KERN_INFO "START Debug btree traverse added update before\n");
+    printk(KERN_INFO "CACHE: current dir_bno: %d\n", inode_info->i_bno);
+    basicbtfs_cache_iterate_dir_debug(inode->i_sb, inode_info->i_bno);
+    printk(KERN_INFO "END Debug btree traverse update before\n");
+
     // basicbtfs_cache_update_root_node(sb, inode_info->i_bno, bno);
+    basicbtfs_cache_update_root_bno(inode_info->i_bno, bno);
+
+    printk(KERN_INFO "START Debug btree traverse added update after\n");
+    printk(KERN_INFO "CACHE: current dir_bno: %d\n", bno);
+    basicbtfs_cache_iterate_dir_debug(inode->i_sb, bno);
+    printk(KERN_INFO "END Debug btree traverse update after\n");
 
     disk_inode = (struct basicbtfs_inode *) bh->b_data;
     disk_inode += inode_offset;

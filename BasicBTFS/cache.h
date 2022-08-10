@@ -109,14 +109,37 @@ static inline void basicbtfs_cache_update_block(struct super_block *sb, uint32_t
     }
 }
 
-static inline void basicbtfs_cache_update_root_node(uint32_t dir_bno, struct basicbtfs_btree_node_cache *new_node, struct inode *inode) {
-    struct basicbtfs_btree_dir_cache_list *dir_cache;
+static inline void basicbtfs_cache_update_root_node(uint32_t dir_bno, struct basicbtfs_btree_node_cache *new_node) {
+    struct basicbtfs_btree_dir_cache_list *tmp, *dir_cache;
+    struct basicbtfs_btree_node_cache *node_cache;
 
-    list_for_each_entry(dir_cache, &dir_cache_list, list) {
+    list_for_each_entry_safe(dir_cache, tmp, &dir_cache_list, list) {
         if (dir_cache->bno == dir_bno) {
+            printk("found\n");
             list_del(&new_node->list);
             list_add(&new_node->list, &dir_cache->root_node_cache->list);
-            dir_cache->bno = BASICBTFS_INODE(inode)->i_bno;
+            break;
+        }
+    }
+
+    node_cache =  list_first_entry(&dir_cache->root_node_cache->list, struct basicbtfs_btree_node_cache, list);
+    if (new_node == node_cache) {
+        printk("si\n");
+    } else {
+        printk("not the same\n");
+    }
+}
+
+static inline void basicbtfs_cache_update_root_bno(uint32_t dir_bno, uint32_t new_bno) {
+    struct basicbtfs_btree_dir_cache_list *tmp, *dir_cache;
+    printk("new bno: %d\n", new_bno);
+    bool found = false;
+
+    list_for_each_entry_safe(dir_cache, tmp, &dir_cache_list, list) {
+        if (dir_cache->bno == dir_bno) {
+            list_del(&dir_cache->list);
+            dir_cache->bno = new_bno;
+            list_add(&dir_cache->list, &dir_cache_list);
         }
     }
 }
@@ -128,11 +151,15 @@ static inline struct basicbtfs_btree_node_cache * basicbtfs_cache_get_root_node(
     printk("current dir_bno: %d\n", dir_bno);
 
     list_for_each_entry(dir_cache, &dir_cache_list, list) {
+        printk("checked bno: %d\n", dir_cache->bno);
         if (dir_cache->bno == dir_bno) {
+            printk("found new bno: %d\n", dir_bno);
             node_cache =  list_first_entry(&dir_cache->root_node_cache->list, struct basicbtfs_btree_node_cache, list);
             return node_cache;
         }
     }
+
+    printk("no :(\n");
     return NULL;
 }
 
@@ -211,7 +238,6 @@ static inline int basicbtfs_cache_emit_block(struct basicbtfs_block *btfs_block,
         }
     }
 
-    printk("current index: %d\n", *current_index);
     return 0;
 }
 
@@ -246,22 +272,22 @@ static inline int basicbtfs_cache_emit_block_debug(struct basicbtfs_block *btfs_
     cur_entry = (struct basicbtfs_name_entry *) block;
     *total_nr_entries += name_tree->nr_of_entries;
 
-    if (0 < *total_nr_entries) {
-        for (i = 0; i < name_tree->nr_of_entries; i++) {
-            block += sizeof(struct basicbtfs_name_entry);
-            if (cur_entry->ino != 0) {
-                filename = kzalloc(sizeof(char) * cur_entry->name_length, GFP_KERNEL);
-                strncpy(filename, block, cur_entry->name_length);
-                printk("current filename: %s\n", filename);
-                kfree(filename);
-            } else {
-                i--;
-            }
+    printk("nr of entries: %d\n", name_tree->nr_of_entries);
 
-            block += cur_entry->name_length;
-            cur_entry = (struct basicbtfs_name_entry *) block;
-            // *current_index++;
+    for (i = 0; i < name_tree->nr_of_entries; i++) {
+        block += sizeof(struct basicbtfs_name_entry);
+        if (cur_entry->ino != 0) {
+            filename = kzalloc(sizeof(char) * cur_entry->name_length, GFP_KERNEL);
+            strncpy(filename, block, cur_entry->name_length);
+            printk("current filename: %s\n", filename);
+            kfree(filename);
+        } else {
+            i--;
         }
+
+        block += cur_entry->name_length;
+        cur_entry = (struct basicbtfs_name_entry *) block;
+        // *current_index++;
     }
 
     printk("current index: %d\n", *current_index);
@@ -276,7 +302,9 @@ static inline bool basicbtfs_cache_iterate_dir_debug(struct super_block *sb, uin
 
     list_for_each_entry(dir_cache, &dir_cache_list, list) {
         if (dir_cache->bno == hash) {
+            printk("start operation\n");
             list_for_each_entry(nametree_hdr_cache, &dir_cache->name_tree_cache->list, list) {
+                printk("iterate\n");
                 basicbtfs_cache_emit_block_debug(nametree_hdr_cache->name_tree_block, &total_nr_entries, &current_index);
             }
 
@@ -324,7 +352,7 @@ static inline int basicbtfs_cache_lookup_entry(struct super_block *sb, uint32_t 
 static inline void basicbtfs_cache_delete_node(struct super_block *sb, uint32_t hash, struct basicbtfs_btree_node_cache *node_cache) {
 
     list_del(&node_cache->list);
-    basicbtfs_destroy_btree_node_data(node_cache);
+    // basicbtfs_destroy_btree_node_data(node_cache);
 }
 
 #endif
