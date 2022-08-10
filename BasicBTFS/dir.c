@@ -16,7 +16,7 @@ static int basicbtfs_iterate(struct file *dir, struct dir_context *ctx) {
     struct inode *inode = file_inode(dir);
     struct basicbtfs_inode_info *inode_info = BASICBTFS_INODE(inode);
     struct super_block *sb = inode->i_sb;
-    uint32_t name_bno = 0;
+    uint32_t name_bno = 0, nr_of_files = 0;
     struct buffer_head *bh = NULL;
     struct basicbtfs_btree_node *node = NULL;
 
@@ -38,18 +38,23 @@ static int basicbtfs_iterate(struct file *dir, struct dir_context *ctx) {
     basicbtfs_btree_traverse_debug(sb, inode_info->i_bno);
     printk(KERN_INFO "END Debug btree iterate\n");
 
-    if (basicbtfs_cache_iterate_dir(sb, inode_info->i_bno, ctx, ctx->pos - 2)) {
-        printk("found in cache\n");
-        return 0;
-    }
-
     bh = sb_bread(sb, inode_info->i_bno);
 
     if (!bh) return -EIO;
 
     node = (struct basicbtfs_btree_node *) bh->b_data;
     name_bno = node->tree_name_bno;
+    nr_of_files = node->nr_of_files;
     brelse(bh);
+
+    if (basicbtfs_cache_iterate_dir(sb, inode_info->i_bno, ctx, ctx->pos - 2)) {
+        printk("found in cache and ctx pos: %d | %lld\n", nr_of_files, ctx->pos - 2);
+        if (ctx->pos - 2 >= nr_of_files) {
+            printk("all in cache\n");
+            return 0;
+        }
+    }
+
     // basicbtfs_nametree_iterate_name_debug(sb, name_bno);
     // return basicbtfs_btree_traverse(sb, inode_info->i_bno, ctx, ctx->pos - 2, &ctx_index);
     return basicbtfs_nametree_iterate_name(sb, name_bno, ctx, ctx->pos - 2);
@@ -63,12 +68,12 @@ struct dentry *basicbtfs_search_entry(struct inode *dir, struct dentry *dentry) 
 
     hash = get_hash(dentry);
 
-    // ino = basicbtfs_cache_lookup_entry(sb, inode_info->i_bno, hash);
+    ino = basicbtfs_cache_lookup_entry(sb, inode_info->i_bno, hash);
 
-    // if (ino != 0 && ino != -1) {
-    //     inode = basicbtfs_iget(sb, ino);
-    //     goto end;
-    // }
+    if (ino != 0 && ino != -1) {
+        inode = basicbtfs_iget(sb, ino);
+        goto end;
+    }
 
     ino = basicbtfs_btree_node_lookup(sb, inode_info->i_bno, hash, 0);
 
@@ -76,7 +81,7 @@ struct dentry *basicbtfs_search_entry(struct inode *dir, struct dentry *dentry) 
         inode = basicbtfs_iget(sb, ino);
     }
 
-    // end:
+    end:
     dir->i_atime = current_time(dir);
     d_add(dentry, inode);
     return NULL;
@@ -86,7 +91,7 @@ int basicbtfs_add_entry(struct inode *dir, struct inode *inode, struct dentry *d
     struct basicbtfs_inode_info *inode_info = BASICBTFS_INODE(dir);
     int ret = 0;
     struct basicbtfs_entry new_entry;
-    uint32_t name_bno = 0, hash = 0, dir_bno = 0;
+    uint32_t name_bno = 0, hash = 0, dir_bno = 0, nr_of_blocks = 0;
     struct buffer_head *bh = NULL;
     struct basicbtfs_btree_node *node = NULL;
     struct basicbtfs_btree_node_cache *node_cache = NULL;
@@ -116,18 +121,22 @@ int basicbtfs_add_entry(struct inode *dir, struct inode *inode, struct dentry *d
     basicbtfs_cache_iterate_dir_debug(dir->i_sb, inode_info->i_bno);
     printk(KERN_INFO "END Debug btree traverse before\n");
 
+    nr_of_blocks = basicbtfs_cache_get_nr_of_blocks(inode_info->i_bno);
 
-    ret = basicbtfs_nametree_insert_name(dir->i_sb, name_bno, &new_entry, dentry, inode_info->i_bno);
+
+    ret = basicbtfs_nametree_insert_name(dir->i_sb, name_bno, &new_entry, dentry, inode_info->i_bno, nr_of_blocks);
     printk("added to nametree succesfully before addition: %d\n", inode_info->i_bno);
 
 
     ret = basicbtfs_btree_node_insert(dir->i_sb, dir, inode_info->i_bno, &new_entry);
     printk("added to btree succesfully: %d\n", inode_info->i_bno);
 
-    node_cache = basicbtfs_cache_get_root_node(inode_info->i_bno);
-    ret = basicbtfs_btree_node_cache_insert(dir->i_sb, dir, node_cache, &new_entry, inode_info->i_bno);
 
-    
+    if (nr_of_blocks < BASICBTFS_MAX_CACHE_BLOCKS_PER_DIR) {
+        node_cache = basicbtfs_cache_get_root_node(inode_info->i_bno);
+        ret = basicbtfs_btree_node_cache_insert(dir->i_sb, dir, node_cache, &new_entry, inode_info->i_bno);
+    }
+
     printk(KERN_INFO "START Debug btree traverse added: %s\n", dentry->d_name.name);
     basicbtfs_nametree_iterate_name_debug(dir->i_sb, name_bno);
     printk(KERN_INFO "CACHE: current dir_bno: %d\n", inode_info->i_bno);
