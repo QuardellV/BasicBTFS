@@ -293,7 +293,7 @@ test_create_root() {
 
     echo "$(tput setaf 6)CREATE ROOT TESTS: $test_count$(tput setaf 7)" 
 
-    local result=$(sudo sh -c "ls -l | grep -e 'basicftfs.ko' | wc -l")
+    local result=$(sudo sh -c "ls -l | grep -e 'basicbtfs.ko' | wc -l")
     if [ "$result" == 1 ]
     then
         ((test_passed++))
@@ -511,7 +511,7 @@ test_create_nfiles_subdir_1() {
 
     local test_passed=0
     local dirname=$(tr -dc A-Za-z </dev/urandom | head -c 16)
-    local random_number=$[RANDOM%15+14]
+    local random_number=500
     local test_count=$((1 + 2 * $random_number))
 
     echo "$(tput setaf 6)CREATE FILES SUBDIR DEPTH 1 TESTS: "$test_count"$(tput setaf 7)"
@@ -817,7 +817,7 @@ test_rmdir_nonempty() {
 }
 
 test_rm_empty() {
-    local test_count=3
+    local test_count=5
     local test_passed=0
     local filename=$(tr -dc A-Za-z </dev/urandom | head -c 16)
     local filename2=$(tr -dc A-Za-z </dev/urandom | head -c 16)
@@ -833,21 +833,21 @@ test_rm_empty() {
         ((test_passed++))
     fi
 
-    # test_create_file 'touch test/'$filename2'' $F_MOD "1" $filename2 "" "FILE EMPTY" $filename2 "1"
-    # ret=$?
+    test_create_file 'touch test/'$filename2'' $F_MOD "1" $filename2 "" "FILE EMPTY" $filename2 "1"
+    ret=$?
 
-    # if [ "$ret" == 0 ]
-    # then
-    #     ((test_passed++))
-    # fi
+    if [ "$ret" == 0 ]
+    then
+        ((test_passed++))
+    fi
 
-    # test_create_file 'touch test/'$filename3'' $F_MOD "1" $filename3 "" "FILE EMPTY" $filename3 "1"
-    # ret=$?
+    test_create_file 'touch test/'$filename3'' $F_MOD "1" $filename3 "" "FILE EMPTY" $filename3 "1"
+    ret=$?
 
-    # if [ "$ret" == 0 ]
-    # then
-    #     ((test_passed++))
-    # fi
+    if [ "$ret" == 0 ]
+    then
+        ((test_passed++))
+    fi
 
     test_rmfile 'rm -rf test/'$filename'' $F_MOD "1" $filename "1"
     ret=$?
@@ -2067,10 +2067,10 @@ test_mkdir_toolong
 
 test_create_file_subdir_1
 test_create_file_subdir_n
-test_create_nfiles_subdir_1
+# test_create_nfiles_subdir_1
 
 test_write_small
-test_write_advanced
+# test_write_advanced
 
 test_rm_empty
 test_rm_small
@@ -2082,14 +2082,14 @@ test_rmdir_nonempty
 test_rm_in_subdir
 test_rm_subdir
 
-test_move_file_simple
-test_move_file_noreplace
-test_move_file_overwrite
-test_move_file_to_other_dir
-test_move_advanced
+# # test_move_file_simple
+# # test_move_file_noreplace
+# # test_move_file_overwrite
+# # test_move_file_to_other_dir
+# # # test_move_advanced
 
-test_move_dir_simple
-test_move_dir_in_dir
+# # test_move_dir_simple
+# # test_move_dir_in_dir
 
 test_advanced_sequence_1
 test_advanced_sequence_2

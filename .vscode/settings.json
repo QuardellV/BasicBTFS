@@ -5,6 +5,8 @@
         "module.h": "c",
         "buffer_head.h": "c",
         "basicftfs.h": "c",
-        "fs.h": "c"
+        "fs.h": "c",
+        "basicbtfs.h": "c",
+        "btreecache.h": "c"
     }
 }

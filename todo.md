@@ -27,13 +27,7 @@
   - Check where it actually would make sense. Definitely not for the bitmap for the inode/blocks // Next week
 - Check how the filesystem can be defragmented also including garbage collection // Next week
 - check how we can use cache to reduce the I/O costs. LRU which is around 10% of the total memory // This week
-  - Makes sense to use it for things with much space and/or a lot of I/O interactions
-  - files
-  - frequent entries
-  - make it circular linked lists. Make separate cache for each btree dir entry, and its info itself. most likely need to implement btree_node in cache as well
-  - Make separate for each file entry, and its info itself
-  - It is possible to make a simple btree starting from the root of the last 100 directories. in this way we can search and iterate last hundred directories
-  - It is posssible to make a simple linked list of the last 100 files/ or basically allocate memory for n amount of bytes. same applies for the directories
+  - Make lazy cleanup for cache
 - Check how the filesystem can truncate/shrink during write_begin/end // Next week
 - Check how a snapshot can be made using reflink // Next week
 <!-- - free space management using buddy slab allocator/ pre-allocation? // Next week -->
