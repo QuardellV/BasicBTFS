@@ -239,6 +239,7 @@ int init_sbi(struct super_block *sb, struct basicbtfs_sb_info *csb, struct basic
     sbi->s_bmap_blocks = csb->s_bmap_blocks;
     sbi->s_nfree_inodes = csb->s_nfree_inodes;
     sbi->s_nfree_blocks = csb->s_nfree_blocks;
+    sbi->s_cache_dir_entries = 0;
     sb->s_fs_info = sbi;
     return 0;
 }
@@ -356,7 +357,10 @@ int basicbtfs_fill_super(struct super_block *sb, void *data, int silent)
     node_cache = (struct basicbtfs_btree_node_cache *)basicbtfs_alloc_file(sb);
     // basicbtfs_destroy_btree_node_data(node_cache);
     basicbtfs_btree_node_cache_init(sb, node_cache, true);
-    basicbtfs_cache_add_dir(sb, BASICBTFS_INODE(root_inode)->i_bno, node_cache, (struct basicbtfs_block *)bh_name_table->b_data, node->tree_name_bno);
+
+    if (sbi->s_cache_dir_entries < BASICBTFS_MAX_CACHE_DIR_ENTRIES ) {
+        basicbtfs_cache_add_dir(sb, BASICBTFS_INODE(root_inode)->i_bno, node_cache, (struct basicbtfs_block *)bh_name_table->b_data, node->tree_name_bno);
+    }
 
     mark_buffer_dirty(bh);
     brelse(bh);

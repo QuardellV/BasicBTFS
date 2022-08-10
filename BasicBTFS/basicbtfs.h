@@ -19,7 +19,8 @@
 
 #define BASICBTFS_MAX_BLOCKS_PER_CLUSTER 4
 
-#define BASICBTFS_MAX_CACHE_DIR_ENTRIES 100
+#define BASICBTFS_MAX_CACHE_DIR_ENTRIES    100
+#define BASICBTFS_MAX_DACHE_BLOCKS_PER_DIR 250
 
 
 
@@ -49,6 +50,7 @@ struct basicbtfs_sb_info {
     uint32_t s_inode_blocks;
     uint32_t s_nfree_inodes;
     uint32_t s_nfree_blocks;
+    uint32_t s_cache_dir_entries;
 
 #ifdef __KERNEL__
     unsigned long *s_ifree_bitmap;
@@ -129,6 +131,7 @@ struct basicbtfs_block {
 struct basicbtfs_btree_dir_cache_list {
     struct list_head list;
     uint32_t bno;
+    uint32_t nr_of_blocks;
     struct basicbtfs_btree_node_cache *root_node_cache;
     struct basicbtfs_name_tree_cache *name_tree_cache;
 };

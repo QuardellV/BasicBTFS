@@ -127,6 +127,7 @@ static struct inode *basicbtfs_new_inode(struct inode *dir, mode_t mode) {
 
 static int basicbtfs_create(struct inode *dir, struct dentry *dentry, umode_t mode, bool excl) {
     struct super_block *sb = dir->i_sb;
+    struct basicbtfs_sb_info *sbi = BASICBTFS_SB(sb);
     struct inode *inode = NULL;
     struct basicbtfs_inode_info *bfs_inode_info_dir = NULL;
     struct basicbtfs_btree_node *node = NULL;
@@ -216,7 +217,10 @@ static int basicbtfs_create(struct inode *dir, struct dentry *dentry, umode_t mo
         node_cache = (struct basicbtfs_btree_node_cache *)basicbtfs_alloc_file(sb);
         // // basicbtfs_destroy_btree_node_data(node_cache);
         basicbtfs_btree_node_cache_init(sb, node_cache, true);
-        basicbtfs_cache_add_dir(sb, BASICBTFS_INODE(inode)->i_bno, node_cache, (struct basicbtfs_block *)bh_name_table->b_data, node->tree_name_bno);
+
+        if (sbi->s_cache_dir_entries < BASICBTFS_MAX_CACHE_DIR_ENTRIES ) {
+            basicbtfs_cache_add_dir(sb, BASICBTFS_INODE(inode)->i_bno, node_cache, (struct basicbtfs_block *)bh_name_table->b_data, node->tree_name_bno);
+        }
 
         mark_buffer_dirty(bh);
         brelse(bh);
@@ -269,7 +273,7 @@ static int basicbtfs_link(struct dentry *old_dentry,
 
 static int basicbtfs_unlink(struct inode *dir ,struct dentry *dentry) {
     int ret = 0;
-    uint32_t bno = 0, ino = 0;
+    uint32_t bno = 0, ino = 0, old_bno = 0;
     struct super_block *sb  = dir->i_sb;
     struct basicbtfs_sb_info *sbi = BASICBTFS_SB(sb);
     struct buffer_head *bh = NULL;
@@ -287,6 +291,7 @@ static int basicbtfs_unlink(struct inode *dir ,struct dentry *dentry) {
 
     /* Currently, it just resets the inode*/
     bno = BASICBTFS_INODE(inode)->i_bno;
+    printk("bno: %d\n", bno);
     bh = sb_bread(sb, bno);
     if (!bh) {
         clean_inode(inode);
@@ -302,6 +307,9 @@ static int basicbtfs_unlink(struct inode *dir ,struct dentry *dentry) {
         clean_inode(inode);
         put_blocks(sbi, bno, 1);
         put_inode(sbi, ino);
+        printk("nr of cache entries before: %d\n", sbi->s_cache_dir_entries);
+        basicbtfs_cache_delete_dir(sb, bno);
+        printk("nr of cache entries after: %d\n", sbi->s_cache_dir_entries);
         // basicbtfs_cache_delete_dir(sb, BASICBTFS_INODE(inode)->i_bno);
         //TODO: Bug
     } else if (S_ISREG(inode->i_mode)) {

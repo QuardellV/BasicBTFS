@@ -13,10 +13,12 @@
 
 static inline void basicbtfs_cache_add_dir(struct super_block *sb, uint32_t bno, struct basicbtfs_btree_node_cache *node, struct basicbtfs_block *name_block, uint32_t name_bno) {
     struct basicbtfs_btree_dir_cache_list *new_cache_dir_entry = basicbtfs_alloc_btree_dir(sb);
+    struct basicbtfs_sb_info *sbi = BASICBTFS_SB(sb);
     struct basicbtfs_name_tree_cache *name_tree_cache;
     // struct basicbtfs_block *tmp_block = basicbtfs_alloc_file(sb);
     new_cache_dir_entry->root_node_cache = (struct basicbtfs_btree_node_cache *)basicbtfs_alloc_file(sb);
     new_cache_dir_entry->bno = bno;
+    new_cache_dir_entry->nr_of_blocks = 5;
     INIT_LIST_HEAD(&new_cache_dir_entry->list);
     list_add(&new_cache_dir_entry->list, &dir_cache_list);
 
@@ -43,22 +45,27 @@ static inline void basicbtfs_cache_add_dir(struct super_block *sb, uint32_t bno,
     } else {
         printk("not empty\n");
     }
+    sbi->s_cache_dir_entries++;
 }
 
 static inline void basicbtfs_cache_add_node(struct super_block *sb, uint32_t dir_bno, struct basicbtfs_btree_node_cache *node) {
-    struct basicbtfs_btree_dir_cache_list *dir_cache;
+    struct basicbtfs_btree_dir_cache_list *dir_cache, *tmp;
 
-    list_for_each_entry(dir_cache, &dir_cache_list, list) {
+    list_for_each_entry_safe(dir_cache, tmp, &dir_cache_list, list) {
         if (dir_cache->bno == dir_bno) {
             INIT_LIST_HEAD(&node->list);
             list_add_tail(&node->list, &dir_cache->root_node_cache->list);
+
+            list_del(&dir_cache->list);
+            dir_cache->nr_of_blocks++;
+            list_add(&dir_cache->list, &dir_cache_list);
             break;
         }
     }
 }
 
 static inline void basicbtfs_cache_add_name_block(struct super_block *sb, uint32_t dir_bno, struct basicbtfs_block *name_block, uint32_t name_bno) {
-    struct basicbtfs_btree_dir_cache_list *dir_cache;
+    struct basicbtfs_btree_dir_cache_list *dir_cache, *tmp;
 
     printk("add name block\n");
 
@@ -68,10 +75,14 @@ static inline void basicbtfs_cache_add_name_block(struct super_block *sb, uint32
 
     memcpy(nametree_hdr->name_tree_block, name_block, sizeof(struct basicbtfs_block));
 
-    list_for_each_entry(dir_cache, &dir_cache_list, list) {
+    list_for_each_entry_safe(dir_cache, tmp, &dir_cache_list, list) {
         if (dir_cache->bno == dir_bno) {
             INIT_LIST_HEAD(&nametree_hdr->list);
             list_add(&nametree_hdr->list, &dir_cache->name_tree_cache->list);
+
+            list_del(&dir_cache->list);
+            dir_cache->nr_of_blocks++;
+            list_add(&dir_cache->list, &dir_cache_list);
             break;
         }
     }
@@ -95,11 +106,11 @@ static inline void basicbtfs_cache_add_name_block(struct super_block *sb, uint32
 
 static inline void basicbtfs_cache_update_block(struct super_block *sb, uint32_t dir_bno, struct basicbtfs_block *name_block, uint32_t name_bno) {
     struct basicbtfs_btree_dir_cache_list *dir_cache;
-    struct basicbtfs_name_tree_cache *nametree_hdr_cache;
+    struct basicbtfs_name_tree_cache *nametree_hdr_cache, *tmp;
 
     list_for_each_entry(dir_cache, &dir_cache_list, list) {
         if (dir_cache->bno == dir_bno) {
-            list_for_each_entry(nametree_hdr_cache, &dir_cache->name_tree_cache->list, list) {
+            list_for_each_entry_safe(nametree_hdr_cache, tmp, &dir_cache->name_tree_cache->list, list) {
                 if (nametree_hdr_cache->name_bno == name_bno) {
                     memcpy(nametree_hdr_cache->name_tree_block, name_block, sizeof(struct basicbtfs_block));
                     break;
@@ -163,42 +174,34 @@ static inline struct basicbtfs_btree_node_cache * basicbtfs_cache_get_root_node(
     return NULL;
 }
 
-static inline void basicbtfs_cache_delete_dir(struct super_block *sb, uint32_t hash) {
-    struct basicbtfs_btree_dir_cache_list *dir_cache;
-    struct basicbtfs_btree_node_cache *node_cache;
-    struct basicbtfs_name_tree_cache *nametree_hdr_cache;
 
-    list_for_each_entry(dir_cache, &dir_cache_list, list) {
+
+static inline void basicbtfs_cache_delete_dir(struct super_block *sb, uint32_t hash) {
+    struct basicbtfs_sb_info *sbi = BASICBTFS_SB(sb);
+    struct basicbtfs_btree_dir_cache_list *dir_cache, *tmp_dir_cache;
+    struct basicbtfs_btree_node_cache *node_cache, *tmp_node;
+    struct basicbtfs_name_tree_cache *nametree_hdr_cache, *tmp_natr_hdr_cache;
+
+    list_for_each_entry_safe(dir_cache, tmp_dir_cache, &dir_cache_list, list) {
         if (dir_cache->bno == hash) {
-            list_for_each_entry(node_cache, &dir_cache->root_node_cache->list, list) {
+            printk("found\n");
+            list_for_each_entry_safe(node_cache, tmp_node, &dir_cache->root_node_cache->list, list) {
+                printk("yes\n");
                 list_del(&node_cache->list);
+                basicbtfs_destroy_file_block((struct basicbtfs_block *) node_cache);
                 // basicbtfs_destroy_btree_node_data(node_cache);
             }
 
-            list_for_each_entry(nametree_hdr_cache, &dir_cache->name_tree_cache->list, list) {
+            list_for_each_entry_safe(nametree_hdr_cache, tmp_natr_hdr_cache, &dir_cache->name_tree_cache->list, list) {
                 list_del(&nametree_hdr_cache->list);
                 basicbtfs_destroy_file_block(nametree_hdr_cache->name_tree_block);
                 basicbtfs_destroy_nametree_hdr(nametree_hdr_cache);
             }
             list_del(&dir_cache->list);
             basicbtfs_destroy_btree_dir(dir_cache);
+            sbi->s_cache_dir_entries--;
             break;
         }
-    }
-}
-
-static inline void basicbtfs_cache_delete_dir_cache(void) {
-    struct basicbtfs_btree_dir_cache_list *dir_cache;
-    struct basicbtfs_btree_node_cache *node_cache;
-
-    list_for_each_entry(dir_cache, &dir_cache_list, list) {
-        list_for_each_entry(node_cache, &dir_cache->root_node_cache->list, list) {
-            // list_del(&node_cache->list);
-            // basicbtfs_destroy_btree_node_data(node_cache);
-        }
-
-        // list_del(&dir_cache->list);
-        // basicbtfs_destroy_btree_dir(dir_cache);
     }
 }
 
@@ -349,10 +352,37 @@ static inline int basicbtfs_cache_lookup_entry(struct super_block *sb, uint32_t 
     return 0;
 }
 
-static inline void basicbtfs_cache_delete_node(struct super_block *sb, uint32_t hash, struct basicbtfs_btree_node_cache *node_cache) {
+static inline void basicbtfs_cache_delete_node(struct super_block *sb, uint32_t dir_bno, struct basicbtfs_btree_node_cache *node_cache) {
+    struct basicbtfs_btree_dir_cache_list *dir_cache, *tmp;
+    list_for_each_entry_safe(dir_cache, tmp, &dir_cache_list, list) {
+        if (dir_cache->bno == dir_bno) {
+            list_del(&dir_cache->list);
+            dir_cache->nr_of_blocks--;
+            list_add(&dir_cache->list, &dir_cache_list);
 
-    list_del(&node_cache->list);
+            list_del(&node_cache->list);
+            basicbtfs_destroy_file_block((struct basicbtfs_block *) node_cache);
+            break;
+        }
+    }
+
     // basicbtfs_destroy_btree_node_data(node_cache);
 }
+
+// static inline void basicbtfs_cache_delete_name_block(struct super_block *sb, uint32_t dir_bno, struct basicbtfs_btree_node_cache *node_cache) {
+//     struct basicbtfs_btree_dir_cache_list *dir_cache, *tmp;
+//     list_for_each_entry_safe(dir_cache, tmp, &dir_cache_list, list) {
+//         if (dir_cache->bno == dir_bno) {
+//             list_del(&dir_cache->list);
+//             dir_cache->nr_of_blocks--;
+//             list_add(&dir_cache->list, &dir_cache_list);
+//             list_del(&node_cache->list);
+//             basicbtfs_destroy_file_block((struct basicbtfs_block *) node_cache);
+//             break;
+//         }
+//     }
+
+//     // basicbtfs_destroy_btree_node_data(node_cache);
+// }
 
 #endif

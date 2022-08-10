@@ -34,13 +34,14 @@ static int basicbtfs_iterate(struct file *dir, struct dir_context *ctx) {
         return 0;
     }
 
-    // printk(KERN_INFO "START Debug btree iterate\n");
-    // basicbtfs_btree_traverse_debug(sb, inode_info->i_bno);
-    // printk(KERN_INFO "END Debug btree iterate\n");
+    printk(KERN_INFO "START Debug btree iterate\n");
+    basicbtfs_btree_traverse_debug(sb, inode_info->i_bno);
+    printk(KERN_INFO "END Debug btree iterate\n");
 
-    // if (basicbtfs_cache_iterate_dir(sb, inode_info->i_bno, ctx, ctx->pos - 2)) {
-    //     return 0;
-    // }
+    if (basicbtfs_cache_iterate_dir(sb, inode_info->i_bno, ctx, ctx->pos - 2)) {
+        printk("found in cache\n");
+        return 0;
+    }
 
     bh = sb_bread(sb, inode_info->i_bno);
 

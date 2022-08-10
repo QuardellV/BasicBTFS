@@ -478,7 +478,7 @@ static inline int basicbtfs_btree_cache_delete_entry(struct super_block *sb, str
             new_root_node->nr_of_files = node->nr_of_files - 1;
             new_root_node->nr_times_done = node->nr_times_done;
             new_root_node->tree_name_bno = node->tree_name_bno;
-            // basicbtfs_cache_delete_node(sb, BASICBTFS_INODE(inode)->i_bno, node);
+            basicbtfs_cache_delete_node(sb, BASICBTFS_INODE(inode)->i_bno, node);
             // basicbtfs_cache_delete_node(sb, node->children[0], root_bno);
         }
     } else {
