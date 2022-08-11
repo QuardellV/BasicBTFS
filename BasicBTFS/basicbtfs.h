@@ -121,6 +121,7 @@ struct basicbtfs_btree_node_cache {
     uint32_t nr_of_keys;
     uint32_t nr_of_files;
     uint32_t nr_times_done;
+    bool free;
     bool leaf;
 };
 
@@ -139,6 +140,7 @@ struct basicbtfs_btree_dir_cache_list {
 struct basicbtfs_name_tree_cache {
     struct list_head list;
     uint32_t name_bno;
+    bool free;
     struct basicbtfs_block *name_tree_block;
 };
 
