@@ -6,16 +6,6 @@
 
 static inline uint32_t get_first_free_bits(unsigned long *freemap, unsigned long size, uint32_t len) {
     unsigned long start_no = bitmap_find_next_zero_area(freemap, size, 1, len, 0);
-    if (start_no >= size) {
-        printk(KERN_ERR "no free area has been found\n");
-        return -1;
-    }
-    bitmap_set(freemap, start_no, len);
-    return start_no;
-}
-
-static inline uint32_t get_last_free_bits(unsigned long *freemap, unsigned long size, uint32_t len, uint32_t start_unused) {
-    unsigned long start_no = bitmap_find_next_zero_area(freemap, size, start_unused, len, 0);
 
     if (start_no >= size) {
         printk(KERN_ERR "no free area has been found\n");
