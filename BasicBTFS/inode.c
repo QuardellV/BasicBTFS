@@ -181,8 +181,11 @@ static int basicbtfs_create(struct inode *dir, struct dentry *dentry, umode_t mo
 
         node = (struct basicbtfs_btree_node *) bh->b_data;
         node->leaf = true;
+        node->root = true;
         node->nr_of_files = 0;
         node->nr_of_keys = 0;
+        node->block_type = BASICBTFS_BLOCKTYPE_BTREE_NODE;
+        node->parent = inode->i_ino;
 
         if (node->tree_name_bno == 0) {
             node->tree_name_bno = get_free_blocks(BASICBTFS_SB(sb), 1);
@@ -204,16 +207,12 @@ static int basicbtfs_create(struct inode *dir, struct dentry *dentry, umode_t mo
         }
 
         bh_name_table = sb_bread(sb, node->tree_name_bno);
+
         if (!bh_name_table) {
             brelse(bh);
             return -EIO;
         }
         
-        // node_cache = basicbtfs_alloc_btree_node_data(sb);
-        // basicbtfs_btree_node_cache_init(sb, node_cache, true);
-        // basicbtfs_cache_add_dir(sb, bfs_inode_info_dir->i_bno, node_cache, (struct basicbtfs_block *)bh_name_table->b_data, node->tree_name_bno);
-        // basicbtfs_cache_add_dir(sb, BASICBTFS_INODE(inode)->i_bno, node, (struct basicbtfs_block *) bh->b_data);
-
         node_cache = (struct basicbtfs_btree_node_cache *)basicbtfs_alloc_file(sb);
         // // basicbtfs_destroy_btree_node_data(node_cache);
         basicbtfs_btree_node_cache_init(sb, node_cache, true);

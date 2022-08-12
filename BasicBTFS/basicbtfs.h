@@ -15,14 +15,16 @@
 #define BASICBTFS_ENTRIES_PER_BLOCK    (BASICBTFS_BLOCKSIZE / sizeof(struct basicbtfs_entry))
 #define BASICBTFS_ENTRIES_PER_DIR      (BASICBTFS_ENTRIES_PER_BLOCK * BASICBTFS_ATABLE_MAX_BLOCKS)
 #define BASICBTFS_FILE_BSIZE           (BASICBTFS_BLOCKSIZE * BASICBTFS_ATABLE_MAX_BLOCKS)
-#define BASICBTFS_EMPTY_NAME_TREE      ((BASICBTFS_BLOCKSIZE - 4 * sizeof(uint32_t)))
+#define BASICBTFS_EMPTY_NAME_TREE      ((BASICBTFS_BLOCKSIZE - sizeof(struct basicbtfs_name_tree)))
 
 #define BASICBTFS_MAX_BLOCKS_PER_CLUSTER 4
 
 #define BASICBTFS_MAX_CACHE_DIR_ENTRIES    100
 #define BASICBTFS_MAX_CACHE_BLOCKS_PER_DIR 250
 
-
+#define BASICBTFS_BLOCKTYPE_BTREE_NODE    0x01
+#define BASICBTFS_BLOCKTYPE_NAMETREE      0x02
+#define BASICBTFS_BLOCKTYPE_CLUSTER_TABLE 0x03
 
 struct basicbtfs_inode {
     uint32_t i_mode;
@@ -86,6 +88,8 @@ struct basicbtfs_name_tree {
     uint32_t start_unused_area;
     uint32_t nr_of_entries;
     uint32_t next_block;
+    uint32_t prev_block;
+    uint32_t block_type;
 };
 
 struct basicbtfs_cluster {
@@ -106,11 +110,14 @@ struct basicbtfs_alloc_table {
 struct basicbtfs_btree_node {
     struct basicbtfs_entry entries[2 * BASICBTFS_MIN_DEGREE - 1];
     uint32_t children[2 * BASICBTFS_MIN_DEGREE];
+    uint32_t block_type;
+    uint32_t parent;
     uint32_t tree_name_bno;
     uint32_t nr_of_keys;
     uint32_t nr_of_files;
     uint32_t nr_times_done;
     bool leaf;
+    bool root;
 };
 
 struct basicbtfs_btree_node_cache {

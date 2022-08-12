@@ -299,7 +299,7 @@ static inline int basicbtfs_cache_emit_block_debug(struct basicbtfs_block *btfs_
         if (cur_entry->ino != 0) {
             filename = kzalloc(sizeof(char) * cur_entry->name_length, GFP_KERNEL);
             strncpy(filename, block, cur_entry->name_length);
-            printk("current filename: %s\n", filename);
+            printk("Current filename: %d | %d | %d | %s\n", cur_entry->name_length, i, *current_index, filename);
             kfree(filename);
         } else {
             i--;
@@ -307,7 +307,7 @@ static inline int basicbtfs_cache_emit_block_debug(struct basicbtfs_block *btfs_
 
         block += cur_entry->name_length;
         cur_entry = (struct basicbtfs_name_entry *) block;
-        // *current_index++;
+        *current_index++;
     }
 
     printk("current index: %d\n", *current_index);

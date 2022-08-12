@@ -272,6 +272,8 @@ int basicbtfs_fill_super(struct super_block *sb, void *data, int silent)
     struct basicbtfs_name_tree *name_tree = NULL;
     int ret = 0;
 
+    printk("size of nametree: %ld\n", sizeof(struct basicbtfs_name_tree));
+
     ret = init_super_block(sb);
 
     if (ret < 0) return ret;
@@ -333,8 +335,11 @@ int basicbtfs_fill_super(struct super_block *sb, void *data, int silent)
 
     node = (struct basicbtfs_btree_node *) bh->b_data;
     node->leaf = true;
+    node->root = true;
+    node->block_type = BASICBTFS_BLOCKTYPE_BTREE_NODE;
     node->nr_of_keys = 0;
     node->nr_of_files = 0;
+    node->parent = node->parent = root_inode->i_ino;
 
     if (node->tree_name_bno == 0) {
         node->tree_name_bno = get_free_blocks(BASICBTFS_SB(sb), 1);

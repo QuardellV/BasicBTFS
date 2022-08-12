@@ -70,11 +70,11 @@ static struct superblock *write_superblock(int fd, struct stat *fstats) {
         "\tnr_bfree_blocks=%u\n"
         "\tnr_free_inodes=%u\n"
         "\tnr_free_blocks=%u\n",
+        
         sizeof(struct superblock), sb->info.s_magic, sb->info.s_nblocks,
         sb->info.s_ninodes, sb->info.s_inode_blocks, sb->info.s_imap_blocks,
         sb->info.s_bmap_blocks, sb->info.s_nfree_inodes,
         sb->info.s_nfree_blocks);
-
     return sb;
 }
 
