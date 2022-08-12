@@ -10,12 +10,13 @@
 #define BASICBTFS_MIN_DEGREE           7
 #define BASICBTFS_MAX_BLOCKS_PER_CLUSTER 4
 #define BASICBTFS_ATABLE_MAX_BLOCKS    ((BASICBTFS_BLOCKSIZE - sizeof(uint32_t)) / sizeof(uint32_t))
-#define BASICBTFS_ATABLE_MAX_CLUSTERS  ((BASICBTFS_BLOCKSIZE - sizeof(uint32_t)) / sizeof(struct basicbtfs_cluster))
+#define BASICBTFS_ATABLE_MAX_CLUSTERS  ((BASICBTFS_BLOCKSIZE - 3 * sizeof(uint32_t)) / sizeof(struct basicbtfs_cluster))
 #define BASICBTFS_MAX_BLOCKS_PER_DIR   (BASICBTFS_ATABLE_MAX_CLUSTERS * BASICBTFS_MAX_BLOCKS_PER_CLUSTER)
 #define BASICBTFS_ENTRIES_PER_BLOCK    (BASICBTFS_BLOCKSIZE / sizeof(struct basicbtfs_entry))
 #define BASICBTFS_ENTRIES_PER_DIR      (BASICBTFS_ENTRIES_PER_BLOCK * BASICBTFS_ATABLE_MAX_BLOCKS)
 #define BASICBTFS_FILE_BSIZE           (BASICBTFS_BLOCKSIZE * BASICBTFS_ATABLE_MAX_BLOCKS)
 #define BASICBTFS_EMPTY_NAME_TREE      ((BASICBTFS_BLOCKSIZE - sizeof(struct basicbtfs_name_tree)))
+#define BASICBTFS_WORDS_PER_BLOCK      ((BASICBTFS_BLOCKSIZE / sizeof(uint32_t)))
 
 #define BASICBTFS_MAX_BLOCKS_PER_CLUSTER 4
 
@@ -49,6 +50,7 @@ struct basicbtfs_sb_info {
     uint32_t s_ninodes;
     uint32_t s_imap_blocks;
     uint32_t s_bmap_blocks;
+    uint32_t s_filemap_blocks;
     uint32_t s_inode_blocks;
     uint32_t s_nfree_inodes;
     uint32_t s_nfree_blocks;
@@ -57,6 +59,7 @@ struct basicbtfs_sb_info {
 #ifdef __KERNEL__
     unsigned long *s_ifree_bitmap;
     unsigned long *s_bfree_bitmap;
+    uint32_t *s_fileblock_map;
 #endif
 };
 
@@ -99,6 +102,8 @@ struct basicbtfs_cluster {
 
 struct basicbtfs_cluster_table {
     uint32_t nr_of_clusters;
+    uint32_t ino;
+    uint32_t block_type;
     struct basicbtfs_cluster table[BASICBTFS_ATABLE_MAX_CLUSTERS];
 };
 
@@ -129,6 +134,16 @@ struct basicbtfs_btree_node_cache {
     uint32_t nr_of_files;
     uint32_t nr_times_done;
     bool leaf;
+};
+
+struct basicbtfs_disk_block {
+    uint32_t block_type_id;
+    union block_type {
+        struct basicbtfs_btree_node btree_node;
+        // struct basicbtfs_cluster_table cluster_table;
+        // struct basicbtfs_name_tree name_tree;
+    } block_type;
+    // char block[BASICBTFS_BLOCKSIZE - sizeof(uint32_t)];
 };
 
 struct basicbtfs_block {

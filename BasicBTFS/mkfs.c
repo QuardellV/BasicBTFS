@@ -43,8 +43,9 @@ static struct superblock *write_superblock(int fd, struct stat *fstats) {
     uint32_t nr_inodes = nr_blocks;
     uint32_t nr_ifree_bmap_blocks = div_ceil(nr_inodes, BASICBTFS_BLOCKSIZE * 8);
     uint32_t nr_bfree_bmap_blocks = div_ceil(nr_blocks, BASICBTFS_BLOCKSIZE * 8);
+    uint32_t nr_file_map_blocks  = div_ceil(nr_blocks, BASICBTFS_WORDS_PER_BLOCK);
     uint32_t nr_inode_blocks = div_ceil(nr_inodes, BASICBTFS_INODES_PER_BLOCK);
-    uint32_t nr_data_blocks = nr_blocks - nr_ifree_bmap_blocks - nr_bfree_bmap_blocks - nr_inode_blocks;
+    uint32_t nr_data_blocks = nr_blocks - nr_ifree_bmap_blocks - nr_bfree_bmap_blocks - nr_inode_blocks - nr_file_map_blocks;
 
     sb->info.s_magic = htole32(BASICBTFS_MAGIC_NUMBER);
     sb->info.s_nblocks = htole32(nr_blocks);
@@ -52,6 +53,7 @@ static struct superblock *write_superblock(int fd, struct stat *fstats) {
     sb->info.s_inode_blocks = htole32(nr_inode_blocks);
     sb->info.s_imap_blocks = htole32(nr_ifree_bmap_blocks);
     sb->info.s_bmap_blocks = htole32(nr_bfree_bmap_blocks);
+    sb->info.s_filemap_blocks = htole32(nr_file_map_blocks);
     sb->info.s_nfree_inodes = htole32(nr_inodes - 1);
     sb->info.s_nfree_blocks = htole32(nr_data_blocks - 1);
 
@@ -75,6 +77,8 @@ static struct superblock *write_superblock(int fd, struct stat *fstats) {
         sb->info.s_ninodes, sb->info.s_inode_blocks, sb->info.s_imap_blocks,
         sb->info.s_bmap_blocks, sb->info.s_nfree_inodes,
         sb->info.s_nfree_blocks);
+
+    printf("nr_filemap_block: %d\n", sb->info.s_filemap_blocks);
     return sb;
 }
 
@@ -110,7 +114,7 @@ static int write_ifree_blocks(int fd, struct superblock *sb) {
 
 static int write_bfree_blocks(int fd, struct superblock *sb)
 {
-    uint32_t bits_used = le32toh(sb->info.s_imap_blocks) + le32toh(sb->info.s_bmap_blocks) + le32toh(sb->info.s_inode_blocks) +  2;
+    uint32_t bits_used = le32toh(sb->info.s_imap_blocks) + le32toh(sb->info.s_bmap_blocks) + le32toh(sb->info.s_inode_blocks) +  le32toh(sb->info.s_filemap_blocks) + 2;
     uint32_t used_lines = bits_used / 64; // not-free bits are set per uint64 integer
     uint32_t used_lines_rem = bits_used % 64; // if not all 64 bits all free, this is are the first n not free bits.
 
@@ -157,6 +161,24 @@ static int write_bfree_blocks(int fd, struct superblock *sb)
     return 0;
 }
 
+static int write_filemap_blocks(int fd, struct superblock *sb) {
+    int i = 0, ret = 0;
+    char *block = calloc(1, BASICBTFS_BLOCKSIZE);
+    if (!block) {
+        return -1;
+    }
+
+    for (i = 0; i < le32toh(sb->info.s_filemap_blocks); i++) {
+        ret = write(fd, block, BASICBTFS_BLOCKSIZE);
+        if (ret != BASICBTFS_BLOCKSIZE) {
+            free(block);
+            return -1;
+        }
+    }
+
+    return 0;
+}
+
 static int write_inode_blocks(int fd, struct superblock *sb) {
     /* Allocate a zeroed block for inode store */
     char *block = calloc(1, BASICBTFS_BLOCKSIZE);
@@ -165,7 +187,7 @@ static int write_inode_blocks(int fd, struct superblock *sb) {
     }
 
     struct basicbtfs_inode *inode = (struct basicbtfs_inode *) block;
-    uint32_t first_data_block = 1 + le32toh(sb->info.s_imap_blocks) + le32toh(sb->info.s_bmap_blocks) + le32toh(sb->info.s_inode_blocks);
+    uint32_t first_data_block = 1 + le32toh(sb->info.s_imap_blocks) + le32toh(sb->info.s_bmap_blocks) + le32toh(sb->info.s_inode_blocks) + le32toh(sb->info.s_filemap_blocks);
     inode->i_mode = htole32(S_IFDIR | S_IRUSR | S_IRGRP | S_IROTH | S_IWUSR | S_IWGRP | S_IXUSR | S_IXGRP | S_IXOTH); /* All chmod permissions are allowed */
     inode->i_uid = 0;
     inode->i_gid = 0;
@@ -256,6 +278,14 @@ int main(int argc, char **argv)
     ret = write_inode_blocks(fd, sb);
     if (ret) {
         perror("write_inode_blocks() failed:");
+        free(sb);
+        close(fd);
+        return EXIT_FAILURE;
+    }
+
+    ret = write_filemap_blocks(fd, sb);
+    if (ret) {
+        perror("write_filemap_block() failed");
         free(sb);
         close(fd);
         return EXIT_FAILURE;

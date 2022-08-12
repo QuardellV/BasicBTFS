@@ -190,6 +190,8 @@ static int basicbtfs_sync_fs(struct super_block *sb, int wait)
     ret = flush_bitmap(sb, sbi->s_ifree_bitmap, sbi->s_imap_blocks, 1, wait);
     if (ret < 0) return ret;
     ret = flush_bitmap(sb, sbi->s_bfree_bitmap, sbi->s_bmap_blocks, sbi->s_imap_blocks + 1, wait);
+    if (ret < 0) return ret;
+    ret = flush_filemap(sb, sbi->s_fileblock_map, sbi->s_filemap_blocks, sbi->s_imap_blocks + sbi->s_bmap_blocks + sbi->s_inode_blocks + 1, wait);
 
     return ret;
 }
@@ -240,6 +242,7 @@ int init_sbi(struct super_block *sb, struct basicbtfs_sb_info *csb, struct basic
     sbi->s_nfree_inodes = csb->s_nfree_inodes;
     sbi->s_nfree_blocks = csb->s_nfree_blocks;
     sbi->s_cache_dir_entries = 0;
+    sbi->s_filemap_blocks = csb->s_filemap_blocks;
     sb->s_fs_info = sbi;
     return 0;
 }
@@ -260,6 +263,22 @@ int init_bitmap(struct super_block *sb, unsigned long *bitmap, uint32_t map_nr_b
     return 0;
 }
 
+int init_filemap(struct super_block *sb, uint32_t *filemap, uint32_t nr_blocks, uint32_t block_offset) {
+    struct buffer_head *bh = NULL;
+    int i = 0;
+
+    for (i = 0; i < nr_blocks; i++) {
+        int idx = block_offset + i;
+        bh = sb_bread(sb, idx);
+
+        if (!bh) return -EIO;
+
+        memcpy((void *) filemap + i * BASICBTFS_BLOCKSIZE, bh->b_data, BASICBTFS_BLOCKSIZE);
+        brelse(bh);
+    }
+    return 0;
+}
+
 /* Fill the struct superblock from partition superblock */
 int basicbtfs_fill_super(struct super_block *sb, void *data, int silent)
 {
@@ -272,7 +291,7 @@ int basicbtfs_fill_super(struct super_block *sb, void *data, int silent)
     struct basicbtfs_name_tree *name_tree = NULL;
     int ret = 0;
 
-    printk("size of nametree: %ld\n", sizeof(struct basicbtfs_name_tree));
+    printk("size of diskblock: %ld\n", sizeof(struct basicbtfs_disk_block));
 
     ret = init_super_block(sb);
 
@@ -316,7 +335,17 @@ int basicbtfs_fill_super(struct super_block *sb, void *data, int silent)
         return -ENOMEM;
     }
 
-    init_bitmap(sb, sbi->s_bfree_bitmap, sbi->s_bmap_blocks, sbi->s_bmap_blocks + 1);
+    init_bitmap(sb, sbi->s_bfree_bitmap, sbi->s_bmap_blocks, sbi->s_imap_blocks + 1);
+
+    sbi->s_fileblock_map = kzalloc(sbi->s_filemap_blocks * BASICBTFS_BLOCKSIZE, GFP_KERNEL);
+    if (!sbi->s_fileblock_map) {
+        kfree(sbi->s_bfree_bitmap);
+        kfree(sbi->s_ifree_bitmap);
+        kfree(sbi);
+        return -ENOMEM;
+    }
+
+    init_filemap(sb, sbi->s_fileblock_map, sbi->s_filemap_blocks, sbi->s_imap_blocks + sbi->s_bmap_blocks + sbi->s_inode_blocks + 1);
 
     root_inode = basicbtfs_iget(sb, 0);
     if (IS_ERR(root_inode)) {

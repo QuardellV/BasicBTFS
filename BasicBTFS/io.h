@@ -59,6 +59,7 @@ static inline int flush_superblock(struct super_block *sb, int wait) {
     disk_sbi->s_bmap_blocks = sbi->s_bmap_blocks;
     disk_sbi->s_nfree_inodes = sbi->s_nfree_inodes;
     disk_sbi->s_nfree_blocks = sbi->s_nfree_blocks;
+    disk_sbi->s_filemap_blocks = sbi->s_filemap_blocks;
 
     mark_buffer_dirty(bh);
     if (wait) sync_dirty_buffer(bh);
@@ -78,6 +79,25 @@ static inline int flush_bitmap(struct super_block *sb, unsigned long *bitmap, ui
         if (!bh) return -EIO;
 
         memcpy(bh->b_data, (void *) bitmap + i * BASICBTFS_BLOCKSIZE, BASICBTFS_BLOCKSIZE);
+
+        mark_buffer_dirty(bh);
+        if (wait) sync_dirty_buffer(bh);
+        brelse(bh);
+    }
+    return 0;
+}
+
+static inline int flush_filemap(struct super_block *sb, uint32_t *filemap, uint32_t nr_blocks, uint32_t block_offset, int wait) {
+    struct buffer_head *bh = NULL;
+    int i = 0;
+
+    for (i = 0; i < nr_blocks; i++) {
+        int idx = block_offset + i;
+        bh = sb_bread(sb, idx);
+
+        if (!bh) return -EIO;
+
+        memcpy(bh->b_data, (void *) filemap + i * BASICBTFS_BLOCKSIZE, BASICBTFS_BLOCKSIZE);
 
         mark_buffer_dirty(bh);
         if (wait) sync_dirty_buffer(bh);
