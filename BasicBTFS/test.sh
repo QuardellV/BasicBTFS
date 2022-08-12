@@ -2082,14 +2082,14 @@ test_rmdir_nonempty
 test_rm_in_subdir
 test_rm_subdir
 
-# # test_move_file_simple
-# # test_move_file_noreplace
-# # test_move_file_overwrite
-# # test_move_file_to_other_dir
-# # # test_move_advanced
+# # # test_move_file_simple
+# # # test_move_file_noreplace
+# # # test_move_file_overwrite
+# # # test_move_file_to_other_dir
+# # # # test_move_advanced
 
-# # test_move_dir_simple
-# # test_move_dir_in_dir
+# # # test_move_dir_simple
+# # # test_move_dir_in_dir
 
 test_advanced_sequence_1
 test_advanced_sequence_2

@@ -59,6 +59,8 @@ static inline void basicbtfs_defrag_directory(void) {
      * 6. defrag directories on list
      * end
      */
+
+
 }
 
 static inline void basicbtfs_defrag_file(void) {

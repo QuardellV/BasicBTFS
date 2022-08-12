@@ -115,12 +115,6 @@ int basicbtfs_add_entry(struct inode *dir, struct inode *inode, struct dentry *d
     new_entry.ino = inode->i_ino;
     new_entry.hash = hash;
 
-    printk(KERN_INFO "START Debug btree traverse added before: %s\n", dentry->d_name.name);
-    basicbtfs_nametree_iterate_name_debug(dir->i_sb, name_bno);
-    printk(KERN_INFO "CACHE: current dir_bno: %d\n", inode_info->i_bno);
-    basicbtfs_cache_iterate_dir_debug(dir->i_sb, inode_info->i_bno);
-    printk(KERN_INFO "END Debug btree traverse before\n");
-
     nr_of_blocks = basicbtfs_cache_get_nr_of_blocks(inode_info->i_bno);
 
 
@@ -137,11 +131,6 @@ int basicbtfs_add_entry(struct inode *dir, struct inode *inode, struct dentry *d
         ret = basicbtfs_btree_node_cache_insert(dir->i_sb, dir, node_cache, &new_entry, inode_info->i_bno);
     }
 
-    printk(KERN_INFO "START Debug btree traverse added: %s\n", dentry->d_name.name);
-    basicbtfs_nametree_iterate_name_debug(dir->i_sb, name_bno);
-    printk(KERN_INFO "CACHE: current dir_bno: %d\n", inode_info->i_bno);
-    basicbtfs_cache_iterate_dir_debug(dir->i_sb, inode_info->i_bno);
-    printk(KERN_INFO "END Debug btree traverse\n");
     return ret;
 }
 
