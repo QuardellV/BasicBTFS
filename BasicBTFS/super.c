@@ -353,6 +353,8 @@ int basicbtfs_fill_super(struct super_block *sb, void *data, int silent)
         name_tree = (struct basicbtfs_name_tree *)bh_name_table->b_data;
         name_tree->free_bytes = BASICBTFS_EMPTY_NAME_TREE;
         name_tree->start_unused_area = BASICBTFS_BLOCKSIZE - BASICBTFS_EMPTY_NAME_TREE;
+        name_tree->block_type = BASICBTFS_BLOCKTYPE_NAMETREE;
+        name_tree->prev_block = 0;
         name_tree->next_block = 0;
         name_tree->nr_of_entries = 0;
         mark_buffer_dirty(bh_name_table);
