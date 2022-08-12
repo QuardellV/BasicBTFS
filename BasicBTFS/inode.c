@@ -133,6 +133,7 @@ static int basicbtfs_create(struct inode *dir, struct dentry *dentry, umode_t mo
     struct basicbtfs_btree_node *node = NULL;
     struct basicbtfs_btree_node_cache *node_cache = NULL;
     struct basicbtfs_name_tree *name_tree = NULL;
+    struct basicbtfs_cluster_table *cluster_list;
     struct buffer_head *bh_dir = NULL, *bh = NULL, *bh_name_table = NULL;
     int ret = 0;
 
@@ -183,6 +184,9 @@ static int basicbtfs_create(struct inode *dir, struct dentry *dentry, umode_t mo
         node->leaf = true;
         node->nr_of_files = 0;
         node->nr_of_keys = 0;
+        node->parent = 0;
+        node->ino = inode->i_ino;
+        node->block_type = BASICBTFS_BLOCKTYPE_BTREE_NODE;
 
         if (node->tree_name_bno == 0) {
             node->tree_name_bno = get_free_blocks(BASICBTFS_SB(sb), 1);
@@ -199,6 +203,8 @@ static int basicbtfs_create(struct inode *dir, struct dentry *dentry, umode_t mo
             name_tree->start_unused_area = BASICBTFS_BLOCKSIZE - BASICBTFS_EMPTY_NAME_TREE;
             name_tree->next_block = 0;
             name_tree->nr_of_entries = 0;
+            name_tree->block_type = BASICBTFS_BLOCKTYPE_NAMETREE;
+            name_tree->prev_block = 0;
             mark_buffer_dirty(bh_name_table);
             brelse(bh_name_table);
         }
@@ -225,6 +231,16 @@ static int basicbtfs_create(struct inode *dir, struct dentry *dentry, umode_t mo
         mark_buffer_dirty(bh);
         brelse(bh);
 
+    } else if (S_ISREG(inode->i_mode)) {
+        bh = sb_bread(sb, BASICBTFS_INODE(inode)->i_bno);
+
+        if (!bh) return -EIO;
+
+        cluster_list = (struct basicbtfs_cluster_table *) bh->b_data;
+        cluster_list->ino = inode->i_ino;
+        cluster_list->block_type = BASICBTFS_BLOCKTYPE_CLUSTER_TABLE;
+        mark_buffer_dirty(bh);
+        brelse(bh);
     }
 
     ret = basicbtfs_add_entry(dir, inode, dentry);

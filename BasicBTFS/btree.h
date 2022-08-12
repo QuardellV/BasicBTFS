@@ -12,8 +12,10 @@
 
 static inline int basicbtfs_btree_node_delete(struct super_block *sb, uint32_t bno, uint32_t hash);
 
-static inline void basicbtfs_btree_node_init(struct super_block *sb, struct basicbtfs_btree_node *node, bool leaf, uint32_t dir_bno, uint32_t bno) {
+static inline void basicbtfs_btree_node_init(struct super_block *sb, struct basicbtfs_btree_node *node, bool leaf, uint32_t dir_bno, uint32_t bno, uint32_t par_bno) {
     memset(node, 0, sizeof(struct basicbtfs_btree_node));
+    node->block_type = BASICBTFS_BLOCKTYPE_BTREE_NODE;
+    node->parent = par_bno;
     node->nr_of_keys = 0;
     node->leaf = leaf;
     // basicbtfs_cache_add_node(sb, dir_bno, bno, node);
@@ -161,7 +163,7 @@ static inline int basicbtfs_btree_split_child(struct super_block *sb, uint32_t p
 
     node_rhs = (struct basicbtfs_btree_node *) bh_rhs->b_data;
 
-    basicbtfs_btree_node_init(sb, node_rhs, node_lhs->leaf, dir_bno, rhs);
+    basicbtfs_btree_node_init(sb, node_rhs, node_lhs->leaf, dir_bno, rhs, par);
     node_rhs->nr_of_keys = BASICBTFS_MIN_DEGREE - 1;
 
     for (i = 0; i < node_rhs->nr_of_keys; i++) {
@@ -318,7 +320,7 @@ static inline int basicbtfs_btree_node_insert(struct super_block *sb, struct ino
         }
 
         new_node = (struct basicbtfs_btree_node *) bh_new->b_data;
-        basicbtfs_btree_node_init(sb, new_node, false, bno, bno_new_root);
+        basicbtfs_btree_node_init(sb, new_node, false, bno, bno_new_root, bno);
         new_node->children[0] = bno;
 
         ret = basicbtfs_btree_split_child(sb, bno_new_root, bno, 0, bno);
@@ -352,6 +354,7 @@ static inline int basicbtfs_btree_node_insert(struct super_block *sb, struct ino
         new_node->nr_of_files = old_node->nr_of_files + 1;
         new_node->nr_times_done = old_node->nr_times_done + 1;
         new_node->tree_name_bno = old_node->tree_name_bno;
+        new_node->ino = old_node->ino;
         mark_buffer_dirty(bh_new);
         brelse(bh_new);
     } else {
@@ -904,6 +907,7 @@ static inline int basicbtfs_btree_delete_entry(struct super_block *sb, struct in
             new_root_node->nr_of_files = node->nr_of_files - 1;
             new_root_node->nr_times_done = node->nr_times_done;
             new_root_node->tree_name_bno = node->tree_name_bno;
+            new_root_node->ino = node->ino;
             // basicbtfs_cache_delete_node(sb, node->children[0], root_bno);
             mark_buffer_dirty(bh2);
             brelse(bh2);

@@ -335,6 +335,9 @@ int basicbtfs_fill_super(struct super_block *sb, void *data, int silent)
     node->leaf = true;
     node->nr_of_keys = 0;
     node->nr_of_files = 0;
+    node->parent = 0;
+    node->ino = root_inode->i_ino;
+    node->block_type = BASICBTFS_BLOCKTYPE_BTREE_NODE;
 
     if (node->tree_name_bno == 0) {
         node->tree_name_bno = get_free_blocks(BASICBTFS_SB(sb), 1);
@@ -349,7 +352,9 @@ int basicbtfs_fill_super(struct super_block *sb, void *data, int silent)
         name_tree->free_bytes = BASICBTFS_EMPTY_NAME_TREE;
         name_tree->start_unused_area = BASICBTFS_BLOCKSIZE - BASICBTFS_EMPTY_NAME_TREE;
         name_tree->next_block = 0;
+        name_tree->prev_block = 0;
         name_tree->nr_of_entries = 0;
+        name_tree->block_type = BASICBTFS_BLOCKTYPE_NAMETREE;
         mark_buffer_dirty(bh_name_table);
         brelse(bh_name_table);
     }

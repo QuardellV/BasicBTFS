@@ -116,7 +116,7 @@ static inline int basicbtfs_nametree_insert_name(struct super_block *sb, uint32_
     struct buffer_head *bh = NULL;
     struct basicbtfs_name_tree *name_tree = NULL;
     struct basicbtfs_name_entry *name_entry = NULL;
-    uint32_t next_bno;
+    uint32_t prev_bno = name_bno, cur_bno = name_bno;
     char *block = NULL;
     char *filename = NULL;
     
@@ -152,10 +152,11 @@ static inline int basicbtfs_nametree_insert_name(struct super_block *sb, uint32_
     printk("not enough space: %d\n", (BASICBTFS_BLOCKSIZE - name_tree->start_unused_area));
 
     while (name_tree->next_block != 0) {
-        next_bno = name_tree->next_block;
+        prev_bno = cur_bno;
+        cur_bno = name_tree->next_block;
         brelse(bh);
 
-        bh = sb_bread(sb, next_bno);
+        bh = sb_bread(sb, cur_bno);
 
         if (!bh) return -EIO;
 
@@ -165,7 +166,7 @@ static inline int basicbtfs_nametree_insert_name(struct super_block *sb, uint32_
             block = (char *) bh->b_data;
             block += name_tree->start_unused_area;
             dir_entry->block_index = name_tree->start_unused_area;
-            dir_entry->name_bno = next_bno;
+            dir_entry->name_bno = cur_bno;
             name_entry = (struct basicbtfs_name_entry *) block;
             name_entry->ino = dir_entry->ino;
             name_entry->name_length = dentry->d_name.len + 1;
@@ -178,7 +179,7 @@ static inline int basicbtfs_nametree_insert_name(struct super_block *sb, uint32_
             printk("inserted filename: %s | %d | %d\n", filename, dir_entry->name_bno, dir_entry->block_index);
             name_tree->nr_of_entries++;
             mark_buffer_dirty(bh);
-            basicbtfs_cache_update_block(sb, dir_bno, (struct basicbtfs_block *) bh->b_data, next_bno);
+            basicbtfs_cache_update_block(sb, dir_bno, (struct basicbtfs_block *) bh->b_data, cur_bno);
             brelse(bh);
             return 0;
         }
@@ -186,11 +187,11 @@ static inline int basicbtfs_nametree_insert_name(struct super_block *sb, uint32_
 
     name_tree->next_block = get_free_blocks(BASICBTFS_SB(sb), 1);
 
-    next_bno = name_tree->next_block;
+    cur_bno = name_tree->next_block;
     mark_buffer_dirty(bh);
     brelse(bh);
 
-    bh = sb_bread(sb, next_bno);
+    bh = sb_bread(sb, cur_bno);
 
     if (!bh) return -EIO;
 
@@ -198,13 +199,15 @@ static inline int basicbtfs_nametree_insert_name(struct super_block *sb, uint32_
     name_tree->free_bytes = BASICBTFS_EMPTY_NAME_TREE;
     name_tree->start_unused_area = BASICBTFS_BLOCKSIZE - BASICBTFS_EMPTY_NAME_TREE;
     name_tree->next_block = 0;
+    name_tree->prev_block = prev_bno;
     name_tree->nr_of_entries = 0;
+    name_tree->block_type = BASICBTFS_BLOCKTYPE_NAMETREE;
 
     if ((BASICBTFS_BLOCKSIZE - name_tree->start_unused_area) >= dentry->d_name.len) {
         block = (char *) bh->b_data;
         block += name_tree->start_unused_area;
         dir_entry->block_index = name_tree->start_unused_area;
-        dir_entry->name_bno = next_bno;
+        dir_entry->name_bno = cur_bno;
         name_entry = (struct basicbtfs_name_entry *) block;
         name_entry->ino = dir_entry->ino;
         name_entry->name_length = dentry->d_name.len + 1;
@@ -219,7 +222,7 @@ static inline int basicbtfs_nametree_insert_name(struct super_block *sb, uint32_
         mark_buffer_dirty(bh);
         
         if (nr_of_blocks < BASICBTFS_MAX_CACHE_BLOCKS_PER_DIR) {
-            basicbtfs_cache_add_name_block(sb, dir_bno, (struct basicbtfs_block *)bh->b_data, next_bno);
+            basicbtfs_cache_add_name_block(sb, dir_bno, (struct basicbtfs_block *)bh->b_data, cur_bno);
         }
         // basicbtfs_cache_add_name_block(sb, dir_bno, (struct basicbtfs_block *)bh->b_data);
         brelse(bh);
