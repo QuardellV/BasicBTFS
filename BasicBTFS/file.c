@@ -28,7 +28,8 @@ static int basicbtfs_file_get_block(struct inode *inode, sector_t iblock, struct
     struct super_block *sb = inode->i_sb;
     struct basicbtfs_sb_info *sbi = BASICBTFS_SB(sb);
     struct basicbtfs_inode_info *ci = BASICBTFS_INODE(inode);
-    struct basicbtfs_cluster_table *cluster_list;
+    // struct basicbtfs_cluster_table *cluster_list;
+    struct basicbtfs_disk_block *disk_block;
     struct buffer_head *bh_index;
     int ret = 0, bno;
     uint32_t cluster_index = 0;
@@ -44,10 +45,12 @@ static int basicbtfs_file_get_block(struct inode *inode, sector_t iblock, struct
         return -EIO;
     }
 
-    cluster_list = (struct basicbtfs_cluster_table *) bh_index->b_data;
-    cluster_index = basicbtfs_search_cluster(cluster_list, iblock);
+    disk_block = (struct basicbtfs_disk_block *) bh_index->b_data;
 
-    if (cluster_list->table[cluster_index].start_bno == 0) {
+    // cluster_list = (struct basicbtfs_cluster_table *) bh_index->b_data;
+    cluster_index = basicbtfs_search_cluster(&disk_block->block_type.cluster_table, iblock);
+
+    if (disk_block->block_type.cluster_table.table[cluster_index].start_bno == 0) {
         if (!create) {
             return ret;
         }
@@ -57,11 +60,11 @@ static int basicbtfs_file_get_block(struct inode *inode, sector_t iblock, struct
             brelse(bh_index);
             return -ENOSPC;
         }
-        cluster_list->table[cluster_index].start_bno = bno;
-        cluster_list->table[cluster_index].cluster_length = BASICBTFS_MAX_BLOCKS_PER_CLUSTER;
+        disk_block->block_type.cluster_table.table[cluster_index].start_bno = bno;
+        disk_block->block_type.cluster_table.table[cluster_index].cluster_length = BASICBTFS_MAX_BLOCKS_PER_CLUSTER;
         // inode->i_blocks += 1;
     } else {
-        bno = cluster_list->table[cluster_index].start_bno + (iblock % cluster_list->table[cluster_index].cluster_length);
+        bno = disk_block->block_type.cluster_table.table[cluster_index].start_bno + (iblock % disk_block->block_type.cluster_table.table[cluster_index].cluster_length);
     }
     // printk("basicbtfs_file_get_block() sb_bread bno: %d | %lld \n", bno, iblock);
     map_bh(bh_result, sb, bno);

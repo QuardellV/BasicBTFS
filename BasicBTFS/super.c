@@ -41,7 +41,7 @@ int basicbtfs_init_nametree_hdr_cache(void) {
 }
 
 int basicbtfs_init_nametree_data_cache(void) {
-    basicbtfs_nametree_data_cache = kmem_cache_create("basicbtfs_nametree_data_cache", sizeof(struct basicbtfs_name_tree), 0, 0, NULL);
+    basicbtfs_nametree_data_cache = kmem_cache_create("basicbtfs_nametree_hdr_cache", sizeof(struct basicbtfs_name_list_hdr), 0, 0, NULL);
 
     if (!basicbtfs_nametree_data_cache) return -ENOMEM;
     return 0;
@@ -287,8 +287,9 @@ int basicbtfs_fill_super(struct super_block *sb, void *data, int silent)
     struct basicbtfs_sb_info *sbi = NULL;
     struct inode *root_inode = NULL;
     struct basicbtfs_btree_node *node = NULL;
+    struct basicbtfs_disk_block *disk_block = NULL;
     struct basicbtfs_btree_node_cache *node_cache = NULL;
-    struct basicbtfs_name_tree *name_tree = NULL;
+    struct basicbtfs_name_list_hdr *list_hdr = NULL;
     int ret = 0;
 
     printk("size of diskblock: %ld\n", sizeof(struct basicbtfs_disk_block));
@@ -362,13 +363,15 @@ int basicbtfs_fill_super(struct super_block *sb, void *data, int silent)
 
     if (!bh) return -EIO;
 
-    node = (struct basicbtfs_btree_node *) bh->b_data;
+    disk_block = (struct basicbtfs_disk_block *) bh->b_data;
+    disk_block->block_type_id = BASICBTFS_BLOCKTYPE_BTREE_NODE;
+    node = &disk_block->block_type.btree_node;
     node->leaf = true;
     node->root = true;
-    node->block_type = BASICBTFS_BLOCKTYPE_BTREE_NODE;
+    // node->block_type = BASICBTFS_BLOCKTYPE_BTREE_NODE;
     node->nr_of_keys = 0;
     node->nr_of_files = 0;
-    node->parent = node->parent = root_inode->i_ino;
+    node->parent = root_inode->i_ino;
 
     if (node->tree_name_bno == 0) {
         node->tree_name_bno = get_free_blocks(BASICBTFS_SB(sb), 1);
@@ -379,13 +382,13 @@ int basicbtfs_fill_super(struct super_block *sb, void *data, int silent)
             put_blocks(BASICBTFS_SB(sb), node->tree_name_bno, 1);
             return -EIO;
         }
-        name_tree = (struct basicbtfs_name_tree *)bh_name_table->b_data;
-        name_tree->free_bytes = BASICBTFS_EMPTY_NAME_TREE;
-        name_tree->start_unused_area = BASICBTFS_BLOCKSIZE - BASICBTFS_EMPTY_NAME_TREE;
-        name_tree->block_type = BASICBTFS_BLOCKTYPE_NAMETREE;
-        name_tree->prev_block = 0;
-        name_tree->next_block = 0;
-        name_tree->nr_of_entries = 0;
+        list_hdr = (struct basicbtfs_name_list_hdr *)bh_name_table->b_data;
+        list_hdr->free_bytes = BASICBTFS_EMPTY_NAME_TREE;
+        list_hdr->start_unused_area = BASICBTFS_BLOCKSIZE - BASICBTFS_EMPTY_NAME_TREE;
+        list_hdr->block_type = BASICBTFS_BLOCKTYPE_NAMETREE;
+        list_hdr->prev_block = 0;
+        list_hdr->next_block = 0;
+        list_hdr->nr_of_entries = 0;
         mark_buffer_dirty(bh_name_table);
         brelse(bh_name_table);
     }

@@ -132,9 +132,10 @@ static int basicbtfs_create(struct inode *dir, struct dentry *dentry, umode_t mo
     struct basicbtfs_inode_info *bfs_inode_info_dir = NULL;
     struct basicbtfs_btree_node *node = NULL;
     struct basicbtfs_btree_node_cache *node_cache = NULL;
-    struct basicbtfs_name_tree *name_tree = NULL;
+    struct basicbtfs_name_list_hdr *name_list_hdr = NULL;
     struct basicbtfs_cluster_table *cluster_list;
     struct buffer_head *bh_dir = NULL, *bh = NULL, *bh_name_table = NULL;
+    struct basicbtfs_disk_block *disk_block = NULL;
     int ret = 0;
 
     if (strlen(dentry->d_name.name) > BASICBTFS_NAME_LENGTH) return -ENAMETOOLONG;
@@ -144,7 +145,8 @@ static int basicbtfs_create(struct inode *dir, struct dentry *dentry, umode_t mo
 
     if (!bh_dir) return -EIO;
 
-    node = (struct basicbtfs_btree_node *) bh_dir->b_data;
+    disk_block = (struct basicbtfs_disk_block *) bh_dir->b_data;
+    node = &disk_block->block_type.btree_node;
 
     if (node->nr_of_files >= BASICBTFS_ENTRIES_PER_DIR) {
         printk(KERN_ERR "Parent directory is full\n");
@@ -180,12 +182,14 @@ static int basicbtfs_create(struct inode *dir, struct dentry *dentry, umode_t mo
 
         if (!bh) return -EIO;
 
-        node = (struct basicbtfs_btree_node *) bh->b_data;
+        disk_block = (struct basicbtfs_disk_block *) bh->b_data;
+        disk_block->block_type_id = BASICBTFS_BLOCKTYPE_BTREE_NODE;
+        node = &disk_block->block_type.btree_node;
         node->leaf = true;
         node->root = true;
         node->nr_of_files = 0;
         node->nr_of_keys = 0;
-        node->block_type = BASICBTFS_BLOCKTYPE_BTREE_NODE;
+        // node->block_type = BASICBTFS_BLOCKTYPE_BTREE_NODE;
         node->parent = inode->i_ino;
 
         if (node->tree_name_bno == 0) {
@@ -198,13 +202,13 @@ static int basicbtfs_create(struct inode *dir, struct dentry *dentry, umode_t mo
                 return -EIO;
             }
 
-            name_tree = (struct basicbtfs_name_tree *)bh_name_table->b_data;
-            name_tree->free_bytes = BASICBTFS_EMPTY_NAME_TREE;
-            name_tree->start_unused_area = BASICBTFS_BLOCKSIZE - BASICBTFS_EMPTY_NAME_TREE;
-            name_tree->block_type = BASICBTFS_BLOCKTYPE_NAMETREE;
-            name_tree->prev_block = 0;
-            name_tree->next_block = 0;
-            name_tree->nr_of_entries = 0;
+            name_list_hdr = (struct basicbtfs_name_list_hdr *)bh_name_table->b_data;
+            name_list_hdr->free_bytes = BASICBTFS_EMPTY_NAME_TREE;
+            name_list_hdr->start_unused_area = BASICBTFS_BLOCKSIZE - BASICBTFS_EMPTY_NAME_TREE;
+            name_list_hdr->block_type = BASICBTFS_BLOCKTYPE_NAMETREE;
+            name_list_hdr->prev_block = 0;
+            name_list_hdr->next_block = 0;
+            name_list_hdr->nr_of_entries = 0;
             mark_buffer_dirty(bh_name_table);
             brelse(bh_name_table);
         }
@@ -231,10 +235,13 @@ static int basicbtfs_create(struct inode *dir, struct dentry *dentry, umode_t mo
         bh = sb_bread(sb, BASICBTFS_INODE(inode)->i_bno);
 
         if (!bh) return -EIO;
+        disk_block = (struct basicbtfs_disk_block *) bh->b_data;
+        disk_block->block_type.cluster_table.ino = inode->i_ino;
+        disk_block->block_type_id =BASICBTFS_BLOCKTYPE_CLUSTER_TABLE;
 
-        cluster_list = (struct basicbtfs_cluster_table *) bh->b_data;
-        cluster_list->ino = inode->i_ino;
-        cluster_list->block_type = BASICBTFS_BLOCKTYPE_CLUSTER_TABLE;
+        // cluster_list = (struct basicbtfs_cluster_table *) bh->b_data;
+        // cluster_list->ino = inode->i_ino;
+        // cluster_list->block_type = BASICBTFS_BLOCKTYPE_CLUSTER_TABLE;
         mark_buffer_dirty(bh);
         brelse(bh);
     }
@@ -289,7 +296,7 @@ static int basicbtfs_unlink(struct inode *dir ,struct dentry *dentry) {
     struct super_block *sb  = dir->i_sb;
     struct basicbtfs_sb_info *sbi = BASICBTFS_SB(sb);
     struct buffer_head *bh = NULL;
-    struct basicbtfs_alloc_table *table = NULL;
+    struct basicbtfs_disk_block *basicbtfs_disk_block = NULL;
     struct inode *inode = d_inode(dentry);
     ino = inode->i_ino;
 
@@ -312,10 +319,10 @@ static int basicbtfs_unlink(struct inode *dir ,struct dentry *dentry) {
         return ret;
     }
 
-    table = (struct basicbtfs_alloc_table *) bh->b_data;
+    basicbtfs_disk_block = (struct basicbtfs_disk_block *) bh->b_data;
 
     if (S_ISDIR(inode->i_mode)) {
-        reset_block((char *)table, bh);
+        reset_block((char *)basicbtfs_disk_block, bh);
         clean_inode(inode);
         put_blocks(sbi, bno, 1);
         put_inode(sbi, ino);
@@ -338,7 +345,8 @@ static int basicbtfs_rmdir(struct inode *dir, struct dentry *dentry) {
     struct super_block *sb = dir->i_sb;
     uint32_t ino = BASICBTFS_INODE(inode)->i_bno;
     struct buffer_head *bh = NULL;
-    struct basicbtfs_alloc_table *table = NULL;
+    struct basicbtfs_btree_node *node = NULL;
+    struct basicbtfs_disk_block *disk_block = NULL;
     int ret = basicbtfs_unlink(dir, dentry);
 
     if (inode->i_nlink > 2) return -ENOTEMPTY;
@@ -347,9 +355,11 @@ static int basicbtfs_rmdir(struct inode *dir, struct dentry *dentry) {
 
     if (!bh) return -EIO;
 
-    table = (struct basicbtfs_alloc_table *) bh->b_data;
+    // node = (struct basicbtfs_btree_node *) bh->b_data;
+    disk_block = (struct basicbtfs_disk_block *) bh->b_data;
+    node = &disk_block->block_type.btree_node;
 
-    if (table->nr_of_entries > 0) {
+    if (node->nr_of_files > 0) {
         brelse(bh);
         return -ENOTEMPTY;
     }

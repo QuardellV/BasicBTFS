@@ -66,10 +66,9 @@ static inline void basicbtfs_cache_add_node(struct super_block *sb, uint32_t dir
 
 static inline void basicbtfs_cache_add_name_block(struct super_block *sb, uint32_t dir_bno, struct basicbtfs_block *name_block, uint32_t name_bno) {
     struct basicbtfs_btree_dir_cache_list *dir_cache, *tmp;
+    struct basicbtfs_name_tree_cache *nametree_hdr = basicbtfs_alloc_nametree_hdr(sb);
 
     printk("add name block\n");
-
-    struct basicbtfs_name_tree_cache *nametree_hdr = basicbtfs_alloc_nametree_hdr(sb);
     nametree_hdr->name_tree_block = basicbtfs_alloc_file(sb);
     nametree_hdr->name_bno = name_bno;
 
@@ -144,7 +143,6 @@ static inline void basicbtfs_cache_update_root_node(uint32_t dir_bno, struct bas
 static inline void basicbtfs_cache_update_root_bno(uint32_t dir_bno, uint32_t new_bno) {
     struct basicbtfs_btree_dir_cache_list *tmp, *dir_cache;
     printk("new bno: %d\n", new_bno);
-    bool found = false;
 
     list_for_each_entry_safe(dir_cache, tmp, &dir_cache_list, list) {
         if (dir_cache->bno == dir_bno) {
@@ -176,7 +174,6 @@ static inline struct basicbtfs_btree_node_cache * basicbtfs_cache_get_root_node(
 
 static inline uint32_t basicbtfs_cache_get_nr_of_blocks(uint32_t dir_bno) {
     struct basicbtfs_btree_dir_cache_list *dir_cache;
-    struct basicbtfs_btree_node_cache *node_cache;
 
     printk("current dir_bno: %d\n", dir_bno);
 
@@ -223,20 +220,20 @@ static inline void basicbtfs_cache_delete_dir(struct super_block *sb, uint32_t h
 }
 
 static inline int basicbtfs_cache_emit_block(struct basicbtfs_block *btfs_block, int *total_nr_entries, int *current_index, struct dir_context *ctx, loff_t start_pos) {
-    struct basicbtfs_name_tree *name_tree = NULL;
+    struct basicbtfs_name_list_hdr *name_list_hdr = NULL;
     struct basicbtfs_name_entry *cur_entry = NULL;
     char *block = NULL;
     char *filename = NULL;
     int i = 0;
     
-    name_tree = (struct basicbtfs_name_tree *) btfs_block;
+    name_list_hdr = (struct basicbtfs_name_list_hdr *) btfs_block;
     block = (char *) btfs_block;
-    block += sizeof(struct basicbtfs_name_tree);
+    block += sizeof(struct basicbtfs_name_list_hdr);
     cur_entry = (struct basicbtfs_name_entry *) block;
-    *total_nr_entries += name_tree->nr_of_entries;
+    *total_nr_entries += name_list_hdr->nr_of_entries;
 
     if (start_pos < *total_nr_entries) {
-        for (i = 0; i < name_tree->nr_of_entries; i++) {
+        for (i = 0; i < name_list_hdr->nr_of_entries; i++) {
             block += sizeof(struct basicbtfs_name_entry);
             if (cur_entry->ino != 0) {
                 filename = kzalloc(sizeof(char) * cur_entry->name_length, GFP_KERNEL);
@@ -280,21 +277,21 @@ static inline bool basicbtfs_cache_iterate_dir(struct super_block *sb, uint32_t 
 }
 
 static inline int basicbtfs_cache_emit_block_debug(struct basicbtfs_block *btfs_block, int *total_nr_entries, int *current_index) {
-    struct basicbtfs_name_tree *name_tree = NULL;
+    struct basicbtfs_name_list_hdr *name_list_hdr = NULL;
     struct basicbtfs_name_entry *cur_entry = NULL;
     char *block = NULL;
     char *filename = NULL;
     int i = 0;
     
-    name_tree = (struct basicbtfs_name_tree *) btfs_block;
+    name_list_hdr = (struct basicbtfs_name_list_hdr *) btfs_block;
     block = (char *) btfs_block;
-    block += sizeof(struct basicbtfs_name_tree);
+    block += sizeof(struct basicbtfs_name_list_hdr);
     cur_entry = (struct basicbtfs_name_entry *) block;
-    *total_nr_entries += name_tree->nr_of_entries;
+    *total_nr_entries += name_list_hdr->nr_of_entries;
 
-    printk("nr of entries: %d\n", name_tree->nr_of_entries);
+    printk("nr of entries: %d\n", name_list_hdr->nr_of_entries);
 
-    for (i = 0; i < name_tree->nr_of_entries; i++) {
+    for (i = 0; i < name_list_hdr->nr_of_entries; i++) {
         block += sizeof(struct basicbtfs_name_entry);
         if (cur_entry->ino != 0) {
             filename = kzalloc(sizeof(char) * cur_entry->name_length, GFP_KERNEL);
