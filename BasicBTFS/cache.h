@@ -221,14 +221,16 @@ static inline void basicbtfs_cache_delete_dir(struct super_block *sb, uint32_t h
 
 static inline int basicbtfs_cache_emit_block(struct basicbtfs_block *btfs_block, int *total_nr_entries, int *current_index, struct dir_context *ctx, loff_t start_pos) {
     struct basicbtfs_name_list_hdr *name_list_hdr = NULL;
+    struct basicbtfs_disk_block *disk_block = NULL;
     struct basicbtfs_name_entry *cur_entry = NULL;
     char *block = NULL;
     char *filename = NULL;
     int i = 0;
     
-    name_list_hdr = (struct basicbtfs_name_list_hdr *) btfs_block;
+    disk_block = (struct basicbtfs_disk_block *) btfs_block;
+    name_list_hdr = &disk_block->block_type.name_list_hdr;
     block = (char *) btfs_block;
-    block += sizeof(struct basicbtfs_name_list_hdr);
+    block += BASICBTFS_NAME_ENTRY_S_OFFSET;
     cur_entry = (struct basicbtfs_name_entry *) block;
     *total_nr_entries += name_list_hdr->nr_of_entries;
 
@@ -279,13 +281,15 @@ static inline bool basicbtfs_cache_iterate_dir(struct super_block *sb, uint32_t 
 static inline int basicbtfs_cache_emit_block_debug(struct basicbtfs_block *btfs_block, int *total_nr_entries, int *current_index) {
     struct basicbtfs_name_list_hdr *name_list_hdr = NULL;
     struct basicbtfs_name_entry *cur_entry = NULL;
+    struct basicbtfs_disk_block *disk_block = NULL;
     char *block = NULL;
     char *filename = NULL;
     int i = 0;
     
-    name_list_hdr = (struct basicbtfs_name_list_hdr *) btfs_block;
-    block = (char *) btfs_block;
-    block += sizeof(struct basicbtfs_name_list_hdr);
+    disk_block = (struct basicbtfs_disk_block *) btfs_block;
+    name_list_hdr = &disk_block->block_type.name_list_hdr;
+    block = (char *)btfs_block;
+    block += BASICBTFS_NAME_ENTRY_S_OFFSET;
     cur_entry = (struct basicbtfs_name_entry *) block;
     *total_nr_entries += name_list_hdr->nr_of_entries;
 

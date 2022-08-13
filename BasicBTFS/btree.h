@@ -17,7 +17,7 @@ static inline void basicbtfs_btree_node_init(struct super_block *sb, struct basi
     node->nr_of_keys = 0;
     node->leaf = leaf;
     node->parent = par_bno;
-    node->block_type = BASICBTFS_BLOCKTYPE_BTREE_NODE;
+    // node->block_type = BASICBTFS_BLOCKTYPE_BTREE_NODE;
     // basicbtfs_cache_add_node(sb, dir_bno, bno, node);
 }
 

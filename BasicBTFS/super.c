@@ -382,10 +382,14 @@ int basicbtfs_fill_super(struct super_block *sb, void *data, int silent)
             put_blocks(BASICBTFS_SB(sb), node->tree_name_bno, 1);
             return -EIO;
         }
-        list_hdr = (struct basicbtfs_name_list_hdr *)bh_name_table->b_data;
+        disk_block = (struct basicbtfs_disk_block *) bh_name_table->b_data;
+        disk_block->block_type_id =BASICBTFS_BLOCKTYPE_NAMETREE;
+        list_hdr = &disk_block->block_type.name_list_hdr;
+
+        // list_hdr = (struct basicbtfs_name_list_hdr *)bh_name_table->b_data;
         list_hdr->free_bytes = BASICBTFS_EMPTY_NAME_TREE;
         list_hdr->start_unused_area = BASICBTFS_BLOCKSIZE - BASICBTFS_EMPTY_NAME_TREE;
-        list_hdr->block_type = BASICBTFS_BLOCKTYPE_NAMETREE;
+        // list_hdr->block_type = BASICBTFS_BLOCKTYPE_NAMETREE;
         list_hdr->prev_block = 0;
         list_hdr->next_block = 0;
         list_hdr->nr_of_entries = 0;

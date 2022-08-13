@@ -49,13 +49,13 @@ static int basicbtfs_iterate(struct file *dir, struct dir_context *ctx) {
     nr_of_files = node->nr_of_files;
     brelse(bh);
 
-    // if (basicbtfs_cache_iterate_dir(sb, inode_info->i_bno, ctx, ctx->pos - 2)) {
-    //     printk("found in cache and ctx pos: %d | %lld\n", nr_of_files, ctx->pos - 2);
-    //     if (ctx->pos - 2 >= nr_of_files) {
-    //         printk("all in cache\n");
-    //         return 0;
-    //     }
-    // }
+    if (basicbtfs_cache_iterate_dir(sb, inode_info->i_bno, ctx, ctx->pos - 2)) {
+        printk("found in cache and ctx pos: %d | %lld\n", nr_of_files, ctx->pos - 2);
+        if (ctx->pos - 2 >= nr_of_files) {
+            printk("all in cache\n");
+            return 0;
+        }
+    }
 
     // basicbtfs_nametree_iterate_name_debug(sb, name_bno);
     // return basicbtfs_btree_traverse(sb, inode_info->i_bno, ctx, ctx->pos - 2, &ctx_index);

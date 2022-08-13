@@ -202,10 +202,14 @@ static int basicbtfs_create(struct inode *dir, struct dentry *dentry, umode_t mo
                 return -EIO;
             }
 
-            name_list_hdr = (struct basicbtfs_name_list_hdr *)bh_name_table->b_data;
+            // name_list_hdr = (struct basicbtfs_name_list_hdr *)bh_name_table->b_data;
+            disk_block = (struct basicbtfs_disk_block *) bh_name_table->b_data;
+            disk_block->block_type_id = BASICBTFS_BLOCKTYPE_NAMETREE;
+            name_list_hdr = &disk_block->block_type.name_list_hdr;
+
             name_list_hdr->free_bytes = BASICBTFS_EMPTY_NAME_TREE;
             name_list_hdr->start_unused_area = BASICBTFS_BLOCKSIZE - BASICBTFS_EMPTY_NAME_TREE;
-            name_list_hdr->block_type = BASICBTFS_BLOCKTYPE_NAMETREE;
+            // name_list_hdr->block_type = BASICBTFS_BLOCKTYPE_NAMETREE;
             name_list_hdr->prev_block = 0;
             name_list_hdr->next_block = 0;
             name_list_hdr->nr_of_entries = 0;

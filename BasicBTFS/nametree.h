@@ -14,15 +14,17 @@
 static inline int basicbtfs_nametree_emit_block(struct buffer_head *bh, int *total_nr_entries, int *current_index, struct dir_context *ctx, loff_t start_pos) {
     struct basicbtfs_name_list_hdr *name_list_hdr = NULL;
     struct basicbtfs_name_entry *cur_entry = NULL;
+    struct basicbtfs_disk_block *disk_block = NULL;
     char *block = NULL;
     char *filename = NULL;
     int i = 0;
 
     
-    
-    name_list_hdr = (struct basicbtfs_name_list_hdr *) bh->b_data;
+    disk_block = (struct basicbtfs_disk_block *) bh->b_data;
+    name_list_hdr = &disk_block->block_type.name_list_hdr;
+    // name_list_hdr = (struct basicbtfs_name_list_hdr *) bh->b_data;
     block = (char *) bh->b_data;
-    block += sizeof(struct basicbtfs_name_list_hdr);
+    block += BASICBTFS_NAME_ENTRY_S_OFFSET;
     cur_entry = (struct basicbtfs_name_entry *) block;
     *total_nr_entries += name_list_hdr->nr_of_entries;
 
@@ -55,6 +57,7 @@ static inline int basicbtfs_nametree_emit_block(struct buffer_head *bh, int *tot
 static inline int basicbtfs_nametree_iterate_name(struct super_block *sb, uint32_t name_bno, struct dir_context *ctx, loff_t start_pos) {
     struct buffer_head *bh = NULL;
     struct basicbtfs_name_list_hdr *name_list_hdr = NULL;
+    struct basicbtfs_disk_block *disk_block = NULL;
     uint32_t next_bno;
     uint32_t current_index = 0;
     uint32_t total_nr_entries = 0;
@@ -64,7 +67,9 @@ static inline int basicbtfs_nametree_iterate_name(struct super_block *sb, uint32
 
     if (!bh) return -EIO;
 
-    name_list_hdr = (struct basicbtfs_name_list_hdr *) bh->b_data;
+    // name_list_hdr = (struct basicbtfs_name_list_hdr *) bh->b_data;
+    disk_block = (struct basicbtfs_disk_block *) bh->b_data;
+    name_list_hdr = &disk_block->block_type.name_list_hdr;
     ret = basicbtfs_nametree_emit_block(bh, &total_nr_entries, &current_index, ctx, start_pos);
 
     if (ret == 1) {
@@ -81,6 +86,8 @@ static inline int basicbtfs_nametree_iterate_name(struct super_block *sb, uint32
         if (!bh) return -EIO;
 
         name_list_hdr = (struct basicbtfs_name_list_hdr *) bh->b_data;
+        disk_block = (struct basicbtfs_disk_block *) bh->b_data;
+        name_list_hdr = &disk_block->block_type.name_list_hdr;
         ret = basicbtfs_nametree_emit_block(bh, &total_nr_entries, &current_index, ctx, start_pos);
 
         if (ret == 1) {
@@ -95,9 +102,12 @@ static inline int basicbtfs_nametree_insert_entry_in_list(struct buffer_head *bh
     char *block = NULL, *filename = NULL;
     struct basicbtfs_name_entry *name_entry = NULL;
     struct basicbtfs_name_list_hdr *name_list_hdr = NULL;
+    struct basicbtfs_disk_block *disk_block = NULL;
 
-    name_list_hdr = (struct basicbtfs_name_list_hdr *) bh->b_data;
-    block = (char *) name_list_hdr;
+    // name_list_hdr = (struct basicbtfs_name_list_hdr *) bh->b_data;
+    disk_block = (struct basicbtfs_disk_block *) bh->b_data;
+    name_list_hdr = &disk_block->block_type.name_list_hdr;
+    block = (char *) bh->b_data;
     
     block += name_list_hdr->start_unused_area;
     dir_entry->block_index = name_list_hdr->start_unused_area;
@@ -120,6 +130,7 @@ static inline int basicbtfs_nametree_insert_name(struct super_block *sb, uint32_
     struct buffer_head *bh = NULL;
     struct basicbtfs_name_list_hdr *name_list_hdr = NULL;
     struct basicbtfs_name_entry *name_entry = NULL;
+    struct basicbtfs_disk_block *disk_block = NULL;
     uint32_t cur_bno = name_bno, prev_bno = cur_bno;
     char *block = NULL;
     char *filename = NULL;
@@ -128,9 +139,10 @@ static inline int basicbtfs_nametree_insert_name(struct super_block *sb, uint32_
 
     if (!bh) return -EIO;
 
-    name_list_hdr = (struct basicbtfs_name_list_hdr *) bh->b_data;
-
-    if ((BASICBTFS_BLOCKSIZE - name_list_hdr->start_unused_area) > dentry->d_name.len + 1 + sizeof(struct basicbtfs_name_list_hdr)) {
+    // name_list_hdr = (struct basicbtfs_name_list_hdr *) bh->b_data;
+    disk_block = (struct basicbtfs_disk_block *) bh->b_data;
+    name_list_hdr = &disk_block->block_type.name_list_hdr;
+    if ((BASICBTFS_BLOCKSIZE - name_list_hdr->start_unused_area) > dentry->d_name.len + 1 + sizeof(struct basicbtfs_name_entry)) {
         basicbtfs_nametree_insert_entry_in_list(bh, cur_bno, dentry, dir_entry);
         mark_buffer_dirty(bh);
         basicbtfs_cache_update_block(sb, dir_bno, (struct basicbtfs_block *) bh->b_data, cur_bno);
@@ -149,9 +161,11 @@ static inline int basicbtfs_nametree_insert_name(struct super_block *sb, uint32_
 
         if (!bh) return -EIO;
 
-        name_list_hdr = (struct basicbtfs_name_list_hdr *) bh->b_data;
+        // name_list_hdr = (struct basicbtfs_name_list_hdr *) bh->b_data;
+        disk_block = (struct basicbtfs_disk_block *) bh->b_data;
+        name_list_hdr = &disk_block->block_type.name_list_hdr;
 
-        if ((BASICBTFS_BLOCKSIZE - name_list_hdr->start_unused_area) > dentry->d_name.len + 1 + sizeof(struct basicbtfs_name_list_hdr)) {
+        if ((BASICBTFS_BLOCKSIZE - name_list_hdr->start_unused_area) > dentry->d_name.len + 1 + sizeof(struct basicbtfs_name_entry)) {
             basicbtfs_nametree_insert_entry_in_list(bh, cur_bno, dentry, dir_entry);
             mark_buffer_dirty(bh);
             basicbtfs_cache_update_block(sb, dir_bno, (struct basicbtfs_block *) bh->b_data, cur_bno);
@@ -170,15 +184,18 @@ static inline int basicbtfs_nametree_insert_name(struct super_block *sb, uint32_
 
     if (!bh) return -EIO;
 
-    name_list_hdr = (struct basicbtfs_name_list_hdr *) bh->b_data;
+    // name_list_hdr = (struct basicbtfs_name_list_hdr *) bh->b_data;
+    disk_block = (struct basicbtfs_disk_block *) bh->b_data;
+    disk_block->block_type_id = BASICBTFS_BLOCKTYPE_NAMETREE;
+    name_list_hdr = &disk_block->block_type.name_list_hdr;
     name_list_hdr->free_bytes = BASICBTFS_EMPTY_NAME_TREE;
     name_list_hdr->start_unused_area = BASICBTFS_BLOCKSIZE - BASICBTFS_EMPTY_NAME_TREE;
-    name_list_hdr->block_type = BASICBTFS_BLOCKTYPE_NAMETREE;
+    // name_list_hdr->block_type = BASICBTFS_BLOCKTYPE_NAMETREE;
     name_list_hdr->prev_block = prev_bno;
     name_list_hdr->next_block = 0;
     name_list_hdr->nr_of_entries = 0;
 
-    if ((BASICBTFS_BLOCKSIZE - name_list_hdr->start_unused_area) > dentry->d_name.len + 1 +  sizeof(struct basicbtfs_name_list_hdr)) {
+    if ((BASICBTFS_BLOCKSIZE - name_list_hdr->start_unused_area) > dentry->d_name.len + 1 +  sizeof(struct basicbtfs_name_entry)) {
         basicbtfs_nametree_insert_entry_in_list(bh, cur_bno, dentry, dir_entry);
         mark_buffer_dirty(bh);
         
@@ -198,13 +215,16 @@ static inline int basicbtfs_nametree_delete_name(struct super_block *sb, uint32_
     char *block = NULL;
     struct basicbtfs_name_entry *name_entry = NULL;
     struct basicbtfs_name_list_hdr *name_list_hdr = NULL;
+    struct basicbtfs_disk_block *disk_block = NULL;
     uint32_t old_free_bytes = 0;
 
     bh = sb_bread(sb, name_bno);
 
     if (!bh) return -EIO;
 
-    name_list_hdr = (struct basicbtfs_name_list_hdr *) bh->b_data;
+    // name_list_hdr = (struct basicbtfs_name_list_hdr *) bh->b_data;
+    disk_block = (struct basicbtfs_disk_block *) bh->b_data;
+    name_list_hdr = &disk_block->block_type.name_list_hdr;
     block = (char *) bh->b_data;
     block += block_index;
     name_entry = (struct basicbtfs_name_entry *) block;
@@ -227,6 +247,7 @@ static inline int basicbtfs_nametree_delete_name(struct super_block *sb, uint32_
 static inline int basicbtfs_nametree_iterate_name_debug(struct super_block *sb, uint32_t name_bno) {
     struct buffer_head *bh = NULL;
     struct basicbtfs_name_list_hdr *name_list_hdr = NULL;
+    struct basicbtfs_disk_block *disk_block = NULL;
     struct basicbtfs_name_entry *cur_entry = NULL;
     uint32_t next_bno;
     char *block = NULL;
@@ -241,11 +262,18 @@ static inline int basicbtfs_nametree_iterate_name_debug(struct super_block *sb, 
 
     if (!bh) return -EIO;
 
-    name_list_hdr = (struct basicbtfs_name_list_hdr *) bh->b_data;
-    block = (char *) bh->b_data;
-    block += sizeof(struct basicbtfs_name_list_hdr);
+    // name_list_hdr = (struct basicbtfs_name_list_hdr *) bh->b_data;
+    disk_block = (struct basicbtfs_disk_block *) bh->b_data;
+    printk("1\n");
+    name_list_hdr = &disk_block->block_type.name_list_hdr;
+    printk("12\n");
+    block = bh->b_data;
+    block += BASICBTFS_NAME_ENTRY_S_OFFSET;
     cur_entry = (struct basicbtfs_name_entry *) block;
+    printk("13\n");
     total_nr_entries = name_list_hdr->nr_of_entries;
+
+    printk("done: %d\n", BASICBTFS_NAME_ENTRY_S_OFFSET + sizeof(struct basicbtfs_name_entry));
 
     for (i = 0; i < name_list_hdr->nr_of_entries; i++) {
         block += sizeof(struct basicbtfs_name_entry);
@@ -271,9 +299,11 @@ static inline int basicbtfs_nametree_iterate_name_debug(struct super_block *sb, 
 
         if (!bh) return -EIO;
 
-        name_list_hdr = (struct basicbtfs_name_list_hdr *) bh->b_data;
-        block = (char *) bh->b_data;
-        block += sizeof(struct basicbtfs_name_list_hdr);
+        // name_list_hdr = (struct basicbtfs_name_list_hdr *) bh->b_data;
+        disk_block = (struct basicbtfs_disk_block *) bh->b_data;
+        name_list_hdr = &disk_block->block_type.name_list_hdr;
+        block = bh->b_data;
+        block += BASICBTFS_NAME_ENTRY_S_OFFSET;
         cur_entry = (struct basicbtfs_name_entry *) block;
         total_nr_entries += name_list_hdr->nr_of_entries;
 
