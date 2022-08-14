@@ -56,6 +56,7 @@ struct basicbtfs_sb_info {
     uint32_t s_nfree_inodes;
     uint32_t s_nfree_blocks;
     uint32_t s_cache_dir_entries;
+    uint32_t s_unused_area;
 
 #ifdef __KERNEL__
     unsigned long *s_ifree_bitmap;

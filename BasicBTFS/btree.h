@@ -97,6 +97,43 @@ static inline uint32_t basicbtfs_btree_node_lookup(struct super_block *sb, uint3
     return ret;
 }
 
+static inline uint32_t basicbtfs_btree_node_update_namelist_info(struct super_block *sb, uint32_t root_bno, uint32_t hash, int counter, uint32_t name_bno, uint32_t block_index) {
+    struct buffer_head *bh = NULL;
+    struct basicbtfs_disk_block *disk_block = NULL;
+    struct basicbtfs_btree_node *btr_node = NULL;
+    uint32_t ret = 0, child = 0;
+    int index = 0;
+
+    bh = sb_bread(sb, root_bno);
+
+    if (!bh) return 0;
+    disk_block = (struct basicbtfs_disk_block *) bh->b_data;
+    btr_node = &disk_block->block_type.btree_node;
+    // hash > btr_node->entries[index].hash
+    while (index < btr_node->nr_of_keys && hash > btr_node->entries[index].hash) {
+        index++;
+        counter++;
+    }
+    // btr_node->entries[index].hash == hash
+    if (btr_node->entries[index].hash == hash) {
+        printk(KERN_INFO "Current counter: %d of %d\n", counter, hash);
+        btr_node->entries[index].name_bno = name_bno;
+        btr_node->entries[index].block_index = block_index;
+        mark_buffer_dirty(bh);
+        brelse(bh);
+        return 0;
+    }
+
+    if (btr_node->leaf) {
+        brelse(bh);
+        return 0;
+    }
+    child  = btr_node->children[index];
+    brelse(bh);
+    ret = basicbtfs_btree_node_lookup(sb, child, hash, counter);
+    return ret;
+}
+
 static inline uint32_t basicbtfs_btree_node_lookup_with_entry(struct super_block *sb, uint32_t root_bno, uint32_t hash, int counter, struct basicbtfs_entry *entry) {
     struct buffer_head *bh = NULL;
     struct basicbtfs_disk_block *disk_block = NULL;
@@ -1024,7 +1061,7 @@ static inline int basicbtfs_btree_traverse_debug(struct super_block *sb, uint32_
 
     if (!bh) return -EIO;
 
-    node = (struct basicbtfs_btree_node *) bh->b_data;
+    // node = (struct basicbtfs_btree_node *) bh->b_data;
     disk_block = (struct basicbtfs_disk_block *) bh->b_data;
     node = &disk_block->block_type.btree_node;
 

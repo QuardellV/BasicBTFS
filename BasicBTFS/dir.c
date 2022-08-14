@@ -120,11 +120,11 @@ int basicbtfs_add_entry(struct inode *dir, struct inode *inode, struct dentry *d
     new_entry.ino = inode->i_ino;
     new_entry.hash = hash;
 
-    printk(KERN_INFO "START Debug btree traverse added before: %s\n", dentry->d_name.name);
-    basicbtfs_nametree_iterate_name_debug(dir->i_sb, name_bno);
-    printk(KERN_INFO "CACHE: current dir_bno: %d\n", inode_info->i_bno);
-    basicbtfs_cache_iterate_dir_debug(dir->i_sb, inode_info->i_bno);
-    printk(KERN_INFO "END Debug btree traverse before\n");
+    // printk(KERN_INFO "START Debug btree traverse added before: %s\n", dentry->d_name.name);
+    // // basicbtfs_nametree_iterate_name_debug(dir->i_sb, name_bno);
+    // printk(KERN_INFO "CACHE: current dir_bno: %d\n", inode_info->i_bno);
+    // // basicbtfs_cache_iterate_dir_debug(dir->i_sb, inode_info->i_bno);
+    // printk(KERN_INFO "END Debug btree traverse before\n");
 
     nr_of_blocks = basicbtfs_cache_get_nr_of_blocks(inode_info->i_bno);
 
@@ -142,11 +142,11 @@ int basicbtfs_add_entry(struct inode *dir, struct inode *inode, struct dentry *d
         ret = basicbtfs_btree_node_cache_insert(dir->i_sb, dir, node_cache, &new_entry, inode_info->i_bno);
     }
 
-    printk(KERN_INFO "START Debug btree traverse added: %s\n", dentry->d_name.name);
-    basicbtfs_nametree_iterate_name_debug(dir->i_sb, name_bno);
-    printk(KERN_INFO "CACHE: current dir_bno: %d\n", inode_info->i_bno);
-    basicbtfs_cache_iterate_dir_debug(dir->i_sb, inode_info->i_bno);
-    printk(KERN_INFO "END Debug btree traverse\n");
+    // printk(KERN_INFO "START Debug btree traverse added: %s\n", dentry->d_name.name);
+    // // basicbtfs_nametree_iterate_name_debug(dir->i_sb, name_bno);
+    // printk(KERN_INFO "CACHE: current dir_bno: %d\n", inode_info->i_bno);
+    // // basicbtfs_cache_iterate_dir_debug(dir->i_sb, inode_info->i_bno);
+    // printk(KERN_INFO "END Debug btree traverse\n");
     return ret;
 }
 
@@ -189,11 +189,11 @@ int basicbtfs_delete_entry(struct inode *dir, struct dentry *dentry) {
         printk("yes it exists in cache: %d | %d\n", new_entry.name_bno, new_entry.block_index);
     }
 
-    printk(KERN_INFO "START Debug btree traverse BEFOREremove: %s\n", dentry->d_name.name);
-    basicbtfs_nametree_iterate_name_debug(dir->i_sb, name_bno);
-    printk(KERN_INFO "CACHE\n");
-    basicbtfs_cache_iterate_dir_debug(dir->i_sb, inode_info->i_bno);
-    printk(KERN_INFO "END Debug btree traverse BEFORE\n");
+    // printk(KERN_INFO "START Debug btree traverse BEFOREremove: %s\n", dentry->d_name.name);
+    // basicbtfs_nametree_iterate_name_debug(dir->i_sb, name_bno);
+    // printk(KERN_INFO "CACHE\n");
+    // basicbtfs_cache_iterate_dir_debug(dir->i_sb, inode_info->i_bno);
+    // printk(KERN_INFO "END Debug btree traverse BEFORE\n");
 
     ret = basicbtfs_btree_delete_entry(dir->i_sb, dir, inode_info->i_bno, hash);
     node_cache = basicbtfs_cache_get_root_node(inode_info->i_bno);
@@ -201,11 +201,11 @@ int basicbtfs_delete_entry(struct inode *dir, struct dentry *dentry) {
 
     ret = basicbtfs_nametree_delete_name(dir->i_sb, new_entry.name_bno, new_entry.block_index, inode_info->i_bno);
 
-    printk(KERN_INFO "START Debug btree traverse AFTER : %s\n", dentry->d_name.name);
-    basicbtfs_nametree_iterate_name_debug(dir->i_sb, name_bno);
-    printk(KERN_INFO "CACHE\n");
-    basicbtfs_cache_iterate_dir_debug(dir->i_sb, inode_info->i_bno);
-    printk(KERN_INFO "END Debug btree traverse AFTER\n");
+    // printk(KERN_INFO "START Debug btree traverse AFTER : %s\n", dentry->d_name.name);
+    // basicbtfs_nametree_iterate_name_debug(dir->i_sb, name_bno);
+    // printk(KERN_INFO "CACHE\n");
+    // basicbtfs_cache_iterate_dir_debug(dir->i_sb, inode_info->i_bno);
+    // printk(KERN_INFO "END Debug btree traverse AFTER\n");
     // basicbtfs_nametree_iterate_name_debug(dir->i_sb, name_bno);
     // // basicbtfs_btree_traverse_debug(dir->i_sb, inode_info->i_bno);
     // printk(KERN_INFO "END Debu tree traverse REMOVE\n");

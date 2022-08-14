@@ -85,7 +85,6 @@ static inline int basicbtfs_nametree_iterate_name(struct super_block *sb, uint32
 
         if (!bh) return -EIO;
 
-        name_list_hdr = (struct basicbtfs_name_list_hdr *) bh->b_data;
         disk_block = (struct basicbtfs_disk_block *) bh->b_data;
         name_list_hdr = &disk_block->block_type.name_list_hdr;
         ret = basicbtfs_nametree_emit_block(bh, &total_nr_entries, &current_index, ctx, start_pos);

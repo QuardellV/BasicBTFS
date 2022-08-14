@@ -15,6 +15,36 @@ static inline uint32_t get_first_free_bits(unsigned long *freemap, unsigned long
     return start_no;
 }
 
+static inline bool is_bit_range_empty(unsigned long *freemap, unsigned long size, unsigned long start, uint32_t len) {
+    unsigned long start_no = bitmap_find_next_zero_area(freemap, size, start, len, 0);
+
+    return start_no == start;
+}
+
+static inline uint32_t get_offset(unsigned long *freemap, unsigned long size, unsigned long start, uint32_t len) {
+    unsigned long start_no = bitmap_find_next_zero_area(freemap, size, start, len, 0);
+
+    if (start_no >= size) {
+        printk(KERN_ERR "no free area has been found\n");
+        return -1;
+    }
+    
+    bitmap_set(freemap, start_no, len);
+    return start_no;
+}
+
+
+static inline uint32_t get_first_free_bits_from_start(unsigned long *freemap, unsigned long size, unsigned long start, uint32_t len) {
+    unsigned long start_no = bitmap_find_next_zero_area(freemap, size, start, len, 0);
+
+    if (start_no >= size) {
+        printk(KERN_ERR "no free area has been found\n");
+        return -1;
+    }
+    bitmap_set(freemap, start_no, len);
+    return start_no;
+}
+
 static inline uint32_t get_free_inode(struct basicbtfs_sb_info *sbi) {
     uint32_t start_ino = get_first_free_bits(sbi->s_ifree_bitmap, sbi->s_ninodes, 1);
 
