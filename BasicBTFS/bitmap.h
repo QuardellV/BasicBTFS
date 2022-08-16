@@ -15,6 +15,7 @@ static inline uint32_t get_first_free_bits(unsigned long *freemap, unsigned long
     return start_no;
 }
 
+
 static inline bool is_bit_range_empty(unsigned long *freemap, unsigned long size, unsigned long start, uint32_t len) {
     unsigned long start_no = bitmap_find_next_zero_area(freemap, size, start, len, 0);
 

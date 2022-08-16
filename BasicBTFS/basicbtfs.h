@@ -94,6 +94,7 @@ struct basicbtfs_name_list_hdr {
     uint32_t nr_of_entries;
     uint32_t next_block;
     uint32_t prev_block;
+    bool first_list;
     // uint32_t block_type;
 };
 
