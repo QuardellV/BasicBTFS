@@ -87,7 +87,7 @@ static inline int flush_bitmap(struct super_block *sb, unsigned long *bitmap, ui
     return 0;
 }
 
-static inline int flush_filemap(struct super_block *sb, uint32_t *filemap, uint32_t nr_blocks, uint32_t block_offset, int wait) {
+static inline int flush_filemap(struct super_block *sb, struct basicbtfs_fileblock_info *filemap, uint32_t nr_blocks, uint32_t block_offset, int wait) {
     struct buffer_head *bh = NULL;
     int i = 0;
 

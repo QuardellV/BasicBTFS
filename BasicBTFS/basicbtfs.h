@@ -17,7 +17,7 @@
 #define BASICBTFS_FILE_BSIZE           (BASICBTFS_BLOCKSIZE * BASICBTFS_ATABLE_MAX_BLOCKS)
 #define BASICBTFS_EMPTY_NAME_TREE      ((BASICBTFS_BLOCKSIZE - BASICBTFS_NAME_ENTRY_S_OFFSET))
 #define BASICBTFS_NAME_ENTRY_S_OFFSET  ((sizeof(struct basicbtfs_name_list_hdr) + sizeof(uint32_t)))
-#define BASICBTFS_WORDS_PER_BLOCK      ((BASICBTFS_BLOCKSIZE / sizeof(uint32_t)))
+#define BASICBTFS_WORDS_PER_BLOCK      ((BASICBTFS_BLOCKSIZE / sizeof(struct basicbtfs_fileblock_info)))
 
 #define BASICBTFS_MAX_BLOCKS_PER_CLUSTER 4
 
@@ -42,6 +42,11 @@ struct basicbtfs_inode {
     char i_data[32];
 };
 
+struct basicbtfs_fileblock_info {
+    uint32_t ino;
+    uint32_t cluster_index;
+};
+
 
 #define BASICBTFS_INODES_PER_BLOCK (BASICBTFS_BLOCKSIZE / sizeof(struct basicbtfs_inode))
 
@@ -61,7 +66,7 @@ struct basicbtfs_sb_info {
 #ifdef __KERNEL__
     unsigned long *s_ifree_bitmap;
     unsigned long *s_bfree_bitmap;
-    uint32_t *s_fileblock_map;
+    struct basicbtfs_fileblock_info *s_fileblock_map;
 #endif
 };
 

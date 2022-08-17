@@ -51,11 +51,27 @@ static inline void my_get_rand_bytes(char *buffer, int num) {
 
 static inline unsigned long get_hash(struct dentry *dentry) {
     const int length = dentry->d_name.len + 1;
-    char *tmp_buffer = kzalloc(sizeof(char) * length, GFP_KERNEL);
+    char *tmp_buffer = (char *)kzalloc(sizeof(char) * length, GFP_KERNEL);
     u32 crc = 0;
 
     memcpy(tmp_buffer, dentry->d_name.name, dentry->d_name.len);
     tmp_buffer[dentry->d_name.len] = '\0';
+
+    crc = crc32(crc, tmp_buffer, length);
+
+    // printk(KERN_INFO "Current unsigned long: %d\n", crc);
+
+    kfree(tmp_buffer);
+
+    return crc;
+}
+
+static inline unsigned long get_hash_from_block(char *filename, int length) {
+    char *tmp_buffer = (char *)kzalloc(sizeof(char) * length, GFP_KERNEL);
+    u32 crc = 0;
+
+    memcpy(tmp_buffer, filename, length);
+    tmp_buffer[length] = '\0';
 
     crc = crc32(crc, tmp_buffer, length);
 
