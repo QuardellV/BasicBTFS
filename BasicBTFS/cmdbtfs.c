@@ -113,12 +113,12 @@ int main(int argc, char **argv) {
                 memcpy(args.name, argv[2], strlen(argv[2]) + 1);
                 fd = open(args.name, O_RDONLY);
 
-                // if (fd == -1) {
-                //     perror("could not open disk\n");
-                //     return EXIT_FAILURE;
-                // } else {
-                //     printf("yes boys\n");
-                // }
+                if (fd == -1) {
+                    perror("could not open disk\n");
+                    return EXIT_FAILURE;
+                } else {
+                    printf("yes boys\n");
+                }
                 ret = ioctl(fd, cur_cmd_code, (int32_t *) &args);
 
                 if (ret != -1) {
