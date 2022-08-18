@@ -9,6 +9,9 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <sys/ioctl.h>
+#include <linux/fs.h>
+#include <stdint.h>
+
 
 #include "basicbtfs.h"
 
@@ -74,7 +77,7 @@ void init_default_commands() {
 unsigned long search_command(char *command) {
     for (int index = 0; index <= cmd_list->pointer; index++) {
         struct command_t *cur_command = cmd_list->data[index];
-        // printf("cur: %s, %s\n", cur_command->name, command);
+        printf("cur: %s, %s\n", cur_command->name, command);
 
         if (strcmp(command, cur_command->name) == 0) {
             return cur_command->code;
@@ -92,24 +95,49 @@ char *to_lowercase(char *command) {
 
 int main(int argc, char **argv) {
     unsigned long cur_cmd_code = 0;
-    int fd, fd2;
+    int fd, ret;
     struct basicbtfs_ioctl_vol_args args;
     init_default_commands();
-
-    fd = open(argv[0], O_RDWR);
 
     if (argv[1] != NULL) {
         cur_cmd_code = search_command(to_lowercase(argv[1]));
     } else {
+        printf("No argument given\n");
         return 0;
+    }
+
+    switch (cur_cmd_code) {
+        case BASICBTFS_IOC_DEFRAG:
+            if (argv[2] != NULL) {
+                printf("%s will be defragmented\n", argv[2]);
+                memcpy(args.name, argv[2], strlen(argv[2]) + 1);
+                fd = open(args.name, O_RDONLY);
+
+                // if (fd == -1) {
+                //     perror("could not open disk\n");
+                //     return EXIT_FAILURE;
+                // } else {
+                //     printf("yes boys\n");
+                // }
+                ret = ioctl(fd, cur_cmd_code, (int32_t *) &args);
+
+                if (ret != -1) {
+                    printf("oh no, something went wrong\n");
+                } else {
+                    printf("sent\n");
+                }
+            } else {
+                printf("no valid entry\n");
+            }
+            break;
+        default:
+            printf("invalid command, try again\n");
     }
 
     if (argv[2] != NULL && argv[2][0] == '/') {
         memcpy(args.name, argv[2], strlen(argv[2]) + 1);
         ioctl(fd, cur_cmd_code, (int32_t *) &args);
     }
-    
-    ioctl(fd, cur_cmd_code, (int32_t *) &args);
 
     close(fd);
 

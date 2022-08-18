@@ -331,6 +331,5 @@ const struct file_operations basicbtfs_dir_ops = {
     .llseek		= generic_file_llseek,
 	.read		= generic_read_dir,
     .iterate_shared = basicbtfs_iterate,
-
-    // .unlocked_ioctl = basicbtfs_ioctl,
+    .unlocked_ioctl = basicbtfs_ioctl,
 };

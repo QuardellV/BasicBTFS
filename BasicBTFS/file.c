@@ -135,5 +135,5 @@ const struct file_operations basicbtfs_file_ops = {
     .read_iter = generic_file_read_iter,
     .write_iter = generic_file_write_iter,
     .fsync = generic_file_fsync,
-    // .unlocked_ioctl = basicbtfs_ioctl,
+    .unlocked_ioctl = basicbtfs_ioctl,
 };
