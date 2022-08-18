@@ -243,6 +243,7 @@ int init_sbi(struct super_block *sb, struct basicbtfs_sb_info *csb, struct basic
     sbi->s_nfree_blocks = csb->s_nfree_blocks;
     sbi->s_cache_dir_entries = 0;
     sbi->s_filemap_blocks = csb->s_filemap_blocks;
+    sbi->s_unused_area = csb->s_unused_area;
     sb->s_fs_info = sbi;
     return 0;
 }

@@ -22,7 +22,7 @@ static inline bool is_bit_range_empty(unsigned long *freemap, unsigned long size
     return start_no == start;
 }
 
-static inline uint32_t get_offset(unsigned long *freemap, unsigned long size, unsigned long start, uint32_t len) {
+static inline uint32_t get_offset(struct basicbtfs_sb_info *sbi, unsigned long *freemap, unsigned long size, unsigned long start, uint32_t len) {
     unsigned long start_no = bitmap_find_next_zero_area(freemap, size, start, len, 0);
 
     if (start_no >= size) {
@@ -31,6 +31,10 @@ static inline uint32_t get_offset(unsigned long *freemap, unsigned long size, un
     }
     
     bitmap_set(freemap, start_no, len);
+
+    if (start_no > sbi->s_unused_area) {
+        sbi->s_unused_area = start_no + len + 1;
+    }
     return start_no;
 }
 
@@ -60,6 +64,10 @@ static inline uint32_t get_free_blocks(struct basicbtfs_sb_info *sbi, uint32_t l
     uint32_t start_bno = get_first_free_bits(sbi->s_bfree_bitmap, sbi->s_nblocks, len);
     if (start_bno > 0) {
         sbi->s_nfree_blocks -= len;
+    }
+
+    if (start_bno > sbi->s_unused_area) {
+        sbi->s_unused_area = start_bno + len + 1;
     }
 
     return start_bno;

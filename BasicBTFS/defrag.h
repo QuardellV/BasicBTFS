@@ -23,7 +23,7 @@ static inline int basicbtfs_defrag_btree_node(struct super_block *sb, uint32_t o
     if (old_bno == *offset) {
         printk("same\n");
     } else if (is_bit_range_empty(sbi->s_bfree_bitmap, sbi->s_bmap_blocks, *offset, 1)) {
-        uint32_t new_bno = get_offset(sbi->s_bfree_bitmap, sbi->s_bmap_blocks, *offset, 1);
+        uint32_t new_bno = get_offset(sbi, sbi->s_bfree_bitmap, sbi->s_bmap_blocks, *offset, 1);
 
         bh_old = sb_bread(sb, old_bno);
 
@@ -38,7 +38,7 @@ static inline int basicbtfs_defrag_btree_node(struct super_block *sb, uint32_t o
         brelse(bh_new);
         brelse(bh_old);
     } else {
-        uint32_t tmp_bno = get_offset(sbi->s_bfree_bitmap, sbi->s_bmap_blocks, sbi->s_unused_area, 1);
+        uint32_t tmp_bno = get_offset(sbi, sbi->s_bfree_bitmap, sbi->s_bmap_blocks, sbi->s_unused_area, 1);
 
         bh_old = sb_bread(sb, old_bno);
 
@@ -252,7 +252,7 @@ static inline int basicbtfs_defrag_move_file_block(struct super_block *sb, struc
     disk_block = (struct basicbtfs_disk_block *) bh->b_data;
     cluster_list = &disk_block->block_type.cluster_table;
 
-    uint32_t tmp_bno = get_offset(sbi->s_bfree_bitmap, sbi->s_bmap_blocks, sbi->s_unused_area, cluster_list->table[cluster_index].cluster_length);
+    uint32_t tmp_bno = get_offset(sbi, sbi->s_bfree_bitmap, sbi->s_bmap_blocks, sbi->s_unused_area, cluster_list->table[cluster_index].cluster_length);
 
     bh_new = sb_bread(sb, tmp_bno);
 
@@ -392,7 +392,7 @@ static inline int basicbtfs_defrag_nametree_block(struct super_block *sb, struct
     if (*offset == name_bno) {
         return;
     } else if (is_bit_range_empty(sbi->s_bfree_bitmap, sbi->s_bmap_blocks, *offset, 1)) {
-        uint32_t new_bno = get_offset(sbi->s_bfree_bitmap, sbi->s_bmap_blocks, *offset, 1);
+        uint32_t new_bno = get_offset(sbi, sbi->s_bfree_bitmap, sbi->s_bmap_blocks, *offset, 1);
 
         bh_new = sb_bread(sb, new_bno);
         memcpy(bh_new->b_data, bh->b_data, BASICBTFS_BLOCKSIZE);
@@ -417,7 +417,7 @@ static inline int basicbtfs_defrag_nametree_block(struct super_block *sb, struct
         put_blocks(sbi, name_bno, 1);
     } else {
         // swap
-        uint32_t tmp_bno = get_offset(sbi->s_bfree_bitmap, sbi->s_bmap_blocks, sbi->s_unused_area, 1);
+        uint32_t tmp_bno = get_offset(sbi, sbi->s_bfree_bitmap, sbi->s_bmap_blocks, sbi->s_unused_area, 1);
 
         bh_new = sb_bread(sb, tmp_bno);
         if (!bh_new) {
@@ -574,7 +574,7 @@ static inline int basicbtfs_defrag_file_table_block(struct super_block *sb, inod
         disk_block = (struct basicbtfs_disk_block *) bh_new->b_data;
         cluster_list = &disk_block->block_type.cluster_table;
     } else {
-        uint32_t tmp_bno = get_offset(sbi->s_bfree_bitmap, sbi->s_bmap_blocks, sbi->s_unused_area, 1);
+        uint32_t tmp_bno = get_offset(sbi, sbi->s_bfree_bitmap, sbi->s_bmap_blocks, sbi->s_unused_area, 1);
 
         bh_swap = sb_bread(sb, tmp_bno);
 
@@ -629,7 +629,7 @@ static inline int basicbtfs_defrag_file_table_block(struct super_block *sb, inod
              if (*offset == disk_block_offset + block_index) {
                 return;
             } else if (is_bit_range_empty(sbi->s_bfree_bitmap, sbi->s_bmap_blocks, *offset + block_index, 1)) {
-                uint32_t new_bno = get_offset(sbi->s_bfree_bitmap, sbi->s_bmap_blocks, *offset + block_index, 1);
+                uint32_t new_bno = get_offset(sbi, sbi->s_bfree_bitmap, sbi->s_bmap_blocks, *offset + block_index, 1);
 
                 bh_new_block = sb_bread(sb, new_bno);
 
@@ -643,7 +643,7 @@ static inline int basicbtfs_defrag_file_table_block(struct super_block *sb, inod
                 brelse(bh_old_block);
             } else {
                 // swap
-                uint32_t tmp_bno = get_offset(sbi->s_bfree_bitmap, sbi->s_bmap_blocks, sbi->s_unused_area, 1);
+                uint32_t tmp_bno = get_offset(sbi, sbi->s_bfree_bitmap, sbi->s_bmap_blocks, sbi->s_unused_area, 1);
 
                 bh_swap_block = sb_bread(sb, tmp_bno);
                 if (!bh_swap_block) {
@@ -782,9 +782,10 @@ static inline void basicbtfs_defrag_disk(struct super_block *sb, struct inode *i
      * 1. 
      * 3. Defrag directory
      */
-
+    struct basicbtfs_sb_info *sbi = (struct basicbtfs_sb_info *)BASICBTFS_SB(sb);
     uint32_t offset = BASICBTFS_INODE(inode)->i_bno;
     basicbtfs_defrag_directory(sb, inode, &offset);
+    sbi->s_unused_area = offset + 1;
 
 }
 

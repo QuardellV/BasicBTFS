@@ -2,6 +2,7 @@
 #define BASICBTFS_H
 
 #define BASICBTFS_MAGIC_NUMBER         0x1DEADBAD
+#define BASICBTFS_IOCTL_MAGIC          0x94
 #define BASICBTFS_BLOCKSIZE            (1 << 12)
 #define BASICBTFS_SB_BNO               0
 #define BASICBTFS_NAME_LENGTH          255
@@ -27,6 +28,13 @@
 #define BASICBTFS_BLOCKTYPE_BTREE_NODE    0x01
 #define BASICBTFS_BLOCKTYPE_NAMETREE      0x02
 #define BASICBTFS_BLOCKTYPE_CLUSTER_TABLE 0x03
+
+struct basicbtfs_ioctl_vol_args {
+    int fd;
+    char name[4000 + 1];
+};
+
+#define BASICBTFS_IOC_DEFRAG _IOW(BASICBTFS_IOCTL_MAGIC, 1, struct basicbtfs_ioctl_vol_args)
 
 struct basicbtfs_inode {
     uint32_t i_mode;
@@ -232,6 +240,8 @@ struct dentry *basicbtfs_search_entry(struct inode *dir, struct dentry *dentry);
 int basicbtfs_delete_entry(struct inode *dir, struct dentry *dentry);
 int basicbtfs_update_entry(struct inode *old_dir, struct inode *new_dir, struct dentry *old_dentry, struct dentry *new_dentry, unsigned int flags);
 int clean_file_block(struct inode *inode);
+
+long basicbtfs_ioctl(struct file *file, unsigned int cmd, unsigned long arg);
 
 /* Operation structs*/
 extern const struct file_operations basicbtfs_file_ops;

@@ -60,6 +60,7 @@ static inline int flush_superblock(struct super_block *sb, int wait) {
     disk_sbi->s_nfree_inodes = sbi->s_nfree_inodes;
     disk_sbi->s_nfree_blocks = sbi->s_nfree_blocks;
     disk_sbi->s_filemap_blocks = sbi->s_filemap_blocks;
+    disk_sbi->s_unused_area = sbi->s_unused_area;
 
     mark_buffer_dirty(bh);
     if (wait) sync_dirty_buffer(bh);

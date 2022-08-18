@@ -328,5 +328,9 @@ int clean_file_block(struct inode *inode) {
 
 const struct file_operations basicbtfs_dir_ops = {
     .owner = THIS_MODULE,
+    .llseek		= generic_file_llseek,
+	.read		= generic_read_dir,
     .iterate_shared = basicbtfs_iterate,
+
+    // .unlocked_ioctl = basicbtfs_ioctl,
 };
