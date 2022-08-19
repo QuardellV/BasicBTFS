@@ -62,6 +62,8 @@ static int basicbtfs_file_get_block(struct inode *inode, sector_t iblock, struct
         }
         disk_block->block_type.cluster_table.table[cluster_index].start_bno = bno;
         disk_block->block_type.cluster_table.table[cluster_index].cluster_length = BASICBTFS_MAX_BLOCKS_PER_CLUSTER;
+        sbi->s_fileblock_map[bno].ino = inode->i_ino;
+        sbi->s_fileblock_map[bno].cluster_index = cluster_index;
         // inode->i_blocks += 1;
     } else {
         bno = disk_block->block_type.cluster_table.table[cluster_index].start_bno + (iblock % disk_block->block_type.cluster_table.table[cluster_index].cluster_length);

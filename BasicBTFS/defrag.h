@@ -209,7 +209,6 @@ static inline int basicbtfs_defrag_move_namelist(struct super_block *sb, struct 
     struct basicbtfs_btree_node *btr_node = NULL;
     uint32_t old_free_bytes = 0;
 
-    // name_list_hdr = (struct basicbtfs_name_list_hdr *) bh->b_data;
     disk_block = (struct basicbtfs_disk_block *) bh->b_data;
     name_list_hdr = &disk_block->block_type.name_list_hdr;
 
@@ -318,9 +317,9 @@ static inline int basicbtfs_defrag_move_file_block(struct super_block *sb, struc
         brelse(bh_new);
     }
 
-    cluster_list->table[cluster_index].start_bno = tmp_bno;
-    put_blocks(sbi, cluster_list->table[cluster_index].start_bno, cluster_list->table[cluster_index].cluster_length - 1);
+    put_blocks(sbi, cluster_list->table[cluster_index].start_bno + 1, cluster_list->table[cluster_index].cluster_length - 1);
     put_blocks(sbi, new_bno, 1);
+    cluster_list->table[cluster_index].start_bno = tmp_bno;
 
     return 0;
 }
@@ -345,194 +344,171 @@ static inline int basicbtfs_defrag_nametree_block(struct super_block *sb, struct
     int i = 0;
 
 
-    // disk_block = (struct basicbtfs_disk_block *) bh->b_data;
-    // name_list_hdr = &disk_block->block_type.name_list_hdr;
-    // // name_list_hdr = (struct basicbtfs_name_list_hdr *) bh->b_data;
-    // block = (char *) bh->b_data;
-    // block += BASICBTFS_NAME_ENTRY_S_OFFSET;
-    // pos += BASICBTFS_NAME_ENTRY_S_OFFSET;
-    // cur_entry = (struct basicbtfs_name_entry *) block;
+    disk_block = (struct basicbtfs_disk_block *) bh->b_data;
+    name_list_hdr = &disk_block->block_type.name_list_hdr;
+    block = (char *) bh->b_data;
+    block += BASICBTFS_NAME_ENTRY_S_OFFSET;
+    pos += BASICBTFS_NAME_ENTRY_S_OFFSET;
+    cur_entry = (struct basicbtfs_name_entry *) block;
 
-    // for (i = 0; i < name_list_hdr->nr_of_entries; i++) {
-    //     block += sizeof(struct basicbtfs_name_entry);
-    //     pos += sizeof(struct basicbtfs_name_entry);
-    //     if (cur_entry->ino != 0) {
-    //         filename = (char *)kzalloc(sizeof(char) * cur_entry->name_length, GFP_KERNEL);
-    //         strncpy(filename, block, cur_entry->name_length);
-    //         basicbtfs_btree_node_update_namelist_info(sb, BASICBTFS_INODE(inode)->i_bno, get_hash_from_block(filename, cur_entry_next->name_length), 0, name_bno, pos - sizeof(struct basicbtfs_name_entry));
-    //         kfree(filename);
-    //     } else {
-    //         rest_of_block = BASICBTFS_BLOCKSIZE - (pos + cur_entry->name_length);
-    //         name_list_hdr->start_unused_area -= (sizeof(struct basicbtfs_name_entry) + cur_entry->name_length);
-    //         memcpy(block - sizeof(struct basicbtfs_name_entry) , block + cur_entry->name_length, rest_of_block);
-    //         i--;
-    //         continue;
-    //     }
+    for (i = 0; i < name_list_hdr->nr_of_entries; i++) {
+        block += sizeof(struct basicbtfs_name_entry);
+        pos += sizeof(struct basicbtfs_name_entry);
+        if (cur_entry->ino != 0) {
+            filename = (char *)kzalloc(sizeof(char) * cur_entry->name_length, GFP_KERNEL);
+            strncpy(filename, block, cur_entry->name_length);
+            basicbtfs_btree_node_update_namelist_info(sb, BASICBTFS_INODE(inode)->i_bno, get_hash_from_block(filename, cur_entry_next->name_length), 0, name_bno, pos - sizeof(struct basicbtfs_name_entry));
+            kfree(filename);
+        } else {
+            rest_of_block = BASICBTFS_BLOCKSIZE - (pos + cur_entry->name_length);
+            name_list_hdr->start_unused_area -= (sizeof(struct basicbtfs_name_entry) + cur_entry->name_length);
+            memcpy(block - sizeof(struct basicbtfs_name_entry) , block + cur_entry->name_length, rest_of_block);
+            i--;
+            continue;
+        }
 
-    //     block += cur_entry->name_length;
-    //     pos += cur_entry->name_length;
-    //     cur_entry = (struct basicbtfs_name_entry *) block;
-    // }
+        block += cur_entry->name_length;
+        pos += cur_entry->name_length;
+        cur_entry = (struct basicbtfs_name_entry *) block;
+    }
 
-    // printk("final pos: %d\n", pos);
-    // rest_of_block = BASICBTFS_BLOCKSIZE - pos;
+    printk("final pos: %d\n", pos);
+    rest_of_block = BASICBTFS_BLOCKSIZE - pos;
 
-    // bh_next = sb_bread(sb, name_list_hdr->next_block);
+    if (name_list_hdr_next != 0) {
+        bh_next = sb_bread(sb, name_list_hdr->next_block);
 
-    // if (!bh_next) {
-    //     brelse(bh);
-    //     return -EIO;
-    // }
+        if (!bh_next) {
+            brelse(bh);
+            return -EIO;
+        }
 
-    // disk_block_next = (struct basicbtfs_disk_block *) bh_next->b_data;
-    // name_list_hdr_next = &disk_block_next->block_type.name_list_hdr;
-    // // name_list_hdr = (struct basicbtfs_name_list_hdr *) bh->b_data;
-    // block_next = (char *) bh_next->b_data;
-    // block_next += BASICBTFS_NAME_ENTRY_S_OFFSET;
-    // pos_next += BASICBTFS_NAME_ENTRY_S_OFFSET;
-    // cur_entry_next = (struct basicbtfs_name_entry *) block_next;
+        disk_block_next = (struct basicbtfs_disk_block *) bh_next->b_data;
+        name_list_hdr_next = &disk_block_next->block_type.name_list_hdr;
+        // name_list_hdr = (struct basicbtfs_name_list_hdr *) bh->b_data;
+        block_next = (char *) bh_next->b_data;
+        block_next += BASICBTFS_NAME_ENTRY_S_OFFSET;
+        pos_next += BASICBTFS_NAME_ENTRY_S_OFFSET;
+        cur_entry_next = (struct basicbtfs_name_entry *) block_next;
 
-    // for (i = 0; i < name_list_hdr_next->nr_of_entries; i++) {
-    //     block_next += sizeof(struct basicbtfs_name_entry);
-    //     pos_next += sizeof(struct basicbtfs_name_entry);
-    //     if ((BASICBTFS_BLOCKSIZE - name_list_hdr->start_unused_area) >  cur_entry_next->name_length +  sizeof(struct basicbtfs_name_entry)) {
-    //         if (cur_entry_next->ino != 0) {
-    //             memcpy(block, block_next - sizeof(struct basicbtfs_name_entry), cur_entry_next->name_length +  sizeof(struct basicbtfs_name_entry));
-    //             entries_to_move++;
-    //             cur_entry_next->ino = 0;
-    //             rest_of_block -= (cur_entry_next->name_length +  sizeof(struct basicbtfs_name_entry));
-    //             name_list_hdr->free_bytes -= (sizeof(struct basicbtfs_name_entry) + cur_entry_next->name_length);
-    //             name_list_hdr->start_unused_area += (sizeof(struct basicbtfs_name_entry) + cur_entry_next->name_length);
-    //             name_list_hdr_next->free_bytes += (sizeof(struct basicbtfs_name_entry) + cur_entry_next->name_length);
+        for (i = 0; i < name_list_hdr_next->nr_of_entries; i++) {
+            block_next += sizeof(struct basicbtfs_name_entry);
+            pos_next += sizeof(struct basicbtfs_name_entry);
+            if ((BASICBTFS_BLOCKSIZE - name_list_hdr->start_unused_area) >  cur_entry_next->name_length +  sizeof(struct basicbtfs_name_entry)) {
+                if (cur_entry_next->ino != 0) {
+                    memcpy(block, block_next - sizeof(struct basicbtfs_name_entry), cur_entry_next->name_length +  sizeof(struct basicbtfs_name_entry));
+                    entries_to_move++;
+                    cur_entry_next->ino = 0;
+                    rest_of_block -= (cur_entry_next->name_length +  sizeof(struct basicbtfs_name_entry));
+                    name_list_hdr->free_bytes -= (sizeof(struct basicbtfs_name_entry) + cur_entry_next->name_length);
+                    name_list_hdr->start_unused_area += (sizeof(struct basicbtfs_name_entry) + cur_entry_next->name_length);
+                    name_list_hdr_next->free_bytes += (sizeof(struct basicbtfs_name_entry) + cur_entry_next->name_length);
 
-    //             filename = (char *)kzalloc(sizeof(char) * cur_entry_next->name_length, GFP_KERNEL);
-    //             strncpy(filename, block_next, cur_entry_next->name_length);
-    //             basicbtfs_btree_node_update_namelist_info(sb, BASICBTFS_INODE(inode)->i_bno, get_hash_from_block(filename, cur_entry_next->name_length), 0, name_bno, pos_next - sizeof(struct basicbtfs_name_entry));
-    //             kfree(filename);
-    //         } else {
-    //             i--;
-    //         }
+                    filename = (char *)kzalloc(sizeof(char) * cur_entry_next->name_length, GFP_KERNEL);
+                    strncpy(filename, block_next, cur_entry_next->name_length);
+                    basicbtfs_btree_node_update_namelist_info(sb, BASICBTFS_INODE(inode)->i_bno, get_hash_from_block(filename, cur_entry_next->name_length), 0, name_bno, pos_next - sizeof(struct basicbtfs_name_entry));
+                    kfree(filename);
+                } else {
+                    i--;
+                }
 
-    //         // filename_next = kzalloc(sizeof(char) * cur_entry_next->name_length, GFP_KERNEL);
-    //         // strncpy(filename_next, block_next, cur_entry_next->name_length);
+                // filename_next = kzalloc(sizeof(char) * cur_entry_next->name_length, GFP_KERNEL);
+                // strncpy(filename_next, block_next, cur_entry_next->name_length);
 
-    //         // kfree(filename_next);
-    //     } else {
-    //         break;
-    //     }
+                // kfree(filename_next);
+            } else {
+                break;
+            }
 
-    //     block += cur_entry->name_length;
-    //     pos += cur_entry->name_length;
-    //     cur_entry = (struct basicbtfs_name_entry *) block;
-    // }
+            block += cur_entry->name_length;
+            pos += cur_entry->name_length;
+            cur_entry = (struct basicbtfs_name_entry *) block;
+        }
 
-    // name_list_hdr_next->nr_of_entries -= entries_to_move;
-    // name_list_hdr->nr_of_entries += entries_to_move;
+        name_list_hdr_next->nr_of_entries -= entries_to_move;
+        name_list_hdr->nr_of_entries += entries_to_move;
+    }
+    
 
-    // // check if offset is empty, then take spot and copy item, otherwise 
-    // if (*offset == name_bno) {
-    //     return 0;
-    // } else if (is_bit_range_empty(sbi->s_bfree_bitmap, sbi->s_bmap_blocks, *offset, 1)) {
-    //     uint32_t new_bno = get_offset(sbi, sbi->s_bfree_bitmap, sbi->s_bmap_blocks, *offset, 1);
+    // check if offset is empty, then take spot and copy item, otherwise 
+    if (*offset == name_bno) {
+        return 0;
+    } else if (is_bit_range_empty(sbi->s_bfree_bitmap, sbi->s_bmap_blocks, *offset, 1)) {
+        uint32_t new_bno = get_offset(sbi, sbi->s_bfree_bitmap, sbi->s_bmap_blocks, *offset, 1);
 
-    //     bh_new = sb_bread(sb, new_bno);
-    //     memcpy(bh_new->b_data, bh->b_data, BASICBTFS_BLOCKSIZE);
-
-    //     name_list_hdr_next->prev_block = new_bno;
-
-    //     bh_prev = sb_bread(sb, name_list_hdr->prev_block);
-
-    //     if (!bh_prev) {
-    //         brelse(bh);
-    //         brelse(bh_new);
-    //         return -EIO;
-    //     }
-
-    //     disk_block_prev = (struct basicbtfs_disk_block *) bh_prev->b_data;
-    //     name_list_hdr_prev = &disk_block_prev->block_type.name_list_hdr;
+        bh_new = sb_bread(sb, new_bno);
+        memcpy(bh_new->b_data, bh->b_data, BASICBTFS_BLOCKSIZE);
         
-    //     name_list_hdr_prev->next_block = new_bno;
+        basicbtfs_defrag_move_namelist(sb, bh_new, new_bno);
 
-    //     mark_buffer_dirty(bh_new);
-    //     brelse(bh_new);
-    //     put_blocks(sbi, name_bno, 1);
-    // } else {
-    //     // swap
-    //     uint32_t tmp_bno = get_offset(sbi, sbi->s_bfree_bitmap, sbi->s_bmap_blocks, sbi->s_unused_area, 1);
+        mark_buffer_dirty(bh_new);
+        brelse(bh_new);
+        put_blocks(sbi, name_bno, 1);
+    } else {
+        // swap
+        uint32_t tmp_bno = get_offset(sbi, sbi->s_bfree_bitmap, sbi->s_bmap_blocks, sbi->s_unused_area, 1);
 
-    //     bh_new = sb_bread(sb, tmp_bno);
-    //     if (!bh_new) {
-    //         return -EIO;
-    //     }
+        bh_new = sb_bread(sb, tmp_bno);
+        if (!bh_new) {
+            return -EIO;
+        }
 
-    //     bh_wanted = sb_bread(sb, *offset);
+        bh_wanted = sb_bread(sb, *offset);
 
-    //     if (!bh_wanted) {
+        if (!bh_wanted) {
 
-    //     }
+        }
 
-    //     memcpy(bh_new->b_data, bh_wanted->b_data, BASICBTFS_BLOCKSIZE);
-    //     memcpy(bh_wanted->b_data, bh->b_data, BASICBTFS_BLOCKSIZE);
-    //     name_list_hdr_next->prev_block = *offset;
-        
-    //     bh_prev = sb_bread(sb, name_list_hdr->prev_block);
+        memcpy(bh_new->b_data, bh_wanted->b_data, BASICBTFS_BLOCKSIZE);
+        memcpy(bh_wanted->b_data, bh->b_data, BASICBTFS_BLOCKSIZE);
+        basicbtfs_defrag_move_namelist(sb, bh_new, *offset);
 
-    //     if (!bh_prev) {
-    //         brelse(bh);
-    //         brelse(bh_new);
-    //         return -EIO;
-    //     }
+        disk_block_new = (struct basicbtfs_disk_block *) bh_new->b_data;
 
-    //     disk_block_prev = (struct basicbtfs_disk_block *) bh_prev->b_data;
-    //     name_list_hdr_prev = &disk_block_prev->block_type.name_list_hdr;
-    //     name_list_hdr_prev->next_block = *offset;
+        switch (disk_block_new->block_type_id) {
+            case BASICBTFS_BLOCKTYPE_BTREE_NODE:
+                basicbtfs_defrag_move_btree_node(sb, bh_new, *offset, tmp_bno);
+                break;
+            case BASICBTFS_BLOCKTYPE_CLUSTER_TABLE:
+                basicbtfs_defrag_move_cluster_table(sb, bh_new, tmp_bno);
+                break;
+            case BASICBTFS_BLOCKTYPE_NAMETREE:
+                basicbtfs_defrag_move_namelist(sb, bh_new, tmp_bno);
+                break;
+            default:
+                basicbtfs_defrag_move_file_block(sb, bh_new, tmp_bno);
+                break;
+        }
 
-    //     disk_block_new = (struct basicbtfs_disk_block *) bh_new->b_data;
+        put_blocks(sbi, name_bno, 1);
+    }
 
-    //     switch (disk_block_new->block_type_id) {
-    //         case BASICBTFS_BLOCKTYPE_BTREE_NODE:
-    //             basicbtfs_defrag_move_btree_node(sb, bh_new, *offset, tmp_bno);
-    //             break;
-    //         case BASICBTFS_BLOCKTYPE_CLUSTER_TABLE:
-    //             basicbtfs_defrag_move_cluster_table(sb, bh_new, tmp_bno);
-    //             break;
-    //         case BASICBTFS_BLOCKTYPE_NAMETREE:
-    //             basicbtfs_defrag_move_namelist(sb, bh_new, tmp_bno);
-    //             break;
-    //         default:
-    //             basicbtfs_defrag_move_file_block(sb, bh_new, tmp_bno);
-    //             break;
-    //     }
+    disk_block = (struct basicbtfs_disk_block *) bh->b_data; // to be updated
+    name_list_hdr = &disk_block->block_type.name_list_hdr;
+    // name_list_hdr = (struct basicbtfs_name_list_hdr *) bh->b_data;
+    block = (char *) bh->b_data;
+    block += BASICBTFS_NAME_ENTRY_S_OFFSET;
+    pos += BASICBTFS_NAME_ENTRY_S_OFFSET;
+    cur_entry = (struct basicbtfs_name_entry *) block;
 
-    //     put_blocks(sbi, name_bno, 1);
-    // }
+    for (i = 0; i < name_list_hdr->nr_of_entries; i++) {
+        block += sizeof(struct basicbtfs_name_entry);
+        pos += sizeof(struct basicbtfs_name_entry);
+        if (cur_entry->ino != 0) {
+            filename = (char *)kzalloc(sizeof(char) * cur_entry->name_length, GFP_KERNEL);
+            strncpy(filename, block, cur_entry->name_length);
+            basicbtfs_btree_node_update_namelist_info(sb, BASICBTFS_INODE(inode)->i_bno, get_hash_from_block(filename, cur_entry_next->name_length), 0, name_bno, pos - sizeof(struct basicbtfs_name_entry));
+            kfree(filename);
+        } else {
+            i--;
+        }
 
-    // disk_block = (struct basicbtfs_disk_block *) bh->b_data; // to be updated
-    // name_list_hdr = &disk_block->block_type.name_list_hdr;
-    // // name_list_hdr = (struct basicbtfs_name_list_hdr *) bh->b_data;
-    // block = (char *) bh->b_data;
-    // block += BASICBTFS_NAME_ENTRY_S_OFFSET;
-    // pos += BASICBTFS_NAME_ENTRY_S_OFFSET;
-    // cur_entry = (struct basicbtfs_name_entry *) block;
-
-    // for (i = 0; i < name_list_hdr->nr_of_entries; i++) {
-    //     block += sizeof(struct basicbtfs_name_entry);
-    //     pos += sizeof(struct basicbtfs_name_entry);
-    //     if (cur_entry->ino != 0) {
-    //         filename = (char *)kzalloc(sizeof(char) * cur_entry->name_length, GFP_KERNEL);
-    //         strncpy(filename, block, cur_entry->name_length);
-    //         basicbtfs_btree_node_update_namelist_info(sb, BASICBTFS_INODE(inode)->i_bno, get_hash_from_block(filename, cur_entry_next->name_length), 0, name_bno, pos - sizeof(struct basicbtfs_name_entry));
-    //         kfree(filename);
-    //     } else {
-    //         i--;
-    //     }
-
-    //     block += cur_entry->name_length;
-    //     pos += cur_entry->name_length;
-    //     cur_entry = (struct basicbtfs_name_entry *) block;
-    // }
+        block += cur_entry->name_length;
+        pos += cur_entry->name_length;
+        cur_entry = (struct basicbtfs_name_entry *) block;
+    }
     *offset += 1;
-    printk("si namelist: %d\n", *offset);
+    printk("offset after defragmenting a namelist block: %d\n", *offset);
     return 0;
 }
 
@@ -598,66 +574,66 @@ static inline int basicbtfs_defrag_file_table_block(struct super_block *sb, stru
     struct buffer_head *bh_old = NULL, *bh_new = NULL, *bh_swap, *bh_old_block, *bh_new_block, *bh_swap_block;
     uint32_t cluster_index = 0, block_index = 0, disk_block_offset = 0;
 
-    // if (*offset == BASICBTFS_INODE(inode)->i_bno) {
+    if (*offset == BASICBTFS_INODE(inode)->i_bno) {
 
-    // } else if (is_bit_range_empty(sbi->s_bfree_bitmap, sbi->s_bmap_blocks, *offset, 1)) {
-    //     bh_old = sb_bread(sb, BASICBTFS_INODE(inode)->i_bno);
+    } else if (is_bit_range_empty(sbi->s_bfree_bitmap, sbi->s_bmap_blocks, *offset, 1)) {
+        bh_old = sb_bread(sb, BASICBTFS_INODE(inode)->i_bno);
 
-    //     if (!bh_old) return -EIO;
+        if (!bh_old) return -EIO;
 
-    //     bh_new = sb_bread(sb, *offset);
+        bh_new = sb_bread(sb, *offset);
 
-    //     memcpy(bh_new, bh_old, BASICBTFS_BLOCKSIZE);
-    //     put_blocks(sbi, BASICBTFS_INODE(inode)->i_bno, 1);
-    //     basicbtfs_btree_update_root(inode, *offset);
+        memcpy(bh_new, bh_old, BASICBTFS_BLOCKSIZE);
+        put_blocks(sbi, BASICBTFS_INODE(inode)->i_bno, 1);
+        basicbtfs_btree_update_root(inode, *offset);
 
-    //     disk_block = (struct basicbtfs_disk_block *) bh_new->b_data;
-    //     cluster_list = &disk_block->block_type.cluster_table;
-    // } else {
-    //     uint32_t tmp_bno = get_offset(sbi, sbi->s_bfree_bitmap, sbi->s_bmap_blocks, sbi->s_unused_area, 1);
+        disk_block = (struct basicbtfs_disk_block *) bh_new->b_data;
+        cluster_list = &disk_block->block_type.cluster_table;
+    } else {
+        uint32_t tmp_bno = get_offset(sbi, sbi->s_bfree_bitmap, sbi->s_bmap_blocks, sbi->s_unused_area, 1);
 
-    //     bh_swap = sb_bread(sb, tmp_bno);
+        bh_swap = sb_bread(sb, tmp_bno);
 
-    //     if (!bh_swap) return -EIO;
+        if (!bh_swap) return -EIO;
 
-    //     bh_old = sb_bread(sb, BASICBTFS_INODE(inode)->i_bno);
+        bh_old = sb_bread(sb, BASICBTFS_INODE(inode)->i_bno);
 
-    //     if (!bh_old) return -EIO;
+        if (!bh_old) return -EIO;
 
-    //     bh_new = sb_bread(sb, *offset);
+        bh_new = sb_bread(sb, *offset);
 
-    //     if (!bh_new) return -EIO;
+        if (!bh_new) return -EIO;
 
-    //     memcpy(bh_swap->b_data, bh_new->b_data, BASICBTFS_BLOCKSIZE);
-    //     memcpy(bh_new->b_data, bh_old->b_data, BASICBTFS_BLOCKSIZE);
+        memcpy(bh_swap->b_data, bh_new->b_data, BASICBTFS_BLOCKSIZE);
+        memcpy(bh_new->b_data, bh_old->b_data, BASICBTFS_BLOCKSIZE);
 
 
-    //     disk_block_new = (struct basicbtfs_disk_block *) bh_swap->b_data;
+        disk_block_new = (struct basicbtfs_disk_block *) bh_swap->b_data;
 
-    //     switch (disk_block_new->block_type_id) {
-    //         case BASICBTFS_BLOCKTYPE_BTREE_NODE:
-    //             basicbtfs_defrag_move_btree_node(sb, bh_swap, *offset, tmp_bno);
-    //             break;
-    //         case BASICBTFS_BLOCKTYPE_CLUSTER_TABLE:
-    //             basicbtfs_defrag_move_cluster_table(sb, bh_swap, tmp_bno);
-    //             break;
-    //         case BASICBTFS_BLOCKTYPE_NAMETREE:
-    //             basicbtfs_defrag_move_namelist(sb, bh_swap, tmp_bno);
-    //             break;
-    //         default:
-    //             basicbtfs_defrag_move_file_block(sb, bh_swap, tmp_bno);
-    //             break;
-    //     }
+        switch (disk_block_new->block_type_id) {
+            case BASICBTFS_BLOCKTYPE_BTREE_NODE:
+                basicbtfs_defrag_move_btree_node(sb, bh_swap, *offset, tmp_bno);
+                break;
+            case BASICBTFS_BLOCKTYPE_CLUSTER_TABLE:
+                basicbtfs_defrag_move_cluster_table(sb, bh_swap, tmp_bno);
+                break;
+            case BASICBTFS_BLOCKTYPE_NAMETREE:
+                basicbtfs_defrag_move_namelist(sb, bh_swap, tmp_bno);
+                break;
+            default:
+                basicbtfs_defrag_move_file_block(sb, bh_swap, tmp_bno);
+                break;
+        }
 
-    //     put_blocks(sbi, BASICBTFS_INODE(inode)->i_bno, 1);
-    //     mark_buffer_dirty(bh_swap_block);
-    //     mark_buffer_dirty(bh_old_block);
-    //     mark_buffer_dirty(bh_new_block);
-    //     basicbtfs_btree_update_root(inode, *offset);
-    //     brelse(bh_swap_block);
-    //     brelse(bh_old_block);
-    //     brelse(bh_new_block);
-    // }
+        put_blocks(sbi, BASICBTFS_INODE(inode)->i_bno, 1);
+        mark_buffer_dirty(bh_swap_block);
+        mark_buffer_dirty(bh_old_block);
+        mark_buffer_dirty(bh_new_block);
+        basicbtfs_btree_update_root(inode, *offset);
+        brelse(bh_swap_block);
+        brelse(bh_old_block);
+        brelse(bh_new_block);
+    }
 
     *offset += 1;
 
@@ -669,71 +645,71 @@ static inline int basicbtfs_defrag_file_table_block(struct super_block *sb, stru
             }
             // if is empty take
             // else if-not empty swap
-            //  if (*offset == disk_block_offset + block_index) {
-            //     return -1;
-            // } else if (is_bit_range_empty(sbi->s_bfree_bitmap, sbi->s_bmap_blocks, *offset + block_index, 1)) {
-            //     uint32_t new_bno = get_offset(sbi, sbi->s_bfree_bitmap, sbi->s_bmap_blocks, *offset + block_index, 1);
+             if (*offset == disk_block_offset + block_index) {
+                return -1;
+            } else if (is_bit_range_empty(sbi->s_bfree_bitmap, sbi->s_bmap_blocks, *offset + block_index, 1)) {
+                uint32_t new_bno = get_offset(sbi, sbi->s_bfree_bitmap, sbi->s_bmap_blocks, *offset + block_index, 1);
 
-            //     bh_new_block = sb_bread(sb, new_bno);
+                bh_new_block = sb_bread(sb, new_bno);
 
-            //     bh_old_block = sb_bread(sb, cluster_list->table[cluster_index].start_bno + block_index);
-            //     memcpy(bh_new_block->b_data, bh_old_block->b_data, BASICBTFS_BLOCKSIZE);
+                bh_old_block = sb_bread(sb, cluster_list->table[cluster_index].start_bno + block_index);
+                memcpy(bh_new_block->b_data, bh_old_block->b_data, BASICBTFS_BLOCKSIZE);
 
-            //     put_blocks(sbi, cluster_list->table[cluster_index].start_bno + block_index, 1);
-            //     mark_buffer_dirty(bh_new_block);
-            //     mark_buffer_dirty(bh_old_block);
-            //     brelse(bh_new_block);
-            //     brelse(bh_old_block);
-            // } else {
-            //     // swap
-            //     uint32_t tmp_bno = get_offset(sbi, sbi->s_bfree_bitmap, sbi->s_bmap_blocks, sbi->s_unused_area, 1);
+                put_blocks(sbi, cluster_list->table[cluster_index].start_bno + block_index, 1);
+                mark_buffer_dirty(bh_new_block);
+                mark_buffer_dirty(bh_old_block);
+                brelse(bh_new_block);
+                brelse(bh_old_block);
+            } else {
+                // swap
+                uint32_t tmp_bno = get_offset(sbi, sbi->s_bfree_bitmap, sbi->s_bmap_blocks, sbi->s_unused_area, 1);
 
-            //     bh_swap_block = sb_bread(sb, tmp_bno);
-            //     if (!bh_swap_block) {
-            //         return -EIO;
-            //     }
+                bh_swap_block = sb_bread(sb, tmp_bno);
+                if (!bh_swap_block) {
+                    return -EIO;
+                }
 
-            //     bh_new_block = sb_bread(sb, *offset + block_index);
+                bh_new_block = sb_bread(sb, *offset + block_index);
 
-            //     if (!bh_new_block) {
-            //         return -EIO;
-            //     }
+                if (!bh_new_block) {
+                    return -EIO;
+                }
 
-            //     bh_old_block = sb_bread(sb, cluster_list->table[cluster_index].start_bno + block_index);
+                bh_old_block = sb_bread(sb, cluster_list->table[cluster_index].start_bno + block_index);
 
-            //     if (!bh_old_block) {
-            //         return -EIO;
-            //     }
+                if (!bh_old_block) {
+                    return -EIO;
+                }
 
-            //     memcpy(bh_swap_block->b_data, bh_new_block->b_data, BASICBTFS_BLOCKSIZE);
-            //     memcpy(bh_new_block->b_data, bh_old_block->b_data, BASICBTFS_BLOCKSIZE);
+                memcpy(bh_swap_block->b_data, bh_new_block->b_data, BASICBTFS_BLOCKSIZE);
+                memcpy(bh_new_block->b_data, bh_old_block->b_data, BASICBTFS_BLOCKSIZE);
 
 
-            //     disk_block_new = (struct basicbtfs_disk_block *) bh_new->b_data;
+                disk_block_new = (struct basicbtfs_disk_block *) bh_new->b_data;
 
-            //     switch (disk_block_new->block_type_id) {
-            //         case BASICBTFS_BLOCKTYPE_BTREE_NODE:
-            //             basicbtfs_defrag_move_btree_node(sb, bh_swap_block, *offset + block_index, tmp_bno);
-            //             break;
-            //         case BASICBTFS_BLOCKTYPE_CLUSTER_TABLE:
-            //             basicbtfs_defrag_move_cluster_table(sb, bh_swap_block, tmp_bno);
-            //             break;
-            //         case BASICBTFS_BLOCKTYPE_NAMETREE:
-            //             basicbtfs_defrag_move_namelist(sb, bh_swap_block, tmp_bno);
-            //             break;
-            //         default:
-            //             basicbtfs_defrag_move_file_block(sb, bh_swap_block, tmp_bno);
-            //             break;
-            //     }
+                switch (disk_block_new->block_type_id) {
+                    case BASICBTFS_BLOCKTYPE_BTREE_NODE:
+                        basicbtfs_defrag_move_btree_node(sb, bh_swap_block, *offset + block_index, tmp_bno);
+                        break;
+                    case BASICBTFS_BLOCKTYPE_CLUSTER_TABLE:
+                        basicbtfs_defrag_move_cluster_table(sb, bh_swap_block, tmp_bno);
+                        break;
+                    case BASICBTFS_BLOCKTYPE_NAMETREE:
+                        basicbtfs_defrag_move_namelist(sb, bh_swap_block, tmp_bno);
+                        break;
+                    default:
+                        basicbtfs_defrag_move_file_block(sb, bh_swap_block, tmp_bno);
+                        break;
+                }
 
-            //     put_blocks(sbi, cluster_list->table[cluster_index].start_bno + block_index, 1);
-            //     mark_buffer_dirty(bh_swap_block);
-            //     mark_buffer_dirty(bh_old_block);
-            //     mark_buffer_dirty(bh_new_block);
-            //     brelse(bh_swap_block);
-            //     brelse(bh_old_block);
-            //     brelse(bh_new_block);
-            // }
+                put_blocks(sbi, cluster_list->table[cluster_index].start_bno + block_index, 1);
+                mark_buffer_dirty(bh_swap_block);
+                mark_buffer_dirty(bh_old_block);
+                mark_buffer_dirty(bh_new_block);
+                brelse(bh_swap_block);
+                brelse(bh_old_block);
+                brelse(bh_new_block);
+            }
         }
         cluster_list->table[cluster_index].start_bno = disk_block_offset;
         disk_block_offset += cluster_list->table[cluster_index].cluster_length;
@@ -743,16 +719,6 @@ static inline int basicbtfs_defrag_file_table_block(struct super_block *sb, stru
 
 
     return 0;
-}
-
-static inline void basicbtfs_defrag_file_cluster(void) {
-    /**
-     * swap with the wanted blocks. Reserve one block before the root directory to keep track of the used start of clusters.
-     * In this way, we know which blocks are used as fileblock with their corresponding ino
-     * 
-     */
-
-
 }
 
 static inline int basicbtfs_defrag_traverse_directory(struct super_block *sb, uint32_t bno, uint32_t *offset) {
@@ -778,7 +744,7 @@ static inline int basicbtfs_defrag_traverse_directory(struct super_block *sb, ui
                 return ret;
             }
         }
-        
+
         inode = basicbtfs_iget(sb, node->entries[index].ino);
         if (S_ISDIR(inode->i_mode)) {
             basicbtfs_defrag_directory(sb, inode, offset);
