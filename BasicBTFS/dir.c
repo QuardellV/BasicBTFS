@@ -50,9 +50,9 @@ static int basicbtfs_iterate(struct file *dir, struct dir_context *ctx) {
     brelse(bh);
 
     if (basicbtfs_cache_iterate_dir(sb, inode_info->i_bno, ctx, ctx->pos - 2)) {
-        printk("found in cache and ctx pos: %d | %lld\n", nr_of_files, ctx->pos - 2);
+        // printk("found in cache and ctx pos: %d | %lld\n", nr_of_files, ctx->pos - 2);
         if (ctx->pos - 2 >= nr_of_files) {
-            printk("all in cache\n");
+            // printk("all in cache\n");
             return 0;
         }
     }
@@ -93,7 +93,7 @@ int basicbtfs_add_entry(struct inode *dir, struct inode *inode, struct dentry *d
     struct basicbtfs_inode_info *inode_info = BASICBTFS_INODE(dir);
     int ret = 0;
     struct basicbtfs_entry new_entry;
-    uint32_t name_bno = 0, hash = 0, dir_bno = 0, nr_of_blocks = 0;
+    uint32_t name_bno = 0, hash = 0, nr_of_blocks = 0;
     struct buffer_head *bh = NULL;
     struct basicbtfs_btree_node *node = NULL;
     struct basicbtfs_disk_block *disk_block = NULL;

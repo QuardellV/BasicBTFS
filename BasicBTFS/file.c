@@ -24,6 +24,34 @@ uint32_t basicbtfs_search_cluster(struct basicbtfs_cluster_table *cluster_table,
     return -1;
 }
 
+int basicbtfs_file_update_root(struct inode *inode, uint32_t bno) {
+    struct super_block *sb = inode->i_sb;
+    struct basicbtfs_sb_info *sbi = BASICBTFS_SB(sb);
+    struct basicbtfs_inode_info *inode_info = BASICBTFS_INODE(inode);
+    struct basicbtfs_inode *disk_inode = NULL;
+    struct buffer_head *bh = NULL;
+
+    uint32_t ino = inode->i_ino;
+    uint32_t inode_block = BASICBTFS_GET_INODE_BLOCK(ino, sbi->s_imap_blocks, sbi->s_bmap_blocks);
+    uint32_t inode_offset = BASICBTFS_GET_INODE_BLOCK_IDX(ino);
+
+    if (ino >= sbi->s_ninodes) return -1;
+
+    bh = sb_bread(sb, inode_block);
+
+    if (!bh) return -EIO;
+
+    disk_inode = (struct basicbtfs_inode *) bh->b_data;
+    disk_inode += inode_offset;
+
+    inode_info->i_bno = bno;
+    disk_inode->i_bno = bno;
+
+    mark_buffer_dirty(bh);
+    brelse(bh);
+    return 0;
+}
+
 static int basicbtfs_file_get_block(struct inode *inode, sector_t iblock, struct buffer_head *bh_result, int create) {
     struct super_block *sb = inode->i_sb;
     struct basicbtfs_sb_info *sbi = BASICBTFS_SB(sb);
@@ -54,7 +82,7 @@ static int basicbtfs_file_get_block(struct inode *inode, sector_t iblock, struct
         if (!create) {
             return ret;
         }
-
+        printk("here\n");
         bno = get_free_blocks(sbi, BASICBTFS_MAX_BLOCKS_PER_CLUSTER);
         if (!bno) {
             brelse(bh_index);

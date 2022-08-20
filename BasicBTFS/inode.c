@@ -133,7 +133,6 @@ static int basicbtfs_create(struct inode *dir, struct dentry *dentry, umode_t mo
     struct basicbtfs_btree_node *node = NULL;
     struct basicbtfs_btree_node_cache *node_cache = NULL;
     struct basicbtfs_name_list_hdr *name_list_hdr = NULL;
-    struct basicbtfs_cluster_table *cluster_list;
     struct buffer_head *bh_dir = NULL, *bh = NULL, *bh_name_table = NULL;
     struct basicbtfs_disk_block *disk_block = NULL;
     int ret = 0;
@@ -246,6 +245,7 @@ static int basicbtfs_create(struct inode *dir, struct dentry *dentry, umode_t mo
         // cluster_list = (struct basicbtfs_cluster_table *) bh->b_data;
         // cluster_list->ino = inode->i_ino;
         // cluster_list->block_type = BASICBTFS_BLOCKTYPE_CLUSTER_TABLE;
+        printk("ino of file: %ld\n", inode->i_ino);
         mark_buffer_dirty(bh);
         brelse(bh);
     }
@@ -296,7 +296,7 @@ static int basicbtfs_link(struct dentry *old_dentry,
 
 static int basicbtfs_unlink(struct inode *dir ,struct dentry *dentry) {
     int ret = 0;
-    uint32_t bno = 0, ino = 0, old_bno = 0;
+    uint32_t bno = 0, ino = 0;
     struct super_block *sb  = dir->i_sb;
     struct basicbtfs_sb_info *sbi = BASICBTFS_SB(sb);
     struct buffer_head *bh = NULL;

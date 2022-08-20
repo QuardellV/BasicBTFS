@@ -27,9 +27,11 @@ static inline int basicbtfs_btree_update_root(struct inode *inode, uint32_t bno)
     struct basicbtfs_inode_info *inode_info = BASICBTFS_INODE(inode);
     struct basicbtfs_inode *disk_inode = NULL;
     struct buffer_head *bh = NULL;
+    
     uint32_t ino = inode->i_ino;
     uint32_t inode_block = BASICBTFS_GET_INODE_BLOCK(ino, sbi->s_imap_blocks, sbi->s_bmap_blocks);
     uint32_t inode_offset = BASICBTFS_GET_INODE_BLOCK_IDX(ino);
+
     printk("update non cache root\n");
 
     if (ino >= sbi->s_ninodes) return -1;
@@ -1056,8 +1058,9 @@ static inline int basicbtfs_btree_traverse_debug(struct super_block *sb, uint32_
     struct basicbtfs_btree_node *node = NULL;
     struct basicbtfs_disk_block *disk_block = NULL;
     int index = 0, ret = 0;
-
+    printk("current opened bno: %d\n", bno);
     bh = sb_bread(sb, bno);
+
 
     if (!bh) return -EIO;
 

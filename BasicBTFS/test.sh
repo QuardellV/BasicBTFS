@@ -2056,8 +2056,8 @@ init() {
 }
 
 test_create_root $D_MOD "2" "test" "root"
-# test_create_file_empty
-# test_create_file_nonempty
+test_create_file_empty
+test_create_file_nonempty
 # test_create_file_toolong
 # test_create_already_exist
 

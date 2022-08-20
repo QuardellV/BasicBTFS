@@ -22,18 +22,41 @@ static inline bool is_bit_range_empty(unsigned long *freemap, unsigned long size
     return start_no == start;
 }
 
+static inline bool is_bit_empty(unsigned long *freemap, unsigned long size, unsigned long start, uint32_t block_index) {
+    unsigned char *cur_map = (unsigned char *)freemap;
+    uint32_t index = start / (sizeof(unsigned char) * 8);
+    uint32_t offset = start % (sizeof(unsigned char) * 8);
+    printk("current index: %d | %d | %ld\n", index, offset, start);
+    printk("result: %c", (cur_map[index] & (1 << offset)) ? '1' : '0');
+
+    // if (block_index > 2) return false;
+
+    if (!(cur_map[index] & (1 << offset))) {
+        printk("yay 0\n");
+    } else {
+        printk("no 1");
+    }
+    return !(cur_map[index] & (1 << offset));
+}
+
+static inline bool is_bit_range_empty_test(unsigned long *freemap, unsigned long size, unsigned long start, uint32_t len, uint32_t index) {
+    unsigned long start_no = bitmap_find_next_zero_area(freemap, size, start, len, 0);
+
+    return start_no == start;
+}
+
 static inline uint32_t get_offset(struct basicbtfs_sb_info *sbi, unsigned long *freemap, unsigned long size, unsigned long start, uint32_t len) {
     unsigned long start_no = bitmap_find_next_zero_area(freemap, size, start, len, 0);
 
     if (start_no >= size) {
-        printk(KERN_ERR "no free area has been found\n");
+        printk(KERN_ERR "no free area has been found: %ld\n", start_no);
         return -1;
     }
     
     bitmap_set(freemap, start_no, len);
 
-    if (start_no > sbi->s_unused_area) {
-        sbi->s_unused_area = start_no + len + 1;
+    if (start_no >= sbi->s_unused_area) {
+        sbi->s_unused_area = start_no + len;
     }
     return start_no;
 }
@@ -62,12 +85,13 @@ static inline uint32_t get_free_inode(struct basicbtfs_sb_info *sbi) {
 
 static inline uint32_t get_free_blocks(struct basicbtfs_sb_info *sbi, uint32_t len) {
     uint32_t start_bno = get_first_free_bits(sbi->s_bfree_bitmap, sbi->s_nblocks, len);
+    printk("start bno: %d | %d\n", start_bno, len);
     if (start_bno > 0) {
         sbi->s_nfree_blocks -= len;
     }
 
-    if (start_bno > sbi->s_unused_area) {
-        sbi->s_unused_area = start_bno + len + 1;
+    if (start_bno >= sbi->s_unused_area) {
+        sbi->s_unused_area = start_bno + len;
     }
 
     return start_bno;

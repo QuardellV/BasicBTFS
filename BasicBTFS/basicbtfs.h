@@ -243,6 +243,8 @@ int clean_file_block(struct inode *inode);
 
 long basicbtfs_ioctl(struct file *file, unsigned int cmd, unsigned long arg);
 
+int basicbtfs_file_update_root(struct inode *inode, uint32_t bno);
+
 /* Operation structs*/
 extern const struct file_operations basicbtfs_file_ops;
 extern const struct file_operations basicbtfs_dir_ops;

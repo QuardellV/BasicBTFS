@@ -308,7 +308,7 @@ static inline int basicbtfs_cache_emit_block_debug(struct basicbtfs_block *btfs_
 
         block += cur_entry->name_length;
         cur_entry = (struct basicbtfs_name_entry *) block;
-        *current_index++;
+        *current_index += 1;
     }
 
     printk("current index: %d\n", *current_index);
@@ -365,7 +365,7 @@ static inline uint32_t basicbtfs_cache_lookup_entry(struct super_block *sb, uint
 
     list_for_each_entry(dir_cache, &dir_cache_list, list) {
         if (dir_cache->bno == dir_bno) {
-            printk("found in lookup cache\n");
+            // printk("found in lookup cache\n");
             node_cache =  list_first_entry(&dir_cache->root_node_cache->list, struct basicbtfs_btree_node_cache, list);
             return basicbtfs_btree_node_cache_lookup(node_cache, hash, 0);
         }

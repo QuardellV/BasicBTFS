@@ -48,7 +48,7 @@ static inline int basicbtfs_nametree_emit_block(struct buffer_head *bh, int *tot
 
             block += cur_entry->name_length;
             cur_entry = (struct basicbtfs_name_entry *) block;
-            *current_index++;
+            *current_index += 1;
         }
     }
     return 0;
@@ -128,11 +128,8 @@ static inline int basicbtfs_nametree_insert_entry_in_list(struct buffer_head *bh
 static inline int basicbtfs_nametree_insert_name(struct super_block *sb, uint32_t name_bno, struct basicbtfs_entry *dir_entry, struct dentry *dentry, uint32_t dir_bno, uint32_t nr_of_blocks) {
     struct buffer_head *bh = NULL;
     struct basicbtfs_name_list_hdr *name_list_hdr = NULL;
-    struct basicbtfs_name_entry *name_entry = NULL;
     struct basicbtfs_disk_block *disk_block = NULL;
     uint32_t cur_bno = name_bno, prev_bno = cur_bno;
-    char *block = NULL;
-    char *filename = NULL;
     
     bh = sb_bread(sb, cur_bno);
 
@@ -272,7 +269,7 @@ static inline int basicbtfs_nametree_iterate_name_debug(struct super_block *sb, 
     printk("13\n");
     total_nr_entries = name_list_hdr->nr_of_entries;
 
-    printk("done: %d\n", BASICBTFS_NAME_ENTRY_S_OFFSET + sizeof(struct basicbtfs_name_entry));
+    printk("done: %ld\n", BASICBTFS_NAME_ENTRY_S_OFFSET + sizeof(struct basicbtfs_name_entry));
 
     for (i = 0; i < name_list_hdr->nr_of_entries; i++) {
         block += sizeof(struct basicbtfs_name_entry);
