@@ -32,6 +32,8 @@ static inline int basicbtfs_defrag_btree_node(struct super_block *sb, uint32_t o
     struct basicbtfs_disk_block *disk_block_swap, *disk_block_old, *disk_block_new;
     uint32_t tmp_bno, new_bno;
 
+    printk("defrag btree nodee and offset: %d | %d\n", old_bno, *offset);
+
     if (old_bno == *offset) {
         printk("It is already placed on the correct place. No further action\n");
     } else if (is_bit_range_empty(sbi->s_bfree_bitmap, sbi->s_nblocks, *offset, 1)) {
@@ -93,21 +95,24 @@ static inline int basicbtfs_defrag_btree_node(struct super_block *sb, uint32_t o
         switch (disk_block_swap->block_type_id) {
             case BASICBTFS_BLOCKTYPE_BTREE_NODE:
                 basicbtfs_defrag_move_btree_node(sb, bh_swap, *offset, tmp_bno);
+                printk("need to move btree\n");
                 break;
             case BASICBTFS_BLOCKTYPE_CLUSTER_TABLE:
+            printk("need to move cluster table\n");
                 basicbtfs_defrag_move_cluster_table(sb, bh_swap, tmp_bno);
                 break;
             case BASICBTFS_BLOCKTYPE_NAMETREE:
+                printk("need to move namelist\n");
                 basicbtfs_defrag_move_namelist(sb, bh_swap, tmp_bno);
                 break;
             default:
+                printk("need to move file block\n");
                 basicbtfs_defrag_move_file_block(sb, bh_swap, tmp_bno);
                 break;
         }
 
         put_blocks(sbi, old_bno, 1);
         mark_buffer_dirty(bh_swap);
-        mark_buffer_dirty(bh_old);
         mark_buffer_dirty(bh_new);
         brelse(bh_swap);
         brelse(bh_old);
@@ -149,7 +154,7 @@ static inline int basicbtfs_defrag_btree(struct super_block *sb, struct inode *i
             }
         }
 
-        printk(KERN_INFO "file: %d | ino: %d\n", node->entries[index].hash, node->entries[index].ino);
+        // printk(KERN_INFO "file: %d | ino: %d\n", node->entries[index].hash, node->entries[index].ino);
     }
 
     if (!node->leaf) {
@@ -247,7 +252,7 @@ static inline int basicbtfs_defrag_move_namelist(struct super_block *sb, struct 
         disk_block_next = (struct basicbtfs_disk_block *) bh_next->b_data;
         name_list_next = &disk_block_next->block_type.name_list_hdr;
 
-        name_list_next->next_block = new_bno;
+        name_list_next->prev_block = new_bno;
         mark_buffer_dirty(bh_next);
         brelse(bh_next);
     }
@@ -320,7 +325,6 @@ static inline int basicbtfs_defrag_move_file_block(struct super_block *sb, struc
         disk_block_old = (struct basicbtfs_disk_block *) bh_old2->b_data;
         memcpy(disk_block_new, disk_block_old, BASICBTFS_BLOCKSIZE);
 
-        mark_buffer_dirty(bh_old2);
         mark_buffer_dirty(bh_new);
         brelse(bh_old2);
         brelse(bh_new);
@@ -344,15 +348,15 @@ static inline int basicbtfs_defrag_nametree_block(struct super_block *sb, struct
     struct basicbtfs_sb_info *sbi = BASICBTFS_SB(sb);
     struct basicbtfs_name_list_hdr *name_list_hdr = NULL, *name_list_hdr_next;
     struct basicbtfs_name_entry *cur_entry = NULL, *cur_entry_next;
-    struct basicbtfs_disk_block *disk_block = NULL, *disk_block_next, *disk_block_new, *disk_block_wanted;
-    struct buffer_head *bh_next = NULL, *bh_new, *bh_wanted;
+    struct basicbtfs_disk_block *disk_block = NULL, *disk_block_next, *disk_block_new, *disk_block_swap;
+    struct buffer_head *bh_next = NULL, *bh_new, *bh_swap;
     char *block = NULL, *block_next = NULL;
     uint32_t pos = 0, pos_next = 0, rest_of_block = 0;
     uint32_t entries_to_move = 0, tmp_bno, new_bno;
     char *filename = NULL;
     int i = 0;
 
-    printk("defragment namelist block\n");
+    printk("defragment namelist block and offset: %d | %d\n", name_bno, *offset);
 
 
     disk_block = (struct basicbtfs_disk_block *) bh->b_data;
@@ -465,38 +469,40 @@ static inline int basicbtfs_defrag_nametree_block(struct super_block *sb, struct
         // swap
         tmp_bno = get_offset(sbi, sbi->s_bfree_bitmap, sbi->s_nblocks, sbi->s_unused_area, 1);
 
-        bh_new = sb_bread(sb, tmp_bno);
+        bh_swap = sb_bread(sb, tmp_bno);
+        if (!bh_swap) {
+            return -EIO;
+        }
+
+        bh_new = sb_bread(sb, *offset);
+
         if (!bh_new) {
             return -EIO;
         }
 
-        bh_wanted = sb_bread(sb, *offset);
-
-        if (!bh_wanted) {
-            return -EIO;
-        }
-
         disk_block_new = (struct basicbtfs_disk_block *) bh_new->b_data;
-        disk_block_wanted = (struct basicbtfs_disk_block *) bh_wanted->b_data;
+        disk_block_swap = (struct basicbtfs_disk_block *) bh_swap->b_data;
 
-        memcpy(disk_block_new, disk_block_wanted, BASICBTFS_BLOCKSIZE);
-        memcpy(disk_block_wanted, disk_block, BASICBTFS_BLOCKSIZE);
+        memcpy(disk_block_swap, disk_block_new, BASICBTFS_BLOCKSIZE);
+        memcpy(disk_block_new, disk_block, BASICBTFS_BLOCKSIZE);
         basicbtfs_defrag_move_namelist(sb, bh_new, *offset);
 
-        disk_block_new = (struct basicbtfs_disk_block *) bh_new->b_data;
-
-        switch (disk_block_new->block_type_id) {
+        switch (disk_block_swap->block_type_id) {
             case BASICBTFS_BLOCKTYPE_BTREE_NODE:
-                basicbtfs_defrag_move_btree_node(sb, bh_new, *offset, tmp_bno);
+                printk("need to move btree\n");
+                basicbtfs_defrag_move_btree_node(sb, bh_swap, *offset, tmp_bno);
                 break;
             case BASICBTFS_BLOCKTYPE_CLUSTER_TABLE:
-                basicbtfs_defrag_move_cluster_table(sb, bh_new, tmp_bno);
+                printk("need to move cluster table\n");
+                basicbtfs_defrag_move_cluster_table(sb, bh_swap, tmp_bno);
                 break;
             case BASICBTFS_BLOCKTYPE_NAMETREE:
-                basicbtfs_defrag_move_namelist(sb, bh_new, tmp_bno);
+                printk("need to move nametree\n");
+                basicbtfs_defrag_move_namelist(sb, bh_swap, tmp_bno);
                 break;
             default:
-                basicbtfs_defrag_move_file_block(sb, bh_new, tmp_bno);
+                printk("need to move file block\n");
+                basicbtfs_defrag_move_file_block(sb, bh_swap, tmp_bno);
                 break;
         }
 
@@ -642,13 +648,10 @@ static inline int basicbtfs_defrag_file_table_block(struct super_block *sb, stru
 
         memcpy(disk_block_swap, disk_block_new, BASICBTFS_BLOCKSIZE);
         memcpy(disk_block_new, disk_block, BASICBTFS_BLOCKSIZE);
-
-        printk("done\n");
-        disk_block_swap = (struct basicbtfs_disk_block *) bh_swap->b_data;
         
         switch (disk_block_swap->block_type_id) {
             case BASICBTFS_BLOCKTYPE_BTREE_NODE:
-                // basicbtfs_defrag_move_btree_node(sb, bh_swap, *offset, tmp_bno);
+                basicbtfs_defrag_move_btree_node(sb, bh_swap, *offset, tmp_bno);
                 printk("updated btree on wanted place\n");
                 break;
             case BASICBTFS_BLOCKTYPE_CLUSTER_TABLE:
@@ -656,11 +659,11 @@ static inline int basicbtfs_defrag_file_table_block(struct super_block *sb, stru
                 printk("updated cluster table on wanted place\n");
                 break;
             case BASICBTFS_BLOCKTYPE_NAMETREE:
-                // basicbtfs_defrag_move_namelist(sb, bh_swap, tmp_bno);
+                basicbtfs_defrag_move_namelist(sb, bh_swap, tmp_bno);
                 printk("updated nametree on wanted place\n");
                 break;
             default:
-                // basicbtfs_defrag_move_file_block(sb, bh_swap, tmp_bno);
+                basicbtfs_defrag_move_file_block(sb, bh_swap, tmp_bno);
                 printk("updated file block on wanted place\n");
                 break;
         }
@@ -695,6 +698,7 @@ static inline int basicbtfs_defrag_file_table_block(struct super_block *sb, stru
 
             // if is empty take
             // else if-not empty swap
+            printk("index, bno, and length: %d | %d | %d\n", cluster_index, disk_block_offset, cluster_list->table[cluster_index].cluster_length);
             printk("offset and current block: %d | %d\n", *offset, disk_block_offset + block_index);
             if (*offset == disk_block_offset + block_index) {
                 printk("same offset\n");
@@ -713,10 +717,14 @@ static inline int basicbtfs_defrag_file_table_block(struct super_block *sb, stru
 
                 bh_new_block = sb_bread(sb, new_bno);
 
+                if (!bh_new_block) return -EIO;
+
                 bh_old_block = sb_bread(sb, disk_block_offset + block_index);
 
-                disk_block = (struct basicbtfs_disk_block *) bh_old->b_data;
-                disk_block_new = (struct basicbtfs_disk_block *) bh_new->b_data;
+                if (!bh_old_block) return -EIO;
+
+                disk_block = (struct basicbtfs_disk_block *) bh_old_block->b_data;
+                disk_block_new = (struct basicbtfs_disk_block *) bh_new_block->b_data;
 
                 memcpy(disk_block_new, disk_block, BASICBTFS_BLOCKSIZE);
 
@@ -747,31 +755,34 @@ static inline int basicbtfs_defrag_file_table_block(struct super_block *sb, stru
                     return -EIO;
                 }
 
-                disk_block = (struct basicbtfs_disk_block *) bh_old->b_data;
-                disk_block_new = (struct basicbtfs_disk_block *) bh_new->b_data;
-                disk_block_swap = (struct basicbtfs_disk_block *) bh_swap->b_data;
+                disk_block = (struct basicbtfs_disk_block *) bh_old_block->b_data;
+                disk_block_new = (struct basicbtfs_disk_block *) bh_new_block->b_data;
+                disk_block_swap = (struct basicbtfs_disk_block *) bh_swap_block->b_data;
 
                 memcpy(disk_block_swap, disk_block_new, BASICBTFS_BLOCKSIZE);
                 memcpy(disk_block_new, disk_block, BASICBTFS_BLOCKSIZE);
 
                 switch (disk_block_swap->block_type_id) {
                     case BASICBTFS_BLOCKTYPE_BTREE_NODE:
+                        printk("need to move btree\n");
                         basicbtfs_defrag_move_btree_node(sb, bh_swap_block, *offset, tmp_bno);
                         break;
                     case BASICBTFS_BLOCKTYPE_CLUSTER_TABLE:
+                        printk("need to move cluster table\n");
                         basicbtfs_defrag_move_cluster_table(sb, bh_swap_block, tmp_bno);
                         break;
                     case BASICBTFS_BLOCKTYPE_NAMETREE:
+                        printk("need to move nametree\n");
                         basicbtfs_defrag_move_namelist(sb, bh_swap_block, tmp_bno);
                         break;
                     default:
+                        printk("need to move file block\n");
                         basicbtfs_defrag_move_file_block(sb, bh_swap_block, tmp_bno);
                         break;
                 }
 
                 put_blocks(sbi, cluster_list->table[cluster_index].start_bno + block_index, 1);
                 mark_buffer_dirty(bh_swap_block);
-                mark_buffer_dirty(bh_old_block);
                 mark_buffer_dirty(bh_new_block);
                 brelse(bh_swap_block);
                 brelse(bh_old_block);
@@ -780,7 +791,6 @@ static inline int basicbtfs_defrag_file_table_block(struct super_block *sb, stru
             *offset += 1;
         }
         cluster_list->table[cluster_index].start_bno = new_start_bno;
-        disk_block_offset += cluster_list->table[cluster_index].cluster_length;
         printk("it has been updated: %d\n", cluster_list->table[cluster_index].start_bno);
 
     }
@@ -851,10 +861,10 @@ static inline void basicbtfs_defrag_directory(struct super_block *sb, struct ino
     struct basicbtfs_inode_info *inode_info = BASICBTFS_INODE(inode);
     printk("defrag directory before: %d\n", *offset);
     basicbtfs_defrag_btree(sb, inode, inode_info->i_bno, offset);
-    printk("defragmented btree with offset: %d\n", *offset);
-    basicbtfs_btree_traverse_debug(sb, inode_info->i_bno);
+    // printk("defragmented btree with offset: %d\n", *offset);
+    // // basicbtfs_btree_traverse_debug(sb, inode_info->i_bno);
     basicbtfs_defrag_nametree(sb, inode, offset);
-    printk("defragmented nametree with offset: %d\n", *offset);
+    // printk("defragmented nametree with offset: %d\n", *offset);
     basicbtfs_defrag_traverse_directory(sb, inode_info->i_bno, offset);
     printk("defrag directory after: %d\n", *offset);
 

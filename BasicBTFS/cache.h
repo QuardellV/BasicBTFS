@@ -157,10 +157,7 @@ static inline struct basicbtfs_btree_node_cache * basicbtfs_cache_get_root_node(
     struct basicbtfs_btree_dir_cache_list *dir_cache;
     struct basicbtfs_btree_node_cache *node_cache;
 
-    printk("current dir_bno: %d\n", dir_bno);
-
     list_for_each_entry(dir_cache, &dir_cache_list, list) {
-        printk("checked bno: %d\n", dir_cache->bno);
         if (dir_cache->bno == dir_bno) {
             printk("found new bno: %d\n", dir_bno);
             node_cache =  list_first_entry(&dir_cache->root_node_cache->list, struct basicbtfs_btree_node_cache, list);
@@ -175,10 +172,7 @@ static inline struct basicbtfs_btree_node_cache * basicbtfs_cache_get_root_node(
 static inline uint32_t basicbtfs_cache_get_nr_of_blocks(uint32_t dir_bno) {
     struct basicbtfs_btree_dir_cache_list *dir_cache;
 
-    printk("current dir_bno: %d\n", dir_bno);
-
     list_for_each_entry(dir_cache, &dir_cache_list, list) {
-        printk("checked bno: %d\n", dir_cache->bno);
         if (dir_cache->bno == dir_bno) {
             return dir_cache->nr_of_blocks;
         }
@@ -293,7 +287,6 @@ static inline int basicbtfs_cache_emit_block_debug(struct basicbtfs_block *btfs_
     cur_entry = (struct basicbtfs_name_entry *) block;
     *total_nr_entries += name_list_hdr->nr_of_entries;
 
-    printk("nr of entries: %d\n", name_list_hdr->nr_of_entries);
 
     for (i = 0; i < name_list_hdr->nr_of_entries; i++) {
         block += sizeof(struct basicbtfs_name_entry);
@@ -323,9 +316,7 @@ static inline bool basicbtfs_cache_iterate_dir_debug(struct super_block *sb, uin
 
     list_for_each_entry(dir_cache, &dir_cache_list, list) {
         if (dir_cache->bno == hash) {
-            printk("start operation\n");
             list_for_each_entry(nametree_hdr_cache, &dir_cache->name_tree_cache->list, list) {
-                printk("iterate\n");
                 basicbtfs_cache_emit_block_debug(nametree_hdr_cache->name_tree_block, &total_nr_entries, &current_index);
             }
 
@@ -346,7 +337,7 @@ static inline uint32_t basicbtfs_btree_node_cache_lookup(struct basicbtfs_btree_
     }
     // btr_node->entries[index].hash == hash
     if (btr_node->entries[index].hash == hash) {
-        printk(KERN_INFO "Current counter: %d of %d\n", counter, hash);
+        // printk(KERN_INFO "Current counter: %d of %d\n", counter, hash);
         ret = btr_node->entries[index].ino;
         return ret;
     }

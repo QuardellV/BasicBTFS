@@ -59,7 +59,7 @@ static int basicbtfs_file_get_block(struct inode *inode, sector_t iblock, struct
     // struct basicbtfs_cluster_table *cluster_list;
     struct basicbtfs_disk_block *disk_block;
     struct buffer_head *bh_index;
-    int ret = 0, bno;
+    int ret = 0, bno, i;
     uint32_t cluster_index = 0;
 
     if (iblock >= BASICBTFS_ATABLE_MAX_CLUSTERS) {
@@ -82,16 +82,20 @@ static int basicbtfs_file_get_block(struct inode *inode, sector_t iblock, struct
         if (!create) {
             return ret;
         }
-        printk("here\n");
+        
         bno = get_free_blocks(sbi, BASICBTFS_MAX_BLOCKS_PER_CLUSTER);
         if (!bno) {
             brelse(bh_index);
             return -ENOSPC;
         }
+        printk("new block: %d till %d\n", bno, bno + 4);
         disk_block->block_type.cluster_table.table[cluster_index].start_bno = bno;
         disk_block->block_type.cluster_table.table[cluster_index].cluster_length = BASICBTFS_MAX_BLOCKS_PER_CLUSTER;
-        sbi->s_fileblock_map[bno].ino = inode->i_ino;
-        sbi->s_fileblock_map[bno].cluster_index = cluster_index;
+
+        for (i = 0; i < BASICBTFS_MAX_BLOCKS_PER_CLUSTER; i++) {
+            sbi->s_fileblock_map[bno + i].ino = inode->i_ino;
+            sbi->s_fileblock_map[bno + i].cluster_index = cluster_index;
+        }
         // inode->i_blocks += 1;
     } else {
         bno = disk_block->block_type.cluster_table.table[cluster_index].start_bno + (iblock % disk_block->block_type.cluster_table.table[cluster_index].cluster_length);

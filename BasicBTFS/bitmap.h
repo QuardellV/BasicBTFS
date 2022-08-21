@@ -26,8 +26,6 @@ static inline bool is_bit_empty(unsigned long *freemap, unsigned long size, unsi
     unsigned char *cur_map = (unsigned char *)freemap;
     uint32_t index = start / (sizeof(unsigned char) * 8);
     uint32_t offset = start % (sizeof(unsigned char) * 8);
-    printk("current index: %d | %d | %ld\n", index, offset, start);
-    printk("result: %c", (cur_map[index] & (1 << offset)) ? '1' : '0');
 
     // if (block_index > 2) return false;
 

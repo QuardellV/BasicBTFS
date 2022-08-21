@@ -209,7 +209,8 @@ static int basicbtfs_create(struct inode *dir, struct dentry *dentry, umode_t mo
             name_list_hdr->free_bytes = BASICBTFS_EMPTY_NAME_TREE;
             name_list_hdr->start_unused_area = BASICBTFS_BLOCKSIZE - BASICBTFS_EMPTY_NAME_TREE;
             // name_list_hdr->block_type = BASICBTFS_BLOCKTYPE_NAMETREE;
-            name_list_hdr->prev_block = 0;
+            name_list_hdr->prev_block = BASICBTFS_INODE(inode)->i_bno;
+            name_list_hdr->first_list =  true;
             name_list_hdr->next_block = 0;
             name_list_hdr->nr_of_entries = 0;
             mark_buffer_dirty(bh_name_table);
@@ -222,6 +223,8 @@ static int basicbtfs_create(struct inode *dir, struct dentry *dentry, umode_t mo
             brelse(bh);
             return -EIO;
         }
+
+        printk("new directory with btree and nametree: %d | %d\n", BASICBTFS_INODE(inode)->i_bno, node->tree_name_bno);
         
         node_cache = (struct basicbtfs_btree_node_cache *)basicbtfs_alloc_file(sb);
         // // basicbtfs_destroy_btree_node_data(node_cache);
@@ -236,6 +239,7 @@ static int basicbtfs_create(struct inode *dir, struct dentry *dentry, umode_t mo
 
     } else if (S_ISREG(inode->i_mode)) {
         bh = sb_bread(sb, BASICBTFS_INODE(inode)->i_bno);
+        printk("new file with file cluster entry: %d\n", BASICBTFS_INODE(inode)->i_bno);
 
         if (!bh) return -EIO;
         disk_block = (struct basicbtfs_disk_block *) bh->b_data;
