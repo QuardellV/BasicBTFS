@@ -54,12 +54,14 @@ static inline unsigned long get_hash(struct dentry *dentry) {
     char *tmp_buffer = (char *)kzalloc(sizeof(char) * length, GFP_KERNEL);
     u32 crc = 0;
 
+    printk("name and length: %s | %d\n", dentry->d_name.name, dentry->d_name.len);
+
     memcpy(tmp_buffer, dentry->d_name.name, dentry->d_name.len);
     tmp_buffer[dentry->d_name.len] = '\0';
 
     crc = crc32(crc, tmp_buffer, length);
 
-    // printk(KERN_INFO "Current unsigned long: %d\n", crc);
+    printk(KERN_INFO "Current unsigned long: %d\n", crc);
 
     kfree(tmp_buffer);
 
@@ -67,7 +69,7 @@ static inline unsigned long get_hash(struct dentry *dentry) {
 }
 
 static inline unsigned long get_hash_from_block(char *filename, int length) {
-    char *tmp_buffer = (char *)kzalloc(sizeof(char) * length, GFP_KERNEL);
+    char *tmp_buffer = (char *)kzalloc(sizeof(char) * (length + 1), GFP_KERNEL);
     u32 crc = 0;
 
     memcpy(tmp_buffer, filename, length);

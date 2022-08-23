@@ -392,7 +392,7 @@ int basicbtfs_fill_super(struct super_block *sb, void *data, int silent)
         list_hdr->start_unused_area = BASICBTFS_BLOCKSIZE - BASICBTFS_EMPTY_NAME_TREE;
         // list_hdr->block_type = BASICBTFS_BLOCKTYPE_NAMETREE;
         list_hdr->first_list = true;
-        list_hdr->prev_block = BASICBTFS_INODE(root_inode)->i_bno;
+        list_hdr->prev_block = root_inode->i_ino;
         list_hdr->next_block = 0;
         list_hdr->nr_of_entries = 0;
         mark_buffer_dirty(bh_name_table);

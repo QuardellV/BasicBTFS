@@ -88,7 +88,7 @@ static int basicbtfs_file_get_block(struct inode *inode, sector_t iblock, struct
             brelse(bh_index);
             return -ENOSPC;
         }
-        printk("new block: %d till %d\n", bno, bno + 4);
+        printk("new block: %d till %d\n", bno, bno + 3);
         disk_block->block_type.cluster_table.table[cluster_index].start_bno = bno;
         disk_block->block_type.cluster_table.table[cluster_index].cluster_length = BASICBTFS_MAX_BLOCKS_PER_CLUSTER;
 

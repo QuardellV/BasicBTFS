@@ -209,7 +209,7 @@ static int basicbtfs_create(struct inode *dir, struct dentry *dentry, umode_t mo
             name_list_hdr->free_bytes = BASICBTFS_EMPTY_NAME_TREE;
             name_list_hdr->start_unused_area = BASICBTFS_BLOCKSIZE - BASICBTFS_EMPTY_NAME_TREE;
             // name_list_hdr->block_type = BASICBTFS_BLOCKTYPE_NAMETREE;
-            name_list_hdr->prev_block = BASICBTFS_INODE(inode)->i_bno;
+            name_list_hdr->prev_block = inode->i_ino;
             name_list_hdr->first_list =  true;
             name_list_hdr->next_block = 0;
             name_list_hdr->nr_of_entries = 0;

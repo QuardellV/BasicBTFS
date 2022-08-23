@@ -68,7 +68,7 @@ struct dentry *basicbtfs_search_entry(struct inode *dir, struct dentry *dentry) 
     struct inode *inode = NULL;
     uint32_t ino = 0, hash = 0;
 
-    hash = get_hash(dentry);
+    hash = get_hash_from_block((char *)dentry->d_name.name, dentry->d_name.len);
 
     ino = basicbtfs_cache_lookup_entry(sb, inode_info->i_bno, hash);
 
@@ -108,7 +108,7 @@ int basicbtfs_add_entry(struct inode *dir, struct inode *inode, struct dentry *d
     name_bno = node->tree_name_bno;
     brelse(bh);
 
-    hash = get_hash(dentry);
+    hash = get_hash_from_block((char *)dentry->d_name.name, dentry->d_name.len);
 
     ret = basicbtfs_btree_node_lookup(dir->i_sb, inode_info->i_bno, hash, 0);
 
@@ -175,7 +175,7 @@ int basicbtfs_delete_entry(struct inode *dir, struct dentry *dentry) {
     // // // basicbtfs_btree_traverse_debug(dir->i_sb, inode_info->i_bno);
     // printk(KERN_INFO "END Debu tree traverse REMOVE\n");
 
-    hash = get_hash(dentry);
+    hash = get_hash_from_block((char *)dentry->d_name.name, dentry->d_name.len);
 
     ino = basicbtfs_btree_node_lookup_with_entry(dir->i_sb, inode_info->i_bno, hash, 0, &new_entry);
 
@@ -235,7 +235,7 @@ int basicbtfs_update_entry(struct inode *old_dir, struct inode *new_dir, struct 
         }
     }
 
-    hash = get_hash(new_dentry);
+    hash = get_hash_from_block((char *)new_dentry->d_name.name, new_dentry->d_name.len);
 
     ret = basicbtfs_btree_node_lookup(sb, new_dir_info->i_bno, hash, 0);
 

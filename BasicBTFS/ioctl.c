@@ -15,10 +15,11 @@ long basicbtfs_ioctl(struct file *file, unsigned int cmd, unsigned long arg) {
     struct inode *inode = file_inode(file);
     struct basicbtfs_inode_info *inode_info = BASICBTFS_INODE(inode);
     struct super_block *sb = inode->i_sb;
-    struct basicbtfs_sb_info *sbi = BASICBTFS_SB(sb);
+    // struct basicbtfs_sb_info *sbi = BASICBTFS_SB(sb);
     struct dentry *dentry = sb->s_root;
-    uint32_t first_block = 1 + sbi->s_imap_blocks + sbi->s_bmap_blocks + sbi->s_inode_blocks + sbi->s_filemap_blocks;
-    bool is_root = (first_block == inode_info->i_bno) && (dentry->d_name.name && dentry->d_name.name[0] == '/');
+    int ret = 0;
+    // uint32_t first_block = 1 + sbi->s_imap_blocks + sbi->s_bmap_blocks + sbi->s_inode_blocks + sbi->s_filemap_blocks; // root node might be updated :)
+    bool is_root = (inode->i_ino == 0) && (dentry->d_name.name && dentry->d_name.name[0] == '/');
     // struct basicbtfs_sb_info *sbi = (struct basicbtfs_sb_info *) BASICBTFS_SB(sb);
     if (is_root) {
         printk("this is the root\n");
@@ -30,7 +31,10 @@ long basicbtfs_ioctl(struct file *file, unsigned int cmd, unsigned long arg) {
     switch (cmd) {
         case BASICBTFS_IOC_DEFRAG:
             if (is_root) {
-                basicbtfs_defrag_disk(sb, inode);
+                ret = basicbtfs_defrag_disk(sb, inode);
+                if (ret < 0) {
+                    printk("something went wrong\n");
+                }
             }
             printk("we did it\n");
             return -ENOTTY;
