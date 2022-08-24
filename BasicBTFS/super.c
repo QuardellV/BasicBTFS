@@ -384,6 +384,7 @@ int basicbtfs_fill_super(struct super_block *sb, void *data, int silent)
             return -EIO;
         }
         disk_block = (struct basicbtfs_disk_block *) bh_name_table->b_data;
+        memset(disk_block, 0, sizeof(struct basicbtfs_disk_block));
         disk_block->block_type_id =BASICBTFS_BLOCKTYPE_NAMETREE;
         list_hdr = &disk_block->block_type.name_list_hdr;
 

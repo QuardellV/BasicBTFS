@@ -52,7 +52,7 @@ int basicbtfs_file_update_root(struct inode *inode, uint32_t bno) {
     return 0;
 }
 
-static int basicbtfs_file_free_blocks(struct inode *inode) {
+int basicbtfs_file_free_blocks(struct inode *inode) {
     struct super_block *sb = inode->i_sb;
     struct basicbtfs_sb_info *sbi = BASICBTFS_SB(sb);
     struct basicbtfs_inode_info *ci = BASICBTFS_INODE(inode);
@@ -89,8 +89,6 @@ static int basicbtfs_file_free_blocks(struct inode *inode) {
             sbi->s_fileblock_map[disk_block_offset].cluster_index = 0;
             sbi->s_fileblock_map[disk_block_offset].ino = 0;
 
-            memset(disk_file_block, 0, sizeof(struct basicbtfs_block));
-            mark_buffer_dirty(bh_block);
             brelse(bh_block);
             put_blocks(sbi, disk_block_offset, 1);
             // if is empty take
@@ -99,8 +97,6 @@ static int basicbtfs_file_free_blocks(struct inode *inode) {
           
         }
     }
-    memset(disk_block, 0, sizeof(struct basicbtfs_disk_block));
-    mark_buffer_dirty(bh);
     brelse(bh);
     put_blocks(sbi,bno, 1);
     return 0;
@@ -112,7 +108,8 @@ static int basicbtfs_file_get_block(struct inode *inode, sector_t iblock, struct
     struct basicbtfs_inode_info *ci = BASICBTFS_INODE(inode);
     // struct basicbtfs_cluster_table *cluster_list;
     struct basicbtfs_disk_block *disk_block;
-    struct buffer_head *bh_index;
+    struct basicbtfs_block *disk_file_block;
+    struct buffer_head *bh_index, *bh_block;
     int ret = 0, bno, i;
     uint32_t cluster_index = 0;
 
@@ -149,6 +146,12 @@ static int basicbtfs_file_get_block(struct inode *inode, sector_t iblock, struct
         for (i = 0; i < BASICBTFS_MAX_BLOCKS_PER_CLUSTER; i++) {
             sbi->s_fileblock_map[bno + i].ino = inode->i_ino;
             sbi->s_fileblock_map[bno + i].cluster_index = cluster_index;
+
+            bh_block = sb_bread(sb, bno + i);
+            disk_file_block = (struct basicbtfs_block *) bh_block->b_data;
+            memset(disk_file_block, 0, sizeof(struct basicbtfs_block));
+            mark_buffer_dirty(bh_block);
+            brelse(bh_block);
         }
         // inode->i_blocks += 1;
     } else {

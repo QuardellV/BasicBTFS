@@ -5,12 +5,10 @@
 
 #include "bitmap.h"
 #include "basicbtfs.h"
-#include "btree.h"
 #include "destroy.h"
 #include "io.h"
 #include "init.h"
 #include "btreecache.h"
-#include "nametree.h"
 
 static int init_vfs_inode(struct super_block *sb, struct inode *inode, unsigned long ino) {
     struct basicbtfs_sb_info *sbi = BASICBTFS_SB(sb);
@@ -205,6 +203,7 @@ static int basicbtfs_create(struct inode *dir, struct dentry *dentry, umode_t mo
 
             // name_list_hdr = (struct basicbtfs_name_list_hdr *)bh_name_table->b_data;
             disk_block = (struct basicbtfs_disk_block *) bh_name_table->b_data;
+            memset(disk_block, 0, sizeof(struct basicbtfs_disk_block));
             disk_block->block_type_id = BASICBTFS_BLOCKTYPE_NAMETREE;
             name_list_hdr = &disk_block->block_type.name_list_hdr;
 
@@ -342,6 +341,7 @@ static int basicbtfs_unlink(struct inode *dir ,struct dentry *dentry) {
         // basicbtfs_cache_delete_dir(sb, BASICBTFS_INODE(inode)->i_bno);
         //TODO: Bug
     } else if (S_ISREG(inode->i_mode)) {
+        basicbtfs_file_free_blocks(inode);
         // clean_file_block(inode);
         // clean_inode(inode);
         // put_blocks(sbi, bno, 1);

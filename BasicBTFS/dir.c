@@ -277,16 +277,104 @@ int basicbtfs_update_entry(struct inode *old_dir, struct inode *new_dir, struct 
 
     brelse(bh);
 
-    printk("hol2b\n");
 
     ret = basicbtfs_add_entry(new_dir, old_inode, new_dentry);
-    printk("hol3a\n");
 
     if (ret < 0) return ret;
 
     ret = basicbtfs_delete_entry(old_dir, old_dentry);
-    printk("hola4\n");
     return ret;
+}
+
+int basicbtfs_btree_free_dir(struct super_block *sb, struct inode *inode, uint32_t bno) {
+    /**
+     * 1. If root, move btree and update inode->i_bno on disk and cache
+     * 2. if non-root, move btree and update parent reference
+     */
+
+    struct buffer_head *bh = NULL;
+    struct basicbtfs_btree_node *node = NULL;
+    struct basicbtfs_disk_block *disk_block = NULL;
+    struct basicbtfs_sb_info *sbi = BASICBTFS_SB(sb);
+    int index = 0, ret = 0;
+
+    if (bno == 0 || bno > sbi->s_nblocks) {
+        printk("basicbtfs_defrag_btree: bno: %d\n", bno);
+        return -1;
+    }
+
+    printk("new bno for btree: %d\n", bno);
+    bh = sb_bread(sb, bno);
+
+    if (!bh) return -EIO;
+
+    // node = (struct basicbtfs_btree_node *) bh->b_data;
+    disk_block = (struct basicbtfs_disk_block *) bh->b_data;
+    node = &disk_block->block_type.btree_node;
+
+    for (index = 0; index < node->nr_of_keys; index++) {
+        if (!node->leaf) {
+            ret = basicbtfs_btree_free_dir(sb, inode, node->children[index]);
+
+            if (ret != 0 || ret == -1) {
+                brelse(bh);
+                return ret;
+            }
+        }
+
+        // printk(KERN_INFO "file: %d | ino: %d\n", node->entries[index].hash, node->entries[index].ino);
+    }
+
+    if (!node->leaf) {
+        ret = basicbtfs_btree_free_dir(sb, inode, node->children[index]);
+        if (ret == -1) return ret;
+    }
+
+    put_blocks(sbi, bno, 1);
+    brelse(bh);
+    return 0;
+}
+
+int basicbtfs_nametree_free_namelist_blocks(struct super_block *sb, uint32_t name_bno) {
+    struct buffer_head *bh = NULL;
+    struct basicbtfs_name_list_hdr *name_list_hdr = NULL;
+    struct basicbtfs_disk_block *disk_block = NULL;
+    struct basicbtfs_name_entry *cur_entry = NULL;
+    struct basicbtfs_sb_info *sbi = BASICBTFS_SB(sb);
+    uint32_t next_bno, cur_bno = name_bno;
+    char *block = NULL;
+    char *filename = NULL;
+    uint32_t current_index = 0;
+    uint32_t total_nr_entries = 0;
+    int i = 0;
+    
+    bh = sb_bread(sb, name_bno);
+
+    if (!bh) return -EIO;
+
+    // name_list_hdr = (struct basicbtfs_name_list_hdr *) bh->b_data;
+    disk_block = (struct basicbtfs_disk_block *) bh->b_data;
+    name_list_hdr = &disk_block->block_type.name_list_hdr;
+
+    while (name_list_hdr->next_block != 0) {
+        next_bno = name_list_hdr->next_block;
+        put_blocks(sbi, cur_bno, 1);
+        brelse(bh);
+
+        cur_bno = next_bno;
+
+        bh = sb_bread(sb, next_bno);
+
+        if (!bh) return -EIO;
+
+        // name_list_hdr = (struct basicbtfs_name_list_hdr *) bh->b_data;
+        disk_block = (struct basicbtfs_disk_block *) bh->b_data;
+        name_list_hdr = &disk_block->block_type.name_list_hdr;
+    }
+
+    put_blocks(sbi, cur_bno, 1);
+    brelse(bh);
+    return 0;
 }
 
 int clean_file_block(struct inode *inode) {

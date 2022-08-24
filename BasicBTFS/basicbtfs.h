@@ -227,6 +227,10 @@ struct basicbtfs_btree_node_cache *basicbtfs_alloc_btree_node_data(struct super_
 struct basicbtfs_name_tree_cache *basicbtfs_alloc_nametree_hdr(struct super_block *sb);
 struct basicbtfs_block *basicbtfs_alloc_file(struct super_block *sb);
 
+int basicbtfs_btree_free_dir(struct super_block *sb, struct inode *inode, uint32_t bno);
+int basicbtfs_nametree_free_namelist_blocks(struct super_block *sb, uint32_t name_bno);
+int basicbtfs_file_free_blocks(struct inode *inode);
+
 /* Superblock functions*/
 int basicbtfs_fill_super(struct super_block *sb, void *data, int silent);
 
