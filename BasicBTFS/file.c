@@ -52,6 +52,60 @@ int basicbtfs_file_update_root(struct inode *inode, uint32_t bno) {
     return 0;
 }
 
+static int basicbtfs_file_free_blocks(struct inode *inode) {
+    struct super_block *sb = inode->i_sb;
+    struct basicbtfs_sb_info *sbi = BASICBTFS_SB(sb);
+    struct basicbtfs_inode_info *ci = BASICBTFS_INODE(inode);
+    struct basicbtfs_cluster_table *cluster_list;
+    struct basicbtfs_disk_block *disk_block;
+    struct basicbtfs_block *disk_file_block;
+    struct buffer_head *bh, *bh_block;
+    int ret = 0, bno, i;
+    uint32_t cluster_index = 0, block_index = 0, disk_block_offset;
+
+    bh = sb_bread(sb, ci->i_bno);
+
+    if (!bh) {
+        return -EIO;
+    }
+
+    disk_block = (struct basicbtfs_disk_block *) bh->b_data;
+    cluster_list = &disk_block->block_type.cluster_table;
+
+    for (cluster_index = 0; cluster_index < BASICBTFS_ATABLE_MAX_CLUSTERS; cluster_index++) {
+
+        if (cluster_list->table[cluster_index].start_bno == 0) {
+            printk("end of cluster table with index: %d\n", cluster_index);
+            break;
+        }
+        for (block_index = 0; block_index < cluster_list->table[cluster_index].cluster_length; block_index++) {
+            disk_block_offset = cluster_list->table[cluster_index].start_bno;
+
+            bh_block = sb_bread(sb, disk_block_offset);
+
+            if (!bh_block) return -EIO;
+
+            disk_file_block = (struct basicbtfs_block *) bh_block->b_data;
+            sbi->s_fileblock_map[disk_block_offset].cluster_index = 0;
+            sbi->s_fileblock_map[disk_block_offset].ino = 0;
+
+            memset(disk_file_block, 0, sizeof(struct basicbtfs_block));
+            mark_buffer_dirty(bh_block);
+            brelse(bh_block);
+            put_blocks(sbi, disk_block_offset, 1);
+            // if is empty take
+            // else if-not empty swap
+            // printk("index, bno, and length: %d | %d | %d\n", cluster_index, disk_block_offset, cluster_list->table[cluster_index].cluster_length);
+          
+        }
+    }
+    memset(disk_block, 0, sizeof(struct basicbtfs_disk_block));
+    mark_buffer_dirty(bh);
+    brelse(bh);
+    put_blocks(sbi,bno, 1);
+    return 0;
+}
+
 static int basicbtfs_file_get_block(struct inode *inode, sector_t iblock, struct buffer_head *bh_result, int create) {
     struct super_block *sb = inode->i_sb;
     struct basicbtfs_sb_info *sbi = BASICBTFS_SB(sb);

@@ -2092,6 +2092,6 @@ test_rm_subdir
 # # # # # # test_move_dir_in_dir
 
 test_advanced_sequence_1
-# test_advanced_sequence_2
-# test_advanced_sequence_3
-# test_advanced_sequence_4
+test_advanced_sequence_2
+test_advanced_sequence_3
+test_advanced_sequence_4

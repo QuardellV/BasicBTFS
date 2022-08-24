@@ -240,6 +240,52 @@ static inline int basicbtfs_nametree_delete_name(struct super_block *sb, uint32_
     return 0;
 }
 
+static inline int basicbtfs_nametree_free_namelist_blocks(struct super_block *sb, uint32_t name_bno) {
+    struct buffer_head *bh = NULL;
+    struct basicbtfs_name_list_hdr *name_list_hdr = NULL;
+    struct basicbtfs_disk_block *disk_block = NULL;
+    struct basicbtfs_name_entry *cur_entry = NULL;
+    struct basicbtfs_sb_info *sbi = BASICBTFS_SB(sb);
+    uint32_t next_bno, cur_bno = name_bno;
+    char *block = NULL;
+    char *filename = NULL;
+    uint32_t current_index = 0;
+    uint32_t total_nr_entries = 0;
+    int i = 0;
+    
+    bh = sb_bread(sb, name_bno);
+
+    if (!bh) return -EIO;
+
+    // name_list_hdr = (struct basicbtfs_name_list_hdr *) bh->b_data;
+    disk_block = (struct basicbtfs_disk_block *) bh->b_data;
+    name_list_hdr = &disk_block->block_type.name_list_hdr;
+
+    while (name_list_hdr->next_block != 0) {
+        next_bno = name_list_hdr->next_block;
+        memset(disk_block, 0, sizeof(struct basicbtfs_disk_block));
+        put_blocks(sbi, cur_bno, 1);
+        mark_buffer_dirty(bh);
+        brelse(bh);
+
+        cur_bno = next_bno;
+
+        bh = sb_bread(sb, next_bno);
+
+        if (!bh) return -EIO;
+
+        // name_list_hdr = (struct basicbtfs_name_list_hdr *) bh->b_data;
+        disk_block = (struct basicbtfs_disk_block *) bh->b_data;
+        name_list_hdr = &disk_block->block_type.name_list_hdr;
+    }
+
+    memset(disk_block, 0, sizeof(struct basicbtfs_disk_block));
+    put_blocks(sbi, cur_bno, 1);
+    mark_buffer_dirty(bh);
+    brelse(bh);
+    return 0;
+}
+
 static inline int basicbtfs_nametree_iterate_name_debug(struct super_block *sb, uint32_t name_bno) {
     struct buffer_head *bh = NULL;
     struct basicbtfs_name_list_hdr *name_list_hdr = NULL;
