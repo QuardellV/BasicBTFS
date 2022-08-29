@@ -316,7 +316,7 @@ int basicbtfs_fill_super(struct super_block *sb, void *data, int silent)
         brelse(bh);
         return -ENOMEM;
     }
-
+    should_defrag = false;
     init_sbi(sb, csb, sbi);
     brelse(bh);
 

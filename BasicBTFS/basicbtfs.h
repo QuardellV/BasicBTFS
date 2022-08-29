@@ -29,6 +29,8 @@
 #define BASICBTFS_BLOCKTYPE_NAMETREE      0x02
 #define BASICBTFS_BLOCKTYPE_CLUSTER_TABLE 0x03
 
+#define BASICBTFS_DEFRAG_PERIOD 1000
+
 struct basicbtfs_ioctl_vol_args {
     int fd;
     char name[4000 + 1];
@@ -255,6 +257,8 @@ extern const struct file_operations basicbtfs_dir_ops;
 extern const struct address_space_operations basicbtfs_aops;
 extern const struct inode_operations basicbtfs_inode_ops;
 extern struct list_head dir_cache_list;
+extern bool should_defrag;
+extern uint32_t nr_of_inode_operations;
 
 
 /* Getter functions for disk info*/
