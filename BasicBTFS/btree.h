@@ -192,6 +192,10 @@ static inline int basicbtfs_btree_split_child(struct super_block *sb, uint32_t p
     uint32_t rhs = get_free_blocks(sbi, 1);
     int i = 0;
 
+    if (rhs == -1) {
+        return -ENOSPC;
+    }
+
     bh_par = sb_bread(sb, par);
 
     if (!bh_par) return -EIO;
@@ -381,6 +385,10 @@ static inline int basicbtfs_btree_node_insert(struct super_block *sb, struct ino
     if (old_node->nr_of_keys == 2 * BASICBTFS_MIN_DEGREE -1) {
         int index = 0;
         uint32_t bno_new_root = get_free_blocks(sbi, 1);
+
+        if (bno_new_root == -1) {
+            return -ENOSPC;
+        }
 
         bh_new = sb_bread(sb, bno_new_root);
 

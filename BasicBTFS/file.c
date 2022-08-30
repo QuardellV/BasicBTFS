@@ -112,8 +112,8 @@ static int basicbtfs_file_get_block(struct inode *inode, sector_t iblock, struct
     struct buffer_head *bh_index, *bh_block;
     int ret = 0, bno, i;
     uint32_t cluster_index = 0;
-
-    if (iblock >= BASICBTFS_ATABLE_MAX_CLUSTERS) {
+    printk("block vs max: %d | %ld\n", iblock, BASICBTFS_MAX_BLOCKS_PER_DIR);
+    if (iblock >= BASICBTFS_MAX_BLOCKS_PER_DIR) {
         return -EFBIG;
     }
 
@@ -135,7 +135,7 @@ static int basicbtfs_file_get_block(struct inode *inode, sector_t iblock, struct
         }
         
         bno = get_free_blocks(sbi, BASICBTFS_MAX_BLOCKS_PER_CLUSTER);
-        if (!bno) {
+        if (bno == -1) {
             brelse(bh_index);
             return -ENOSPC;
         }

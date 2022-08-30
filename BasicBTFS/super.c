@@ -19,6 +19,10 @@ static struct kmem_cache *basicbtfs_nametree_hdr_cache;
 static struct kmem_cache *basicbtfs_nametree_data_cache;
 static struct kmem_cache *basicbtfs_file_cache;
 
+bool should_defrag = true;
+bool defrag_now = false;
+uint32_t nr_of_inode_operations = 0;
+
 int basicbtfs_init_btree_dir_cache(void) {
     basicbtfs_btree_dir_cache = kmem_cache_create("basicbtfs_btree_dir_cache", sizeof(struct basicbtfs_btree_dir_cache_list), 0, 0, NULL);
 
@@ -293,7 +297,7 @@ int basicbtfs_fill_super(struct super_block *sb, void *data, int silent)
     struct basicbtfs_name_list_hdr *list_hdr = NULL;
     int ret = 0;
 
-    printk("size of diskblock: %ld\n", sizeof(struct basicbtfs_disk_block));
+    printk("size of diskblock: %d\n", BASICBTFS_MAX_BLOCKS_PER_DIR);
 
     ret = init_super_block(sb);
 
@@ -316,7 +320,8 @@ int basicbtfs_fill_super(struct super_block *sb, void *data, int silent)
         brelse(bh);
         return -ENOMEM;
     }
-    should_defrag = false;
+    should_defrag = true;
+    nr_of_inode_operations = 0;
     init_sbi(sb, csb, sbi);
     brelse(bh);
 
@@ -376,6 +381,10 @@ int basicbtfs_fill_super(struct super_block *sb, void *data, int silent)
 
     if (node->tree_name_bno == 0) {
         node->tree_name_bno = get_free_blocks(BASICBTFS_SB(sb), 1);
+
+        if (node->tree_name_bno == -1) {
+            return -ENOSPC;
+        }
         bh_name_table = sb_bread(sb, node->tree_name_bno);
 
         if (!bh_name_table) {

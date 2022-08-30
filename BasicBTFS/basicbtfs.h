@@ -9,18 +9,17 @@
 #define BASICBTFS_HASH_LENGTH          32
 #define BASICBTFS_SALT_LENGTH          8
 #define BASICBTFS_MIN_DEGREE           7
-#define BASICBTFS_MAX_BLOCKS_PER_CLUSTER 4
+#define BASICBTFS_MAX_BLOCKS_PER_CLUSTER 16
 #define BASICBTFS_ATABLE_MAX_BLOCKS    ((BASICBTFS_BLOCKSIZE - sizeof(uint32_t)) / sizeof(uint32_t))
 #define BASICBTFS_ATABLE_MAX_CLUSTERS  ((BASICBTFS_BLOCKSIZE - 3 * sizeof(uint32_t)) / sizeof(struct basicbtfs_cluster))
 #define BASICBTFS_MAX_BLOCKS_PER_DIR   (BASICBTFS_ATABLE_MAX_CLUSTERS * BASICBTFS_MAX_BLOCKS_PER_CLUSTER)
 #define BASICBTFS_ENTRIES_PER_BLOCK    (BASICBTFS_BLOCKSIZE / sizeof(struct basicbtfs_entry))
 #define BASICBTFS_ENTRIES_PER_DIR      (BASICBTFS_ENTRIES_PER_BLOCK * BASICBTFS_ATABLE_MAX_BLOCKS)
-#define BASICBTFS_FILE_BSIZE           (BASICBTFS_BLOCKSIZE * BASICBTFS_ATABLE_MAX_BLOCKS)
+#define BASICBTFS_FILE_BSIZE           (BASICBTFS_BLOCKSIZE * BASICBTFS_MAX_BLOCKS_PER_DIR)
 #define BASICBTFS_EMPTY_NAME_TREE      ((BASICBTFS_BLOCKSIZE - BASICBTFS_NAME_ENTRY_S_OFFSET))
 #define BASICBTFS_NAME_ENTRY_S_OFFSET  ((sizeof(struct basicbtfs_name_list_hdr) + sizeof(uint32_t)))
 #define BASICBTFS_WORDS_PER_BLOCK      ((BASICBTFS_BLOCKSIZE / sizeof(struct basicbtfs_fileblock_info)))
 
-#define BASICBTFS_MAX_BLOCKS_PER_CLUSTER 4
 
 #define BASICBTFS_MAX_CACHE_DIR_ENTRIES    100
 #define BASICBTFS_MAX_CACHE_BLOCKS_PER_DIR 250
@@ -29,7 +28,7 @@
 #define BASICBTFS_BLOCKTYPE_NAMETREE      0x02
 #define BASICBTFS_BLOCKTYPE_CLUSTER_TABLE 0x03
 
-#define BASICBTFS_DEFRAG_PERIOD 1000
+#define BASICBTFS_DEFRAG_PERIOD 100
 
 struct basicbtfs_ioctl_vol_args {
     int fd;
@@ -258,7 +257,9 @@ extern const struct address_space_operations basicbtfs_aops;
 extern const struct inode_operations basicbtfs_inode_ops;
 extern struct list_head dir_cache_list;
 extern bool should_defrag;
+extern bool defrag_now;
 extern uint32_t nr_of_inode_operations;
+
 
 
 /* Getter functions for disk info*/

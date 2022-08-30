@@ -86,6 +86,7 @@ static inline unsigned long get_hash_from_block(char *filename, int length) {
 
 static inline uint32_t increase_counter(uint32_t counter, uint32_t limit) {
     if (counter == limit) {
+        defrag_now = true;
         return 0;
     } else {
         return counter + 1;

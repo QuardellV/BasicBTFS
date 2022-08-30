@@ -9,6 +9,7 @@
 #include "io.h"
 #include "init.h"
 #include "btreecache.h"
+#include "defrag.h"
 
 static int init_vfs_inode(struct super_block *sb, struct inode *inode, unsigned long ino) {
     struct basicbtfs_sb_info *sbi = BASICBTFS_SB(sb);
@@ -69,17 +70,24 @@ static struct dentry *basicbtfs_lookup(struct inode *dir, struct dentry *dentry,
         return ERR_PTR(-ENAMETOOLONG);
     }
 
-    nr_of_inode_operations = increase_counter(nr_of_inode_operations, 1000);
+    ret =  basicbtfs_search_entry(dir, dentry);
 
-    if (should_defrag && nr_of_inode_operations == BASICBTFS_DEFRAG_PERIOD) {
-        root_inode = basicbtfs_iget(dir->i_sb, 0);
-        ret = basicbtfs_defrag_disk(dir->i_sb, root_inode);
+    nr_of_inode_operations = increase_counter(nr_of_inode_operations, BASICBTFS_DEFRAG_PERIOD);
+    if (should_defrag && defrag_now) {
+        printk("defrag after lookup\n");
+        char * envp[] = { "HOME=/", NULL };
+        char * argv[] = { "./home/quardell/Documents/git/SimpleBtreeFS/BasicBTFS/btfs",  "defrag", "test", NULL};
+
+        ret = call_usermodehelper(argv[0], argv, envp, UMH_WAIT_EXEC);
         if (ret < 0) {
             printk("something went wrong\n");
             return ret;
         }
+        printk("defragged\n");
+        defrag_now = false;
     }
-    return basicbtfs_search_entry(dir, dentry);
+
+    return ret;
 }
 
 static struct inode *basicbtfs_new_inode(struct inode *dir, mode_t mode) {
@@ -124,7 +132,7 @@ static struct inode *basicbtfs_new_inode(struct inode *dir, mode_t mode) {
     bfs_inode_info = BASICBTFS_INODE(inode);
     bno = get_free_blocks(sbi, 1);
 
-    if (!bno) {
+    if (bno == -1) {
         iput(inode);
         put_inode(sbi, ino);
         return ERR_PTR(-ENOSPC);
@@ -148,6 +156,8 @@ static int basicbtfs_create(struct inode *dir, struct dentry *dentry, umode_t mo
     struct buffer_head *bh_dir = NULL, *bh = NULL, *bh_name_table = NULL;
     struct basicbtfs_disk_block *disk_block = NULL;
     int ret = 0;
+
+    nr_of_inode_operations = increase_counter(nr_of_inode_operations, BASICBTFS_DEFRAG_PERIOD);
 
     if (strlen(dentry->d_name.name) > BASICBTFS_NAME_LENGTH) return -ENAMETOOLONG;
 
@@ -205,6 +215,10 @@ static int basicbtfs_create(struct inode *dir, struct dentry *dentry, umode_t mo
 
         if (node->tree_name_bno == 0) {
             node->tree_name_bno = get_free_blocks(BASICBTFS_SB(sb), 1);
+
+            if (node->tree_name_bno == -1) {
+                return -ENOSPC;
+            }
             bh_name_table = sb_bread(sb, node->tree_name_bno);
 
             if (!bh_name_table) {
@@ -287,16 +301,6 @@ static int basicbtfs_create(struct inode *dir, struct dentry *dentry, umode_t mo
     mark_inode_dirty(dir);
     d_instantiate(dentry, inode);
 
-    nr_of_inode_operations = increase_counter(nr_of_inode_operations, 1000);
-
-    if (should_defrag && nr_of_inode_operations == BASICBTFS_DEFRAG_PERIOD) {
-        root_inode = basicbtfs_iget(dir->i_sb, 0);
-        ret = basicbtfs_defrag_disk(dir->i_sb, root_inode);
-        if (ret < 0) {
-            printk("something went wrong\n");
-            return ret;
-        }
-    }
     return 0;
 }
 
@@ -316,18 +320,11 @@ static int basicbtfs_link(struct dentry *old_dentry,
     struct inode *inode = d_inode(old_dentry), *root_inode = NULL;
     int ret = 0;
 
+    nr_of_inode_operations = increase_counter(nr_of_inode_operations, BASICBTFS_DEFRAG_PERIOD);
+
     inode_inc_link_count(inode);
     ret = basicbtfs_add_entry(dir, inode, dentry);
     d_instantiate(dentry, inode);
-    nr_of_inode_operations = increase_counter(nr_of_inode_operations, 1000);
-    if (should_defrag && nr_of_inode_operations == BASICBTFS_DEFRAG_PERIOD) {
-        root_inode = basicbtfs_iget(dir->i_sb, 0);
-        ret = basicbtfs_defrag_disk(dir->i_sb, root_inode);
-        if (ret < 0) {
-            printk("something went wrong\n");
-            return ret;
-        }
-    }
 
     return ret;
 }
@@ -341,6 +338,8 @@ static int basicbtfs_unlink(struct inode *dir ,struct dentry *dentry) {
     struct basicbtfs_disk_block *basicbtfs_disk_block = NULL;
     struct inode *inode = d_inode(dentry), *root_inode;
     ino = inode->i_ino;
+
+    nr_of_inode_operations = increase_counter(nr_of_inode_operations, BASICBTFS_DEFRAG_PERIOD);
 
     ret = basicbtfs_delete_entry(dir, dentry);
 
@@ -381,15 +380,6 @@ static int basicbtfs_unlink(struct inode *dir ,struct dentry *dentry) {
         // put_inode(sbi, ino);
     }
 
-    nr_of_inode_operations = increase_counter(nr_of_inode_operations, 1000);
-    if (should_defrag && nr_of_inode_operations == BASICBTFS_DEFRAG_PERIOD) {
-        root_inode = basicbtfs_iget(dir->i_sb, 0);
-        ret = basicbtfs_defrag_disk(dir->i_sb, root_inode);
-        if (ret < 0) {
-            printk("something went wrong\n");
-            return ret;
-        }
-    }
     return ret;
 }
 
@@ -434,6 +424,8 @@ static int basicbtfs_rename(struct inode *old_dir, struct dentry *old_dentry, st
     int ret = 0;
     struct inode *root_inode;
 
+    nr_of_inode_operations = increase_counter(nr_of_inode_operations, BASICBTFS_DEFRAG_PERIOD);
+
     if (flags & (RENAME_EXCHANGE)) {
         return -EINVAL;
     }
@@ -459,18 +451,6 @@ static int basicbtfs_rename(struct inode *old_dir, struct dentry *old_dentry, st
     if (S_ISDIR(d_inode(old_dentry)->i_mode)) drop_nlink(old_dir);
 
     mark_inode_dirty(old_dir);
-
-
-    nr_of_inode_operations = increase_counter(nr_of_inode_operations, 1000);
-
-    if (should_defrag && nr_of_inode_operations == BASICBTFS_DEFRAG_PERIOD) {
-        root_inode = basicbtfs_iget(old_dir->i_sb, 0);
-        ret = basicbtfs_defrag_disk(old_dir->i_sb, root_inode);
-        if (ret < 0) {
-            printk("something went wrong\n");
-            return ret;
-        }
-    }
     return 0;
 }
 

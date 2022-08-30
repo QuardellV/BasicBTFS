@@ -2,6 +2,7 @@
 #include <linux/fs.h>
 #include <linux/kernel.h>
 #include <linux/module.h>
+#include <linux/kmod.h>
 
 #include "basicbtfs.h"
 #include "destroy.h"
@@ -11,15 +12,29 @@
 #include "btreecache.h"
 #include "nametree.h"
 #include "cache.h"
+#include "defrag.h"
 
 static int basicbtfs_iterate(struct file *dir, struct dir_context *ctx) {
-    struct inode *inode = file_inode(dir);
+    struct inode *inode = file_inode(dir), *root_inode;
     struct basicbtfs_inode_info *inode_info = BASICBTFS_INODE(inode);
     struct super_block *sb = inode->i_sb;
     uint32_t name_bno = 0, nr_of_files = 0;
     struct buffer_head *bh = NULL;
     struct basicbtfs_disk_block *disk_block = NULL;
     struct basicbtfs_btree_node *node = NULL;
+    int ret = 0;
+
+    nr_of_inode_operations = increase_counter(nr_of_inode_operations, BASICBTFS_DEFRAG_PERIOD);
+        // if (should_defrag && defrag_now) {
+        //     printk("defrag after lookup\n");
+        //     root_inode = basicbtfs_iget(sb, 0);
+        //     ret = basicbtfs_defrag_disk(sb, root_inode);
+        //     if (ret < 0) {
+        //         printk("something went wrong\n");
+        //         return ret;
+        //     }
+        //     defrag_now = false;
+        // }
 
     if (!S_ISDIR(inode->i_mode)) {
         printk(KERN_ERR "This file is not a directory\n");
@@ -136,11 +151,12 @@ int basicbtfs_add_entry(struct inode *dir, struct inode *inode, struct dentry *d
     ret = basicbtfs_btree_node_insert(dir->i_sb, dir, inode_info->i_bno, &new_entry);
     printk("added to btree succesfully: %d\n", inode_info->i_bno);
 
-
     if (nr_of_blocks < BASICBTFS_MAX_CACHE_BLOCKS_PER_DIR) {
         node_cache = basicbtfs_cache_get_root_node(inode_info->i_bno);
+        if (!node_cache) return ret;
         ret = basicbtfs_btree_node_cache_insert(dir->i_sb, dir, node_cache, &new_entry, inode_info->i_bno);
     }
+    printk("done\n");
 
     // printk(KERN_INFO "START Debug btree traverse added: %s\n", dentry->d_name.name);
     // // basicbtfs_nametree_iterate_name_debug(dir->i_sb, name_bno);
@@ -183,7 +199,10 @@ int basicbtfs_delete_entry(struct inode *dir, struct dentry *dentry) {
         printk("yes it exists: %d | %d\n", new_entry.name_bno, new_entry.block_index);
     }
 
-    ino = basicbtfs_btree_node_cache_lookup(basicbtfs_cache_get_root_node(inode_info->i_bno), hash, 0);
+    node_cache = basicbtfs_cache_get_root_node(inode_info->i_bno);
+    if (node_cache) {
+        ino = basicbtfs_btree_node_cache_lookup(node_cache, hash, 0);
+    }
 
     if (ino != 0 && ino != -1) {
         printk("yes it exists in cache: %d | %d\n", new_entry.name_bno, new_entry.block_index);
@@ -196,8 +215,10 @@ int basicbtfs_delete_entry(struct inode *dir, struct dentry *dentry) {
     // printk(KERN_INFO "END Debug btree traverse BEFORE\n");
 
     ret = basicbtfs_btree_delete_entry(dir->i_sb, dir, inode_info->i_bno, hash);
-    node_cache = basicbtfs_cache_get_root_node(inode_info->i_bno);
-    ret = basicbtfs_btree_cache_delete_entry(dir->i_sb, dir, node_cache, hash, inode_info->i_bno);
+    
+    if (node_cache) {
+        ret = basicbtfs_btree_cache_delete_entry(dir->i_sb, dir, node_cache, hash, inode_info->i_bno);
+    }
 
     ret = basicbtfs_nametree_delete_name(dir->i_sb, new_entry.name_bno, new_entry.block_index, inode_info->i_bno);
 
@@ -393,7 +414,7 @@ int clean_file_block(struct inode *inode) {
 
     file_block = (struct basicbtfs_alloc_table *) bh->b_data;
 
-    while (bi < BASICBTFS_ATABLE_MAX_BLOCKS && file_block->table[bi] != 0) {
+    while (bi < BASICBTFS_ATABLE_MAX_CLUSTERS && file_block->table[bi] != 0) {
         char *block;
 
         put_blocks(sbi, file_block->table[bi], 1);

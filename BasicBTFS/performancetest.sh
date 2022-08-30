@@ -28,13 +28,35 @@ done
 
 for (( i=1 ; i<=$10 ; i++));
 do
-    iozone –Rab outputfile$i.wks -e -N -O -R -n -g  #about file size and test different sizes corresponding to different types of applications
+    iozone –Rab outputfile$i.wks -e -N -O -R -n 64 -g 128 #about file size and test different sizes corresponding to different types of applications
 done
 
 for (( i=1 ; i<=$10 ; i++));
 do
-    iozone –Rab outputrecord$i.wks -e -N -O -R -y -q  #about record size and test different sizes
+    iozone –Rab outputfile$i.wks -e -N -O -R -n 512 -g 4096 #about file size and test different sizes corresponding to different types of applications
 done
+
+for (( i=1 ; i<=$10 ; i++));
+do
+    iozone –Rab outputfile$i.wks -e -N -O -R -n 8192 -g 16384 #about file size and test different sizes corresponding to different types of applications
+done
+
+for (( i=1 ; i<=$10 ; i++));
+do
+    iozone –Rab outputrecord$i.wks -e -N -O -R -y 2 -q 16  #about record size and test different sizes
+done
+
+for (( i=1 ; i<=$10 ; i++));
+do
+    iozone –Rab outputrecord$i.wks -e -N -O -R -y 128 -q 512  #about record size and test different sizes
+done
+
+for (( i=1 ; i<=$10 ; i++));
+do
+    iozone –Rab outputrecord$i.wks -e -N -O -R -y 1024 -q 16384 #about record size and test different sizes
+done
+
+
 
 # 2. Application benchmarks with and without defragmentation test defragmentation by regularly defragmenting the thing
 #   - Mail server

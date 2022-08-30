@@ -172,6 +172,10 @@ static inline int basicbtfs_nametree_insert_name(struct super_block *sb, uint32_
 
     name_list_hdr->next_block = get_free_blocks(BASICBTFS_SB(sb), 1);
 
+    if (name_list_hdr->next_block == -1) {
+        return -ENOSPC;
+    }
+
     cur_bno = name_list_hdr->next_block;
     mark_buffer_dirty(bh);
     brelse(bh);

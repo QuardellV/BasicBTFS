@@ -142,15 +142,18 @@ static inline void basicbtfs_cache_update_root_node(uint32_t dir_bno, struct bas
 
 static inline void basicbtfs_cache_update_root_bno(uint32_t dir_bno, uint32_t new_bno) {
     struct basicbtfs_btree_dir_cache_list *tmp, *dir_cache;
-    printk("new bno: %d\n", new_bno);
+    printk("new bno cache: %d\n", new_bno);
 
     list_for_each_entry_safe(dir_cache, tmp, &dir_cache_list, list) {
         if (dir_cache->bno == dir_bno) {
+            printk("found\n");
             list_del(&dir_cache->list);
             dir_cache->bno = new_bno;
             list_add(&dir_cache->list, &dir_cache_list);
+            return;
         }
     }
+    printk("not found\n");
 }
 
 static inline struct basicbtfs_btree_node_cache * basicbtfs_cache_get_root_node(uint32_t dir_bno) {
@@ -158,6 +161,7 @@ static inline struct basicbtfs_btree_node_cache * basicbtfs_cache_get_root_node(
     struct basicbtfs_btree_node_cache *node_cache;
 
     list_for_each_entry(dir_cache, &dir_cache_list, list) {
+        printk("cur bno: %d\n",dir_cache->bno );
         if (dir_cache->bno == dir_bno) {
             printk("found new bno: %d\n", dir_bno);
             node_cache =  list_first_entry(&dir_cache->root_node_cache->list, struct basicbtfs_btree_node_cache, list);

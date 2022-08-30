@@ -2050,7 +2050,7 @@ init() {
     make
     sudo insmod basicbtfs.ko
     mkdir -p test
-    dd if=/dev/zero of=test.img bs=1M count=50
+    dd if=/dev/zero of=test.img bs=10M count=50
     ./mkfs.basicbtfs test.img
     sudo mount -o loop -t basicbtfs test.img test
 }
@@ -2063,6 +2063,7 @@ test_create_already_exist
 
 test_mkdir_depth_1
 test_mkdir_depth_n
+./btfs defrag test
 test_mkdir_toolong
 
 test_create_file_subdir_1
@@ -2073,6 +2074,7 @@ test_write_small
 # test_write_advanced
 
 test_rm_empty
+./btfs defrag test
 test_rm_small
 test_rm_large
 
