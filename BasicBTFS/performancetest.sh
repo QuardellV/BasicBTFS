@@ -9,7 +9,8 @@
 
 for i in {0..10..1};
 do
-    iozone -e -Rab output$i.wks # see pdf for further explanation
+    iozone -e -Rab output$i.wks
+    iostat -c -d -x -t -m /dev/loop22 >> iostat$i.out
 done
 
 
@@ -28,32 +29,38 @@ done
 
 for i in {0..10..1};
 do
-    iozone -e -n 2 -g 256 –Rab outputfilesmall$i.wks #about file size and test different sizes corresponding to different types of applications
+    iozone -e -n 2 -g 256 -Rab outputfilesmall$i.wks
+    iostat -c -d -x -t -m /dev/loop22 >> iostat$i.out
 done
 
 for i in {0..10..1};
 do
-    iozone -e -n 512 -g 4096 –Rab outputfilemedium$i.wks #about file size and test different sizes corresponding to different types of applications
+    iozone -e -n 512 -g 4096 -Rab outputfilemedium$i.wks
+    iostat -c -d -x -t -m /dev/loop22 >> iostat$i.out
 done
 
 for i in {0..10..1};
 do
-    iozone -e -n 8192 -g 32768 –Rab outputfilelarge$i.wks #about file size and test different sizes corresponding to different types of applications
+    iozone -e -n 8192 -g 32768 -Rab outputfilelarge$i.wks
+    iostat -c -d -x -t -m /dev/loop22 >> iostat$i.out
 done
 
 for i in {0..10..1};
 do
-    iozone -e -y 2 -q 4  –Rab outputrecordsmall$i.wks  #about record size and test different sizes
+    iozone -e -y 2 -q 4  -Rab outputrecordsmall$i.wks
+    iostat -c -d -x -t -m /dev/loop22 >> iostat$i.out
 done
 
 for i in {0..10..1};
 do
-    iozone -e -y 8 -q 32  –Rab outputrecordmedium$i.wks #about record size and test different sizes
+    iozone -e -y 8 -q 32  -Rab outputrecordmedium$i.wks
+    iostat -c -d -x -t -m /dev/loop22 >> iostat$i.out
 done
 
 for i in {0..10..1};
 do
-    iozone -e -y 64 -q 512  –Rab outputrecordlarge$i.wks
+    iozone -e -y 64 -q 512  -Rab outputrecordlarge$i.wks
+    iostat -c -d -x -t -m /dev/loop22 >> iostat$i.out
 done
 
 
