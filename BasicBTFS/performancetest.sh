@@ -7,9 +7,9 @@
 # do this 10 times and remove outliers. Make plot based on this information.
 # one with defragmentation regurarly
 
-for (( i=1 ; i<=$10 ; i++));
+for i in {0..10..1};
 do
-    iozone –Rab output$i.wks -e -N -O -R # see pdf for further explanation
+    iozone -e -Rab output$i.wks # see pdf for further explanation
 done
 
 
@@ -26,34 +26,34 @@ done
 #   - combined
 #   - specific amount of files/ and sizes
 
-for (( i=1 ; i<=$10 ; i++));
+for i in {0..10..1};
 do
-    iozone –Rab outputfile$i.wks -e -N -O -R -n 64 -g 128 #about file size and test different sizes corresponding to different types of applications
+    iozone -e -n 2 -g 256 –Rab outputfilesmall$i.wks #about file size and test different sizes corresponding to different types of applications
 done
 
-for (( i=1 ; i<=$10 ; i++));
+for i in {0..10..1};
 do
-    iozone –Rab outputfile$i.wks -e -N -O -R -n 512 -g 4096 #about file size and test different sizes corresponding to different types of applications
+    iozone -e -n 512 -g 4096 –Rab outputfilemedium$i.wks #about file size and test different sizes corresponding to different types of applications
 done
 
-for (( i=1 ; i<=$10 ; i++));
+for i in {0..10..1};
 do
-    iozone –Rab outputfile$i.wks -e -N -O -R -n 8192 -g 16384 #about file size and test different sizes corresponding to different types of applications
+    iozone -e -n 8192 -g 32768 –Rab outputfilelarge$i.wks #about file size and test different sizes corresponding to different types of applications
 done
 
-for (( i=1 ; i<=$10 ; i++));
+for i in {0..10..1};
 do
-    iozone –Rab outputrecord$i.wks -e -N -O -R -y 2 -q 16  #about record size and test different sizes
+    iozone -e -y 2 -q 4  –Rab outputrecordsmall$i.wks  #about record size and test different sizes
 done
 
-for (( i=1 ; i<=$10 ; i++));
+for i in {0..10..1};
 do
-    iozone –Rab outputrecord$i.wks -e -N -O -R -y 128 -q 512  #about record size and test different sizes
+    iozone -e -y 8 -q 32  –Rab outputrecordmedium$i.wks #about record size and test different sizes
 done
 
-for (( i=1 ; i<=$10 ; i++));
+for i in {0..10..1};
 do
-    iozone –Rab outputrecord$i.wks -e -N -O -R -y 1024 -q 16384 #about record size and test different sizes
+    iozone -e -y 64 -q 512  –Rab outputrecordlarge$i.wks
 done
 
 

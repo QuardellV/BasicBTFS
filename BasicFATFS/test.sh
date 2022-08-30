@@ -2050,7 +2050,7 @@ init() {
     make
     sudo insmod basicftfs.ko
     mkdir -p test
-    dd if=/dev/zero of=test.img bs=1M count=50
+    dd if=/dev/zero of=test.img bs=10M count=50
     ./mkfs.basicftfs test.img
     sudo mount -o loop -t basicftfs test.img test
 }
