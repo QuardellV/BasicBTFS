@@ -7,7 +7,7 @@
 # do this 10 times and remove outliers. Make plot based on this information.
 # one with defragmentation regurarly
 
-for i in {0..10..1};
+for i in {0..1..1};
 do
     iozone -e -Rab output$i.wks
     iostat -c -d -x -t -m /dev/loop22 >> iostat$i.out
