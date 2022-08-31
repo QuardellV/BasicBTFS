@@ -1,0 +1,9 @@
+Linux 5.4.0-124-generic (quardell-Standard-PC-Q35-ICH9-2009) 	31-08-22 	_x86_64_	(2 CPU)
+
+31-08-22 01:21:15
+avg-cpu:  %user   %nice %system %iowait  %steal   %idle
+           5,87    0,07    2,54   51,07    0,02   40,43
+
+Device            r/s     w/s     rMB/s     wMB/s   rrqm/s   wrqm/s  %rrqm  %wrqm r_await w_await aqu-sz rareq-sz wareq-sz  svctm  %util
+loop22           1,17   66,21      0,01      0,22     0,00     0,00   0,00   0,00    0,12    5,96   0,37     4,90     3,33   5,78  38,93
+
