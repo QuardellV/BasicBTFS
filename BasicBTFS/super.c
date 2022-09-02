@@ -296,9 +296,12 @@ int basicbtfs_fill_super(struct super_block *sb, void *data, int silent)
     struct basicbtfs_btree_node_cache *node_cache = NULL;
     struct basicbtfs_name_list_hdr *list_hdr = NULL;
     int ret = 0;
+    int tmp_degree = 80;
+    int test_size = 28 + (2 * tmp_degree - 1) * sizeof(struct basicbtfs_entry) + 4 * 2 * tmp_degree;
 
-    printk("size of diskblock: %d\n", BASICBTFS_MAX_BLOCKS_PER_DIR);
-
+    printk("size of diskblock: %d\n", sizeof(struct basicbtfs_disk_block));
+    printk("size of btree node: %d\n", sizeof(struct basicbtfs_btree_node));
+    printk("possible size of btree node %d\n", test_size);
     ret = init_super_block(sb);
 
     if (ret < 0) return ret;

@@ -2068,6 +2068,7 @@ endA=`date +%s.%N`
 runtimeA=$( echo "$endA - $startA" | bc -l )
 ./btfs defrag test
 startB=`date +%s.%N`
+# ./btfs defrag test
 test_mkdir_toolong
 
 test_create_file_subdir_1
@@ -2078,6 +2079,7 @@ test_write_small
 # test_write_advanced
 
 test_rm_empty
+# ./btfs defrag test
 test_rm_small
 test_rm_large
 
@@ -2107,3 +2109,4 @@ endC=`date +%s`
 runtimeC=$( echo "$endC - $startC" | bc -l )
 runtime=$( echo "$runtimeA + $runtimeB + $runtimeC" | bc -l )
 echo "final time: $runtime"
+
