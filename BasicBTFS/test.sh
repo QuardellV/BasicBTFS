@@ -2063,7 +2063,7 @@ test_create_already_exist
 
 test_mkdir_depth_1
 test_mkdir_depth_n
-./btfs defrag test
+# ./btfs defrag test
 test_mkdir_toolong
 
 test_create_file_subdir_1
@@ -2074,7 +2074,7 @@ test_write_small
 # test_write_advanced
 
 test_rm_empty
-./btfs defrag test
+# ./btfs defrag test
 test_rm_small
 test_rm_large
 
@@ -2097,3 +2097,4 @@ test_advanced_sequence_1
 test_advanced_sequence_2
 test_advanced_sequence_3
 test_advanced_sequence_4
+

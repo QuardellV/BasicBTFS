@@ -8,7 +8,7 @@
 #define BASICBTFS_NAME_LENGTH          255
 #define BASICBTFS_HASH_LENGTH          32
 #define BASICBTFS_SALT_LENGTH          8
-#define BASICBTFS_MIN_DEGREE           7
+#define BASICBTFS_MIN_DEGREE           80
 #define BASICBTFS_MAX_BLOCKS_PER_CLUSTER 16
 #define BASICBTFS_ATABLE_MAX_BLOCKS    ((BASICBTFS_BLOCKSIZE - sizeof(uint32_t)) / sizeof(uint32_t))
 #define BASICBTFS_ATABLE_MAX_CLUSTERS  ((BASICBTFS_BLOCKSIZE - 3 * sizeof(uint32_t)) / sizeof(struct basicbtfs_cluster))
