@@ -2067,13 +2067,22 @@ init() {
 }
 
 test_create_root $D_MOD "2" "test" "root"
+<<<<<<< HEAD
 
+=======
+startA=`date +%s.%N`
+test_create_file_empty
+>>>>>>> 9c42c1e09f5b1af5805ae81fb5b08493e915463e
 test_create_file_nonempty
 test_create_file_toolong
 test_create_already_exist
 
 test_mkdir_depth_1
 test_mkdir_depth_n
+endA=`date +%s.%N`
+runtimeA=$( echo "$endA - $startA" | bc -l )
+./btfs defrag test
+startB=`date +%s.%N`
 # ./btfs defrag test
 test_mkdir_toolong
 
@@ -2094,7 +2103,10 @@ test_rmdir_nonempty
 
 test_rm_in_subdir
 test_rm_subdir
-
+endB=`date +%s.%N`
+runtimeB=$( echo "$endB - $startB" | bc -l )
+./btfs defrag test
+startC=`date +%s.%N`
 # # # # # # test_move_file_simple
 # # # # # # test_move_file_noreplace
 # # # # # # test_move_file_overwrite
@@ -2108,4 +2120,8 @@ test_advanced_sequence_1
 test_advanced_sequence_2
 test_advanced_sequence_3
 test_advanced_sequence_4
+endC=`date +%s`
+runtimeC=$( echo "$endC - $startC" | bc -l )
+runtime=$( echo "$runtimeA + $runtimeB + $runtimeC" | bc -l )
+echo "final time: $runtime"
 

@@ -110,50 +110,64 @@ static int write_ifree_blocks(int fd, struct superblock *sb) {
 
 static int write_bfree_blocks(int fd, struct superblock *sb)
 {
-    uint32_t bits_used = le32toh(sb->info.s_imap_blocks) + le32toh(sb->info.s_bmap_blocks) + le32toh(sb->info.s_inode_blocks) +  2;
-    uint32_t used_lines = bits_used / 64; // not-free bits are set per uint64 integer
-    uint32_t used_lines_rem = bits_used % 64; // if not all 64 bits all free, this is are the first n not free bits.
+    uint32_t bits_used = le32toh(sb->info.s_imap_blocks) + le32toh(sb->info.s_bmap_blocks) + le32toh(sb->info.s_inode_blocks) + 2;
+    uint32_t blocks_used = bits_used / BASICFTFS_BLOCKSIZE;
+    uint32_t used_lines_last = (bits_used % BASICFTFS_BLOCKSIZE) / 64;
+    // uint32_t used_lines = bits_used / 64; // not-free bits are set per uint64 integer
+    uint32_t used_lines_rem_last = (bits_used % BASICFTFS_BLOCKSIZE) % 64; // if not all 64 bits all free, this is are the first n not free bits.
+    int ret = 0;
 
-    char *block = calloc(1, BASICFTFS_BLOCKSIZE);
-    if (!block) {
-        return -1;
-    }
+    char block[BASICFTFS_BLOCKSIZE];
+    memset(block, 0, BASICFTFS_BLOCKSIZE);
 
     uint64_t *bfree = (uint64_t *) block;
 
     uint32_t i = 0;
-    uint64_t line = 0xffffffffffffffff;
 
-    for (; i < used_lines; i++) {
-        bfree[i] = htole64(line);
-        bits_used -= 64;
-    }
+    for (i = 0; i < blocks_used; i++) {
+        if (blocks_used - 1 == i) {
+            memset(bfree, 0, BASICFTFS_BLOCKSIZE);
+            uint32_t i = 0;
+            uint64_t line = 0xffffffffffffffff;
 
-    uint64_t test = 0;
+            for (i = 0; i < used_lines_last; i++) {
+                bfree[i] = htole64(line);
+                bits_used -= 64;
+            }
 
-    for (i = 0; i < used_lines_rem; i++) {
-        my_set_bit(&test, i, 1);
-    }
+            uint64_t test = 0;
 
-    bfree[used_lines] = htole64(test);
+            for (i = 0; i < used_lines_rem_last; i++) {
+                my_set_bit(&test, i, 1);
+            }
 
-    int ret = write(fd, bfree, BASICFTFS_BLOCKSIZE);
-    if (ret != BASICFTFS_BLOCKSIZE) {
-        free(block);
-        return -1;
-    }
+            bfree[used_lines_last] = htole64(test);
 
-    memset(bfree, 0, BASICFTFS_BLOCKSIZE);
-    for (i = 1; i < le32toh(sb->info.s_bmap_blocks); i++) {
-        ret = write(fd, bfree, BASICFTFS_BLOCKSIZE);
-        if (ret != BASICFTFS_BLOCKSIZE) {
-            free(block);
-            return -1;
+            ret = write(fd, bfree, BASICFTFS_BLOCKSIZE);
+            if (ret != BASICFTFS_BLOCKSIZE) {
+                return -1;
+            }
+
+        } else {
+            memset(block, 0xFF, BASICFTFS_BLOCKSIZE);
+            ret = write(fd, block, BASICFTFS_BLOCKSIZE);
+
+            if (ret != BASICFTFS_BLOCKSIZE) {
+                return -1;
+            }
         }
     }
 
+    memset(bfree, 0, BASICFTFS_BLOCKSIZE);
+    for (i = blocks_used; i < le32toh(sb->info.s_bmap_blocks); i++) {
+        ret = write(fd, bfree, BASICFTFS_BLOCKSIZE);
+        if (ret != BASICFTFS_BLOCKSIZE) {
+            return -1;
+        }
+        printf("succesfully written block: %d\n", i);
+    }
+
     printf("Block bitmap has %d blocks\n", i);
-    free(block);
     return 0;
 }
 

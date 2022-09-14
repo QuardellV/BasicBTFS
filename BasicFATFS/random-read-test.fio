@@ -1,0 +1,9 @@
+[global]
+bs=4k
+ioengine=libaio
+iodepth=32
+direct=1
+invalidate=1
+runtime=60
+size=1g
+rw=randread
