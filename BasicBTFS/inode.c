@@ -73,19 +73,19 @@ static struct dentry *basicbtfs_lookup(struct inode *dir, struct dentry *dentry,
     ret =  basicbtfs_search_entry(dir, dentry);
 
     nr_of_inode_operations = increase_counter(nr_of_inode_operations, BASICBTFS_DEFRAG_PERIOD);
-    if (should_defrag && defrag_now) {
-        printk("defrag after lookup\n");
-        char * envp[] = { "HOME=/", NULL };
-        char * argv[] = { "./home/quardell/Documents/git/SimpleBtreeFS/BasicBTFS/btfs",  "defrag", "test", NULL};
+    // if (should_defrag && defrag_now) {
+    //     printk("defrag after lookup\n");
+    //     char * envp[] = { "HOME=/", NULL };
+    //     char * argv[] = { "./home/quardell/Documents/git/SimpleBtreeFS/BasicBTFS/btfs",  "defrag", "test", NULL};
 
-        ret = call_usermodehelper(argv[0], argv, envp, UMH_WAIT_EXEC);
-        if (ret < 0) {
-            printk("something went wrong\n");
-            return ret;
-        }
-        printk("defragged\n");
-        defrag_now = false;
-    }
+    //     ret = call_usermodehelper(argv[0], argv, envp, UMH_WAIT_EXEC);
+    //     if (ret < 0) {
+    //         printk("something went wrong\n");
+    //         return ret;
+    //     }
+    //     printk("defragged\n");
+    //     defrag_now = false;
+    // }
 
     return ret;
 }

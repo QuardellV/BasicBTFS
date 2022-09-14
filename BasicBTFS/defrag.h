@@ -384,15 +384,31 @@ static inline int basicbtfs_defrag_move_file_block(struct super_block *sb, struc
     struct basicbtfs_sb_info *sbi = BASICBTFS_SB(sb);
     struct inode *inode;
     struct basicbtfs_inode_info *inode_info = NULL;
-    uint32_t ino = 0, cluster_index, tmp_bno;
-    struct buffer_head *bh = NULL, *bh_new, *bh_old2;
+    uint32_t ino = 0, cluster_index, tmp_bno, fblock_info_bno, fblock_info_index;
+    struct buffer_head *bh = NULL, *bh_new, *bh_old2, *bh_file_info;
     struct basicbtfs_cluster_table *cluster_list;
+    struct basicbtfs_fileblock_info *file_info;
     struct basicbtfs_disk_block *disk_block, *disk_block_new, *disk_block_old;
     int i = 0;
 
+    fblock_info_bno = BASICBTFS_GET_FILEBLOCK(old_bno, sbi->s_imap_blocks, sbi->s_bmap_blocks, sbi->s_inode_blocks);
+    fblock_info_index = BASICBTFS_GET_FILEBLOCK_IDX(old_bno);
 
-    ino = sbi->s_fileblock_map[old_bno].ino;
-    cluster_index = sbi->s_fileblock_map[old_bno].cluster_index;
+    bh_file_info = sb_bread(sb, fblock_info_bno);
+
+    if (!bh_file_info) return -EIO;
+
+    file_info = (struct basicbtfs_fileblock_info *) bh_file_info->b_data;
+    file_info += fblock_info_index;
+
+    cluster_index = file_info->cluster_index;
+    ino = file_info->ino;
+
+    brelse(bh_file_info);
+
+
+    // ino = sbi->s_fileblock_map[old_bno].ino;
+    // cluster_index = sbi->s_fileblock_map[old_bno].cluster_index;
     if (ino == 0) {
         printk("something went wrong\n");
         return 0;
@@ -455,10 +471,13 @@ static inline int basicbtfs_defrag_move_file_block(struct super_block *sb, struc
     cluster_list->table[cluster_index].start_bno = tmp_bno;
 
     for (i = 0; i < BASICBTFS_MAX_BLOCKS_PER_CLUSTER; i++) {
-        sbi->s_fileblock_map[old_bno + i].ino = 0;
-        sbi->s_fileblock_map[old_bno + i].cluster_index = 0;
-        sbi->s_fileblock_map[tmp_bno + i].ino = ino;
-        sbi->s_fileblock_map[tmp_bno + i].cluster_index = cluster_index;
+
+        basicbtfs_update_file_info(sb, old_bno + i, 0, 0);
+        basicbtfs_update_file_info(sb, tmp_bno + i, ino, cluster_index);
+        // sbi->s_fileblock_map[old_bno + i].ino = 0;
+        // sbi->s_fileblock_map[old_bno + i].cluster_index = 0;
+        // sbi->s_fileblock_map[tmp_bno + i].ino = ino;
+        // sbi->s_fileblock_map[tmp_bno + i].cluster_index = cluster_index;
     }
 
     printk("new tmp bno: %d\n", tmp_bno);
@@ -963,10 +982,13 @@ static inline int basicbtfs_defrag_file_table_block(struct super_block *sb, stru
                 put_blocks(sbi, disk_block_offset + block_index, 1);
                 mark_buffer_dirty(bh_new_block);
 
-                sbi->s_fileblock_map[new_bno].ino = inode->i_ino;
-                sbi->s_fileblock_map[new_bno].cluster_index = cluster_index;
-                sbi->s_fileblock_map[disk_block_offset + block_index].ino = 0;
-                sbi->s_fileblock_map[disk_block_offset + block_index].cluster_index = 0;
+
+                basicbtfs_update_file_info(sb, new_bno, inode->i_ino, cluster_index);
+                basicbtfs_update_file_info(sb, disk_block_offset + block_index, 0, 0);
+                // sbi->s_fileblock_map[new_bno].ino = inode->i_ino;
+                // sbi->s_fileblock_map[new_bno].cluster_index = cluster_index;
+                // sbi->s_fileblock_map[disk_block_offset + block_index].ino = 0;
+                // sbi->s_fileblock_map[disk_block_offset + block_index].cluster_index = 0;
 
                 // mark_buffer_dirty(bh_old_block);
                 brelse(bh_new_block);
@@ -1030,10 +1052,12 @@ static inline int basicbtfs_defrag_file_table_block(struct super_block *sb, stru
 
                 if (ret < 0) return ret;
                 put_blocks(sbi, cluster_list->table[cluster_index].start_bno + block_index, 1);
-                sbi->s_fileblock_map[*offset].ino = inode->i_ino;
-                sbi->s_fileblock_map[*offset].cluster_index = cluster_index;
-                sbi->s_fileblock_map[disk_block_offset + block_index].ino = 0;
-                sbi->s_fileblock_map[disk_block_offset + block_index].cluster_index = 0;
+                basicbtfs_update_file_info(sb, *offset, inode->i_ino, cluster_index);
+                basicbtfs_update_file_info(sb, disk_block_offset + block_index, 0, 0);
+                // sbi->s_fileblock_map[*offset].ino = inode->i_ino;
+                // sbi->s_fileblock_map[*offset].cluster_index = cluster_index;
+                // sbi->s_fileblock_map[disk_block_offset + block_index].ino = 0;
+                // sbi->s_fileblock_map[disk_block_offset + block_index].cluster_index = 0;
                 mark_buffer_dirty(bh_swap_block);
                 mark_buffer_dirty(bh_new_block);
                 brelse(bh_swap_block);

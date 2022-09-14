@@ -88,6 +88,28 @@ static inline int flush_bitmap(struct super_block *sb, unsigned long *bitmap, ui
     return 0;
 }
 
+static inline int basicbtfs_update_file_info(struct super_block *sb, uint32_t bno, uint32_t new_ino, uint32_t new_cluster_index) {
+    struct basicbtfs_sb_info *sbi = BASICBTFS_SB(sb);
+    uint32_t fblock_info_bno = BASICBTFS_GET_FILEBLOCK(bno, sbi->s_imap_blocks, sbi->s_bmap_blocks, sbi->s_inode_blocks);
+    uint32_t fblock_info_index = BASICBTFS_GET_FILEBLOCK_IDX(bno);
+    struct basicbtfs_fileblock_info *file_info;
+    struct buffer_head *bh = NULL;
+
+    bh = sb_bread(sb, fblock_info_bno);
+
+    if (!bh) return -EIO;
+
+    file_info = (struct basicbtfs_fileblock_info *) bh->b_data;
+    file_info += fblock_info_index;
+
+    file_info->cluster_index = new_cluster_index;
+    file_info->ino = new_ino;
+
+    mark_buffer_dirty(bh);
+    brelse(bh);
+    return 0;
+}
+
 static inline int flush_filemap(struct super_block *sb, struct basicbtfs_fileblock_info *filemap, uint32_t nr_blocks, uint32_t block_offset, int wait) {
     struct buffer_head *bh = NULL;
     int i = 0;

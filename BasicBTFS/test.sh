@@ -3,7 +3,7 @@
 
 F_MOD="-rw-r--r--"
 D_MOD="drwxr-xr-x"
-ROOT_DIR="test"
+ROOT_DIR="test/mnt"
 
 BLUE_TXT="$(tput setaf 6)"
 WHITE_TXT="$(tput setaf 7)"
@@ -56,7 +56,7 @@ test_create_file() {
     sudo sh -c "$op"
 
     # check whether data of file is correct
-    local result=$(sudo sh -c 'cat test/'$abs_file_name'')
+    local result=$(sudo sh -c 'cat '$ROOT_DIR'/'$abs_file_name'')
     check_output "$message" "$result" "CREATE FILE $rel_file_name DATA"
     ret=$?
     if [ "$ret" == 0 ]
@@ -65,7 +65,7 @@ test_create_file() {
     fi
 
     # Check whether file metadata is correct
-    local result2=$(sudo sh -c "ls test -lR | grep -e '$mode' | grep -e '$nlink'| grep -e '$rel_file_name' | wc -l")
+    local result2=$(sudo sh -c "ls '$ROOT_DIR' -lR | grep -e '$mode' | grep -e '$nlink'| grep -e '$rel_file_name' | wc -l")
     check_filetype $expected $result2 "CREATE FILE $rel_file_name METADATA"
     ret=$?
     if [ "$ret" == 0 ]
@@ -94,7 +94,7 @@ test_mkdir() {
     sudo sh -c "$op"
 
     # Check whether file metadata is correct
-    local result2=$(sudo sh -c "ls test -lR | grep -e '$mode' | grep -e '$filename' | wc -l")
+    local result2=$(sudo sh -c "ls '$ROOT_DIR' -lR | grep -e '$mode' | grep -e '$filename' | wc -l")
     check_filetype $expected $result2 "MKDIR $filename"
     ret=$?
     if [ "$ret" == 0 ]
@@ -121,7 +121,7 @@ test_write_file() {
     local test_passed=0
 
     # check whether data of file is correct
-    local result=$(sudo sh -c 'cat test/'$file_name'')
+    local result=$(sudo sh -c 'cat '$ROOT_DIR'/'$file_name'')
 
     check_output "$old_msg" "$result" "WRITE FILE $file_name BEFORE"
     ret=$?
@@ -133,7 +133,7 @@ test_write_file() {
     sudo sh -c "$op"
 
     # check whether data of file is correct
-    local result=$(sudo sh -c 'cat test/'$file_name'')
+    local result=$(sudo sh -c 'cat '$ROOT_DIR'/'$file_name'')
 
     check_output "$new_msg" "$result" "WRITE FILE $file_name AFTER"
     ret=$?
@@ -160,7 +160,7 @@ test_rmdir() {
     local test_passed=0
     
     # Check whether directory still exists
-    local result2=$(sudo sh -c "ls test -lR | grep -e '$mode' | grep -e '$filename' | wc -l")
+    local result2=$(sudo sh -c "ls '$ROOT_DIR' -lR | grep -e '$mode' | grep -e '$filename' | wc -l")
     check_filetype $expected $result2 "RMDIR $filename BEFORE"
     ret=$?
     if [ "$ret" == 0 ]
@@ -171,7 +171,7 @@ test_rmdir() {
     sudo sh -c "$op"
 
     # Check whether directory no longer exists
-    local result2=$(sudo sh -c "ls test -lR | grep -e '$mode' | grep -e '$filename' | wc -l")
+    local result2=$(sudo sh -c "ls '$ROOT_DIR' -lR | grep -e '$mode' | grep -e '$filename' | wc -l")
     check_filetype 0 $result2 "RMDIR $filename AFTER"
     ret=$?
     if [ "$ret" == 0 ]
@@ -197,7 +197,7 @@ test_rmfile() {
     local test_passed=0
 
     # Check whether file still exists
-    local result2=$(sudo sh -c "ls test -lR | grep -e '$mode' | grep -e '$nlink'| grep -e '$filename' | wc -l")
+    local result2=$(sudo sh -c "ls '$ROOT_DIR' -lR | grep -e '$mode' | grep -e '$nlink'| grep -e '$filename' | wc -l")
     check_filetype $expected $result2 "RM FILE $filename BEFORE"
     ret=$?
     if [ "$ret" == 0 ]
@@ -209,7 +209,7 @@ test_rmfile() {
 
     # Check whether file has been deleted
 
-    local result2=$(sudo sh -c "ls test -lR | grep -e '$mode' | grep -e '$nlink'| grep -e '$filename' | wc -l")
+    local result2=$(sudo sh -c "ls '$ROOT_DIR' -lR | grep -e '$mode' | grep -e '$nlink'| grep -e '$filename' | wc -l")
     check_filetype "0" $result2 "RM FILE $filename AFTER"
     ret=$?
     if [ "$ret" == 0 ]
@@ -242,7 +242,7 @@ test_mvfile() {
 
     # Check whether file still exists in old entry
     echo $old_filename
-    local result2=$(sudo sh -c "ls test -lR | grep -e '$mode' | grep -e '$abs_old_name' | wc -l")
+    local result2=$(sudo sh -c "ls '$ROOT_DIR' -lR | grep -e '$mode' | grep -e '$abs_old_name' | wc -l")
     check_filetype $expected $result2 "MV FILE $old_filename BEFORE"
     ret=$?
     if [ "$ret" == 0 ]
@@ -254,7 +254,7 @@ test_mvfile() {
 
     # Check whether file has been created if necessary
 
-    local result2=$(sudo sh -c "ls test -lR | grep -e '$mode' | grep -e '$abs_new_name' | wc -l")
+    local result2=$(sudo sh -c "ls '$ROOT_DIR' -lR | grep -e '$mode' | grep -e '$abs_new_name' | wc -l")
     check_filetype $new_expected $result2 "MV FILE $new_filename AFTER IN NEW ENTRY"
     ret=$?
     if [ "$ret" == 0 ]
@@ -264,7 +264,7 @@ test_mvfile() {
 
     # check whether file has been deleted if necessary in old entry
 
-    local result2=$(sudo sh -c "ls test -lR | grep -e '$mode' | grep -e '$abs_old_name' | wc -l")
+    local result2=$(sudo sh -c "ls '$ROOT_DIR' -lR | grep -e '$mode' | grep -e '$abs_old_name' | wc -l")
     check_filetype $old_expected $result2 "MV FILE $old_filename AFTER IN OLD ENTRY"
     ret=$?
     if [ "$ret" == 0 ]
@@ -318,7 +318,7 @@ test_mkdir_depth_1() {
 
     echo "$(tput setaf 6)MKDIR DEPTH_1 TESTS: "$test_count"$(tput setaf 7)"
 
-    test_mkdir 'mkdir test/'$dirname'' $D_MOD "2" $dirname "1" "1"
+    test_mkdir 'mkdir '$ROOT_DIR'/'$dirname'' $D_MOD "2" $dirname "1" "1"
     ret=$?
 
     if [ "$ret" == 0 ]
@@ -336,7 +336,7 @@ test_mkdir_depth_n() {
 
     echo "$(tput setaf 6)MKDIR DEPTH N TESTS: "$test_count"$(tput setaf 7)"
 
-    test_mkdir 'mkdir test/'$dirname'' $D_MOD "2" $dirname "1" "1"
+    test_mkdir 'mkdir '$ROOT_DIR'/'$dirname'' $D_MOD "2" $dirname "1" "1"
     ret=$?
 
     if [ "$ret" == 0 ]
@@ -352,7 +352,7 @@ test_mkdir_depth_n() {
 
 
 
-        test_mkdir 'mkdir test/'$dirname'' $D_MOD "3" $tmp_dirname "1" $i
+        test_mkdir 'mkdir '$ROOT_DIR'/'$dirname'' $D_MOD "3" $tmp_dirname "1" $i
         ret=$?
 
         if [ "$ret" == 0 ]
@@ -371,7 +371,7 @@ test_mkdir_toolong() {
 
     echo "$(tput setaf 6)MKDIR TOOLONGNAME TESTS: "$test_count"$(tput setaf 7)"
 
-    test_mkdir 'mkdir test/'$dirname'' $D_MOD "2" $dirname "0" "1"
+    test_mkdir 'mkdir '$ROOT_DIR'/'$dirname'' $D_MOD "2" $dirname "0" "1"
     ret=$?
 
     if [ "$ret" == 0 ]
@@ -389,7 +389,7 @@ test_create_file_empty() {
 
     echo "$BLUE_TXT CREATE FILE EMPTY TESTS: "$test_count" $WHITE_TXT"
 
-    test_create_file 'touch test/'$filename'' $F_MOD "1" $filename "" "FILE EMPTY" $filename "1"
+    test_create_file 'touch '$ROOT_DIR'/'$filename'' $F_MOD "1" $filename "" "FILE EMPTY" $filename "1"
     ret=$?
 
     if [ "$ret" == 0 ]
@@ -408,7 +408,7 @@ test_create_file_nonempty() {
 
     echo "$(tput setaf 6)CREATE FILE NONEMPTY TESTS: "$test_count"$(tput setaf 7)"
 
-    test_create_file 'echo "'$msg'" > test/'$filename'' $F_MOD "1" $filename $msg "FILE NONEMPTY" $filename "1"
+    test_create_file 'echo "'$msg'" > '$ROOT_DIR'/'$filename'' $F_MOD "1" $filename $msg "FILE NONEMPTY" $filename "1"
     ret=$?
 
     if [ "$ret" == 0 ]
@@ -428,7 +428,7 @@ test_create_file_toolong() {
 
     echo "$(tput setaf 6)CREATE FILE TOOLONG TESTS: "$test_count"$(tput setaf 7)"
 
-    test_create_file 'touch test/'$filename1'' $F_MOD "1" $filename1 "" "FILE EMPTY" $filename1 "0"
+    test_create_file 'touch '$ROOT_DIR'/'$filename1'' $F_MOD "1" $filename1 "" "FILE EMPTY" $filename1 "0"
     ret=$?
 
     if [ "$ret" == 0 ]
@@ -447,7 +447,7 @@ test_create_already_exist() {
 
     echo "$(tput setaf 6)CREATE FILE ALREADYEXISTS TESTS: "$test_count"$(tput setaf 7)"
 
-    test_create_file 'touch test/'$filename'' $F_MOD "1" $filename "" "FILE EMPTY" $filename "1"
+    test_create_file 'touch '$ROOT_DIR'/'$filename'' $F_MOD "1" $filename "" "FILE EMPTY" $filename "1"
     ret=$?
 
     if [ "$ret" == 0 ]
@@ -455,7 +455,7 @@ test_create_already_exist() {
         ((test_passed++))
     fi
 
-    test_create_file 'touch test/'$filename'' $F_MOD "1" $filename "" "FILE EMPTY" $filename "1"
+    test_create_file 'touch '$ROOT_DIR'/'$filename'' $F_MOD "1" $filename "" "FILE EMPTY" $filename "1"
     ret=$?
 
     if [ "$ret" == 0 ]
@@ -477,7 +477,7 @@ test_create_file_subdir_1() {
 
     echo "$(tput setaf 6)CREATE FILE SUBDIR 1 TESTS: "$test_count"$(tput setaf 7)"
 
-    test_mkdir 'mkdir test/'$dirname'' $D_MOD "2" $dirname "1" "1"
+    test_mkdir 'mkdir '$ROOT_DIR'/'$dirname'' $D_MOD "2" $dirname "1" "1"
     ret=$?
 
     if [ "$ret" == 0 ]
@@ -485,7 +485,7 @@ test_create_file_subdir_1() {
         ((test_passed++))
     fi
 
-    test_create_file 'touch test/'$dirname'/'$filename1'' $F_MOD "1" "$dirname/$filename1" "" "FILE EMPTY" "$filename1" "1"
+    test_create_file 'touch '$ROOT_DIR'/'$dirname'/'$filename1'' $F_MOD "1" "$dirname/$filename1" "" "FILE EMPTY" "$filename1" "1"
     ret=$?
 
     if [ "$ret" == 0 ]
@@ -496,7 +496,7 @@ test_create_file_subdir_1() {
     local filename=$(tr -dc A-Za-z </dev/urandom | head -c 16)
     local msg=$(tr -dc A-Za-z </dev/urandom | head -c 16)
 
-    test_create_file 'echo "'$msg'" > test/'$dirname'/'$filename2'' $F_MOD "1" "$dirname/$filename2" $msg "FILE NONEMPTY" "$filename2" "1"
+    test_create_file 'echo "'$msg'" > '$ROOT_DIR'/'$dirname'/'$filename2'' $F_MOD "1" "$dirname/$filename2" $msg "FILE NONEMPTY" "$filename2" "1"
     ret=$?
 
     if [ "$ret" == 0 ]
@@ -516,7 +516,7 @@ test_create_nfiles_subdir_1() {
 
     echo "$(tput setaf 6)CREATE FILES SUBDIR DEPTH 1 TESTS: "$test_count"$(tput setaf 7)"
 
-    test_mkdir 'mkdir test/'$dirname'' $D_MOD "2" $dirname "1" "1"
+    test_mkdir 'mkdir '$ROOT_DIR'/'$dirname'' $D_MOD "2" $dirname "1" "1"
     ret=$?
 
     if [ "$ret" == 0 ]
@@ -529,7 +529,7 @@ test_create_nfiles_subdir_1() {
         local filename1=$(tr -dc A-Za-z </dev/urandom | head -c 16)
         local filename2=$(tr -dc A-Za-z </dev/urandom | head -c 16)
         local msg=$(tr -dc A-Za-z </dev/urandom | head -c 16)
-        test_create_file 'touch test/'$dirname'/'$filename1'' $F_MOD "1" "$dirname/$filename1" "" "FILE EMPTY" "$filename1" "1"
+        test_create_file 'touch '$ROOT_DIR'/'$dirname'/'$filename1'' $F_MOD "1" "$dirname/$filename1" "" "FILE EMPTY" "$filename1" "1"
         ret=$?
 
         if [ "$ret" == 0 ]
@@ -537,7 +537,7 @@ test_create_nfiles_subdir_1() {
             ((test_passed++))
         fi
 
-        test_create_file 'echo "'$msg'" > test/'$dirname'/'$filename2'' $F_MOD "1" "$dirname/$filename2" $msg "FILE NONEMPTY" "$filename2" "1"
+        test_create_file 'echo "'$msg'" > '$ROOT_DIR'/'$dirname'/'$filename2'' $F_MOD "1" "$dirname/$filename2" $msg "FILE NONEMPTY" "$filename2" "1"
         ret=$?
 
         if [ "$ret" == 0 ]
@@ -556,7 +556,7 @@ test_create_file_subdir_n() {
 
     echo "$(tput setaf 6)CREATE FILES SUBDIR DEPTH N TESTS: "$random_number"$(tput setaf 7)"
 
-    test_mkdir 'mkdir test/'$dirname'' $D_MOD "2" $dirname "1" "1"
+    test_mkdir 'mkdir '$ROOT_DIR'/'$dirname'' $D_MOD "2" $dirname "1" "1"
     ret=$?
 
     if [ "$ret" == 0 ]
@@ -573,7 +573,7 @@ test_create_file_subdir_n() {
         dirname+="/"
         dirname+=$tmp_dirname
 
-        test_mkdir 'mkdir test/'$dirname'' $D_MOD "3" $tmp_dirname "1" $i
+        test_mkdir 'mkdir '$ROOT_DIR'/'$dirname'' $D_MOD "3" $tmp_dirname "1" $i
         ret=$?
 
         if [ "$ret" == 0 ]
@@ -581,7 +581,7 @@ test_create_file_subdir_n() {
             ((test_passed++))
         fi
 
-        test_create_file 'touch test/'$dirname'/'$filename1'' $F_MOD "1" "$dirname/$filename1" "" "FILE EMPTY" "$filename1" "1"
+        test_create_file 'touch '$ROOT_DIR'/'$dirname'/'$filename1'' $F_MOD "1" "$dirname/$filename1" "" "FILE EMPTY" "$filename1" "1"
         ret=$?
 
         if [ "$ret" == 0 ]
@@ -592,7 +592,7 @@ test_create_file_subdir_n() {
         local filename=$(tr -dc A-Za-z </dev/urandom | head -c 16)
         local msg=$(tr -dc A-Za-z </dev/urandom | head -c 16)
 
-        test_create_file 'echo "'$msg'" > test/'$dirname'/'$filename2'' $F_MOD "1" "$dirname/$filename2" $msg "FILE NONEMPTY" "$filename2" "1"
+        test_create_file 'echo "'$msg'" > '$ROOT_DIR'/'$dirname'/'$filename2'' $F_MOD "1" "$dirname/$filename2" $msg "FILE NONEMPTY" "$filename2" "1"
         ret=$?
 
         if [ "$ret" == 0 ]
@@ -614,7 +614,7 @@ test_write_small() {
 
     echo "$(tput setaf 6)WRITESMALL TESTS: "$test_count"$(tput setaf 7)"
 
-    test_create_file 'touch test/'$filename1'' $F_MOD "1" $filename1 "" "FILE EMPTY" $filename1 "1"
+    test_create_file 'touch '$ROOT_DIR'/'$filename1'' $F_MOD "1" $filename1 "" "FILE EMPTY" $filename1 "1"
     ret=$?
 
     if [ "$ret" == 0 ]
@@ -622,7 +622,7 @@ test_write_small() {
         ((test_passed++))
     fi
 
-    test_create_file 'echo "'$msg'" > test/'$filename2'' $F_MOD "1" $filename2 $msg "FILE NONEMPTY" $filename2 "1"
+    test_create_file 'echo "'$msg'" > '$ROOT_DIR'/'$filename2'' $F_MOD "1" $filename2 $msg "FILE NONEMPTY" $filename2 "1"
     ret=$?
 
     if [ "$ret" == 0 ]
@@ -630,7 +630,7 @@ test_write_small() {
         ((test_passed++))
     fi
 
-    test_write_file 'echo "'$msg2'" >> test/'$filename1'' $F_MOD "1" $filename1 "" $msg2
+    test_write_file 'echo "'$msg2'" >> '$ROOT_DIR'/'$filename1'' $F_MOD "1" $filename1 "" $msg2
     ret=$?
 
     if [ "$ret" == 0 ]
@@ -638,7 +638,7 @@ test_write_small() {
         ((test_passed++))
     fi
     printf -v exp_msg "%s\n%s" "$msg $msg2"
-    test_write_file 'echo "'$msg2'" >> test/'$filename2'' $F_MOD "1" $filename2 $msg "$exp_msg"
+    test_write_file 'echo "'$msg2'" >> '$ROOT_DIR'/'$filename2'' $F_MOD "1" $filename2 $msg "$exp_msg"
     ret=$?
 
     if [ "$ret" == 0 ]
@@ -657,7 +657,7 @@ test_write_advanced() {
 
     echo "$(tput setaf 6)WRITE ADVANCED TESTS: "$random_number"$(tput setaf 7)"
 
-    test_mkdir 'mkdir test/'$dirname'' $D_MOD "2" $dirname "1" "1"
+    test_mkdir 'mkdir '$ROOT_DIR'/'$dirname'' $D_MOD "2" $dirname "1" "1"
     ret=$?
 
     if [ "$ret" == 0 ]
@@ -676,7 +676,7 @@ test_write_advanced() {
         dirname+="/"
         dirname+=$tmp_dirname
 
-        test_mkdir 'mkdir test/'$dirname'' $D_MOD "3" $tmp_dirname "1" $i
+        test_mkdir 'mkdir '$ROOT_DIR'/'$dirname'' $D_MOD "3" $tmp_dirname "1" $i
         ret=$?
 
         if [ "$ret" == 0 ]
@@ -691,7 +691,7 @@ test_write_advanced() {
             local filename1=$(tr -dc A-Za-z </dev/urandom | head -c 16)
             local msg=$(tr -dc A-Za-z </dev/urandom | head -c 16)
 
-            test_create_file 'touch test/'$dirname'/'$filename1'' $F_MOD "1" "$dirname/$filename1" "" "FILE EMPTY" "$filename1" "1"
+            test_create_file 'touch '$ROOT_DIR'/'$dirname'/'$filename1'' $F_MOD "1" "$dirname/$filename1" "" "FILE EMPTY" "$filename1" "1"
             ret=$?
 
             if [ "$ret" == 0 ]
@@ -699,7 +699,7 @@ test_write_advanced() {
                 ((test_passed++))
             fi
 
-            test_write_file 'echo "'$msg'" >> test/'$dirname'/'$filename1'' $F_MOD "1" $dirname'/'$filename1 "" $msg
+            test_write_file 'echo "'$msg'" >> '$ROOT_DIR'/'$dirname'/'$filename1'' $F_MOD "1" $dirname'/'$filename1 "" $msg
             ret=$?
 
             if [ "$ret" == 0 ]
@@ -720,7 +720,7 @@ test_rmdir_empty() {
 
     echo "$(tput setaf 6)RMDIR EMPTY TESTS: "$test_count"$(tput setaf 7)"
 
-    test_mkdir 'mkdir test/'$dirname'' $D_MOD "2" $dirname "1" "1"
+    test_mkdir 'mkdir '$ROOT_DIR'/'$dirname'' $D_MOD "2" $dirname "1" "1"
     ret=$?
 
     if [ "$ret" == 0 ]
@@ -730,7 +730,7 @@ test_rmdir_empty() {
 
 
 
-    test_rmdir 'rm -rf test/'$dirname'' $D_MOD "2" $dirname "1"
+    test_rmdir 'rm -rf '$ROOT_DIR'/'$dirname'' $D_MOD "2" $dirname "1"
     ret=$?
 
     if [ "$ret" == 0 ]
@@ -738,7 +738,7 @@ test_rmdir_empty() {
         ((test_passed++))
     fi
 
-    test_rmdir 'rm -rf test/'$dirname'' $D_MOD "2" $dirname "0"
+    test_rmdir 'rm -rf '$ROOT_DIR'/'$dirname'' $D_MOD "2" $dirname "0"
     ret=$?
 
     if [ "$ret" == 0 ]
@@ -759,7 +759,7 @@ test_rmdir_nonempty() {
 
     echo "$(tput setaf 6)RMDIR NONEMPTY TESTS: "$test_count"$(tput setaf 7)"
 
-    test_mkdir 'mkdir test/'$dirname'' $D_MOD "2" $dirname "1" "1"
+    test_mkdir 'mkdir '$ROOT_DIR'/'$dirname'' $D_MOD "2" $dirname "1" "1"
     ret=$?
 
     if [ "$ret" == 0 ]
@@ -767,7 +767,7 @@ test_rmdir_nonempty() {
         ((test_passed++))
     fi
 
-    test_create_file 'touch test/'$dirname'/'$filename1'' $F_MOD "1" "$dirname/$filename1" "" "FILE EMPTY" "$filename1" "1"
+    test_create_file 'touch '$ROOT_DIR'/'$dirname'/'$filename1'' $F_MOD "1" "$dirname/$filename1" "" "FILE EMPTY" "$filename1" "1"
     ret=$?
 
     if [ "$ret" == 0 ]
@@ -775,7 +775,7 @@ test_rmdir_nonempty() {
         ((test_passed++))
     fi
 
-    test_create_file 'echo "'$msg'" > test/'$dirname'/'$filename2'' $F_MOD "1" "$dirname/$filename2" $msg "FILE NONEMPTY" "$filename2" "1"
+    test_create_file 'echo "'$msg'" > '$ROOT_DIR'/'$dirname'/'$filename2'' $F_MOD "1" "$dirname/$filename2" $msg "FILE NONEMPTY" "$filename2" "1"
     ret=$?
 
     if [ "$ret" == 0 ]
@@ -783,7 +783,7 @@ test_rmdir_nonempty() {
         ((test_passed++))
     fi
 
-    test_rmdir 'rm -rf test/'$dirname'' $D_MOD "2" $dirname "1"
+    test_rmdir 'rm -rf '$ROOT_DIR'/'$dirname'' $D_MOD "2" $dirname "1"
     ret=$?
 
     if [ "$ret" == 0 ]
@@ -791,7 +791,7 @@ test_rmdir_nonempty() {
         ((test_passed++))
     fi
 
-    test_rmdir 'rm -rf test/'$dirname'' $D_MOD "2" $dirname "0"
+    test_rmdir 'rm -rf '$ROOT_DIR'/'$dirname'' $D_MOD "2" $dirname "0"
     ret=$?
 
     if [ "$ret" == 0 ]
@@ -825,7 +825,7 @@ test_rm_empty() {
 
     echo "$(tput setaf 6)REMOVE FILE EMPTY TESTS: "$test_count"$(tput setaf 7)"
 
-    test_create_file 'touch test/'$filename'' $F_MOD "1" $filename "" "FILE EMPTY" $filename "1"
+    test_create_file 'touch '$ROOT_DIR'/'$filename'' $F_MOD "1" $filename "" "FILE EMPTY" $filename "1"
     ret=$?
 
     if [ "$ret" == 0 ]
@@ -833,7 +833,7 @@ test_rm_empty() {
         ((test_passed++))
     fi
 
-    test_create_file 'touch test/'$filename2'' $F_MOD "1" $filename2 "" "FILE EMPTY" $filename2 "1"
+    test_create_file 'touch '$ROOT_DIR'/'$filename2'' $F_MOD "1" $filename2 "" "FILE EMPTY" $filename2 "1"
     ret=$?
 
     if [ "$ret" == 0 ]
@@ -841,7 +841,7 @@ test_rm_empty() {
         ((test_passed++))
     fi
 
-    test_create_file 'touch test/'$filename3'' $F_MOD "1" $filename3 "" "FILE EMPTY" $filename3 "1"
+    test_create_file 'touch '$ROOT_DIR'/'$filename3'' $F_MOD "1" $filename3 "" "FILE EMPTY" $filename3 "1"
     ret=$?
 
     if [ "$ret" == 0 ]
@@ -849,7 +849,7 @@ test_rm_empty() {
         ((test_passed++))
     fi
 
-    test_rmfile 'rm -rf test/'$filename'' $F_MOD "1" $filename "1"
+    test_rmfile 'rm -rf '$ROOT_DIR'/'$filename'' $F_MOD "1" $filename "1"
     ret=$?
 
     if [ "$ret" == 0 ]
@@ -857,7 +857,7 @@ test_rm_empty() {
         ((test_passed++))
     fi
 
-    test_rmfile 'rm -rf test/'$filename'' $F_MOD "1" $filename "0"
+    test_rmfile 'rm -rf '$ROOT_DIR'/'$filename'' $F_MOD "1" $filename "0"
     ret=$?
 
     if [ "$ret" == 0 ]
@@ -876,7 +876,7 @@ test_rm_small() {
 
     echo "$(tput setaf 6)REMOVE FILE SMALL TESTS: "$test_count"$(tput setaf 7)"
 
-    test_create_file 'echo "'$msg'" > test/'$filename'' $F_MOD "1" $filename $msg "FILE NONEMPTY" $filename "1"
+    test_create_file 'echo "'$msg'" > '$ROOT_DIR'/'$filename'' $F_MOD "1" $filename $msg "FILE NONEMPTY" $filename "1"
     ret=$?
 
     if [ "$ret" == 0 ]
@@ -884,7 +884,7 @@ test_rm_small() {
         ((test_passed++))
     fi
 
-    test_rmfile 'rm -rf test/'$filename'' $F_MOD "1" $filename "1"
+    test_rmfile 'rm -rf '$ROOT_DIR'/'$filename'' $F_MOD "1" $filename "1"
     ret=$?
 
     if [ "$ret" == 0 ]
@@ -892,7 +892,7 @@ test_rm_small() {
         ((test_passed++))
     fi
 
-    test_rmfile 'rm -rf test/'$filename'' $F_MOD "1" $filename "0"
+    test_rmfile 'rm -rf '$ROOT_DIR'/'$filename'' $F_MOD "1" $filename "0"
     ret=$?
 
     if [ "$ret" == 0 ]
@@ -911,7 +911,7 @@ test_rm_large() {
 
     echo "$(tput setaf 6)REMOVE FILE LARGE TESTS: "$test_count"$(tput setaf 7)"
 
-    test_create_file 'echo "'$msg'" > test/'$filename'' $F_MOD "1" $filename $msg "FILE NONEMPTY" $filename "1"
+    test_create_file 'echo "'$msg'" > '$ROOT_DIR'/'$filename'' $F_MOD "1" $filename $msg "FILE NONEMPTY" $filename "1"
     ret=$?
 
     if [ "$ret" == 0 ]
@@ -919,7 +919,7 @@ test_rm_large() {
         ((test_passed++))
     fi
 
-    test_rmfile 'rm -rf test/'$filename'' $F_MOD "1" $filename "1"
+    test_rmfile 'rm -rf '$ROOT_DIR'/'$filename'' $F_MOD "1" $filename "1"
     ret=$?
 
     if [ "$ret" == 0 ]
@@ -927,7 +927,7 @@ test_rm_large() {
         ((test_passed++))
     fi
 
-    test_rmfile 'rm -rf test/'$filename'' $F_MOD "1" $filename "0"
+    test_rmfile 'rm -rf '$ROOT_DIR'/'$filename'' $F_MOD "1" $filename "0"
     ret=$?
 
     if [ "$ret" == 0 ]
@@ -946,7 +946,7 @@ test_rm_in_subdir() {
 
     echo "$(tput setaf 6)REMOVE IN SUBDIR TESTS: "$random_number"$(tput setaf 7)"
 
-    test_mkdir 'mkdir test/'$dirname'' $D_MOD "2" $dirname "1" "1"
+    test_mkdir 'mkdir '$ROOT_DIR'/'$dirname'' $D_MOD "2" $dirname "1" "1"
     ret=$?
 
     if [ "$ret" == 0 ]
@@ -963,7 +963,7 @@ test_rm_in_subdir() {
         dirname+="/"
         dirname+=$tmp_dirname
 
-        test_mkdir 'mkdir test/'$dirname'' $D_MOD "3" $tmp_dirname "1" $i
+        test_mkdir 'mkdir '$ROOT_DIR'/'$dirname'' $D_MOD "3" $tmp_dirname "1" $i
         ret=$?
 
         if [ "$ret" == 0 ]
@@ -971,7 +971,7 @@ test_rm_in_subdir() {
             ((test_passed++))
         fi
 
-        test_create_file 'touch test/'$dirname'/'$filename1'' $F_MOD "1" "$dirname/$filename1" "" "FILE EMPTY" "$filename1" "1"
+        test_create_file 'touch '$ROOT_DIR'/'$dirname'/'$filename1'' $F_MOD "1" "$dirname/$filename1" "" "FILE EMPTY" "$filename1" "1"
         ret=$?
 
         if [ "$ret" == 0 ]
@@ -982,7 +982,7 @@ test_rm_in_subdir() {
         local filename=$(tr -dc A-Za-z </dev/urandom | head -c 16)
         local msg=$(tr -dc A-Za-z </dev/urandom | head -c 16)
 
-        test_create_file 'echo "'$msg'" > test/'$dirname'/'$filename2'' $F_MOD "1" "$dirname/$filename2" $msg "FILE NONEMPTY" "$filename2" "1"
+        test_create_file 'echo "'$msg'" > '$ROOT_DIR'/'$dirname'/'$filename2'' $F_MOD "1" "$dirname/$filename2" $msg "FILE NONEMPTY" "$filename2" "1"
         ret=$?
 
         if [ "$ret" == 0 ]
@@ -990,7 +990,7 @@ test_rm_in_subdir() {
             ((test_passed++))
         fi
 
-        test_rmfile 'rm -rf test/'$dirname'/'$filename1'' $F_MOD "1" $filename1 "1"
+        test_rmfile 'rm -rf '$ROOT_DIR'/'$dirname'/'$filename1'' $F_MOD "1" $filename1 "1"
         ret=$?
 
         if [ "$ret" == 0 ]
@@ -998,7 +998,7 @@ test_rm_in_subdir() {
             ((test_passed++))
         fi
 
-        test_rmfile 'rm -rf test/'$dirname'/'$filename2'' $F_MOD "1" $filename2 "1"
+        test_rmfile 'rm -rf '$ROOT_DIR'/'$dirname'/'$filename2'' $F_MOD "1" $filename2 "1"
         ret=$?
 
         if [ "$ret" == 0 ]
@@ -1019,7 +1019,7 @@ test_rm_subdir() {
 
     echo "$(tput setaf 6)REMOVE SUBDIR TESTS: "$random_number"$(tput setaf 7)"
 
-    test_mkdir 'mkdir test/'$dirname'' $D_MOD "2" $dirname "1" "1"
+    test_mkdir 'mkdir '$ROOT_DIR'/'$dirname'' $D_MOD "2" $dirname "1" "1"
     ret=$?
 
     if [ "$ret" == 0 ]
@@ -1041,7 +1041,7 @@ test_rm_subdir() {
         dirname+="/"
         dirname+=$tmp_dirname
 
-        test_mkdir 'mkdir test/'$dirname'' $D_MOD "3" $tmp_dirname "1" $i
+        test_mkdir 'mkdir '$ROOT_DIR'/'$dirname'' $D_MOD "3" $tmp_dirname "1" $i
         ret=$?
 
         if [ "$ret" == 0 ]
@@ -1049,7 +1049,7 @@ test_rm_subdir() {
             ((test_passed++))
         fi
 
-        test_mkdir 'mkdir test/'$dirname2'' $D_MOD "3" $tmp_dirname2 "1" $i
+        test_mkdir 'mkdir '$ROOT_DIR'/'$dirname2'' $D_MOD "3" $tmp_dirname2 "1" $i
         ret=$?
 
         if [ "$ret" == 0 ]
@@ -1057,7 +1057,7 @@ test_rm_subdir() {
             ((test_passed++))
         fi
 
-        test_create_file 'touch test/'$dirname'/'$filename1'' $F_MOD "1" "$dirname/$filename1" "" "FILE EMPTY" "$filename1" "1"
+        test_create_file 'touch '$ROOT_DIR'/'$dirname'/'$filename1'' $F_MOD "1" "$dirname/$filename1" "" "FILE EMPTY" "$filename1" "1"
         ret=$?
 
         if [ "$ret" == 0 ]
@@ -1065,7 +1065,7 @@ test_rm_subdir() {
             ((test_passed++))
         fi
 
-        test_create_file 'echo "'$msg'" > test/'$dirname'/'$filename2'' $F_MOD "1" "$dirname/$filename2" $msg "FILE NONEMPTY" "$filename2" "1"
+        test_create_file 'echo "'$msg'" > '$ROOT_DIR'/'$dirname'/'$filename2'' $F_MOD "1" "$dirname/$filename2" $msg "FILE NONEMPTY" "$filename2" "1"
         ret=$?
 
         if [ "$ret" == 0 ]
@@ -1073,7 +1073,7 @@ test_rm_subdir() {
             ((test_passed++))
         fi
 
-        test_rmdir 'rm -rf test/'$dirname2'' $D_MOD "2" $tmp_dirname2 "1"
+        test_rmdir 'rm -rf '$ROOT_DIR'/'$dirname2'' $D_MOD "2" $tmp_dirname2 "1"
         ret=$?
 
         if [ "$ret" == 0 ]
@@ -1083,7 +1083,7 @@ test_rm_subdir() {
 
     done
 
-    test_rmdir 'rm -rf test/'$dirname_copy'' $D_MOD "2" $dirname_copy "1"
+    test_rmdir 'rm -rf '$ROOT_DIR'/'$dirname_copy'' $D_MOD "2" $dirname_copy "1"
         ret=$?
 
         if [ "$ret" == 0 ]
@@ -1102,7 +1102,7 @@ test_move_file_simple() {
 
     echo "$(tput setaf 6)MOVE FILE EMPTY TESTS: "$test_count"$(tput setaf 7)"
 
-    test_create_file 'touch test/'$filename'' $F_MOD "1" $filename "" "FILE EMPTY" $filename "1"
+    test_create_file 'touch '$ROOT_DIR'/'$filename'' $F_MOD "1" $filename "" "FILE EMPTY" $filename "1"
     ret=$?
 
     if [ "$ret" == 0 ]
@@ -1110,7 +1110,7 @@ test_move_file_simple() {
         ((test_passed++))
     fi
 
-    test_mvfile 'mv test/'$filename' test/'$filename2'' $F_MOD "1" $filename $filename2 "1" "1" "0" $filename $filename2
+    test_mvfile 'mv '$ROOT_DIR'/'$filename' '$ROOT_DIR'/'$filename2'' $F_MOD "1" $filename $filename2 "1" "1" "0" $filename $filename2
     ret=$?
 
     if [ "$ret" == 0 ]
@@ -1129,7 +1129,7 @@ test_move_file_noreplace() {
 
     echo "$(tput setaf 6)MOVE_FILE_NOREPLACE TESTS: "$test_count"$(tput setaf 7)"
 
-    test_create_file 'touch test/'$filename'' $F_MOD "1" $filename "" "FILE EMPTY" $filename "1"
+    test_create_file 'touch '$ROOT_DIR'/'$filename'' $F_MOD "1" $filename "" "FILE EMPTY" $filename "1"
     ret=$?
 
     if [ "$ret" == 0 ]
@@ -1137,7 +1137,7 @@ test_move_file_noreplace() {
         ((test_passed++))
     fi
 
-    test_create_file 'touch test/'$filename2'' $F_MOD "1" $filename2 "" "FILE EMPTY" $filename2 "1"
+    test_create_file 'touch '$ROOT_DIR'/'$filename2'' $F_MOD "1" $filename2 "" "FILE EMPTY" $filename2 "1"
     ret=$?
 
     if [ "$ret" == 0 ]
@@ -1145,7 +1145,7 @@ test_move_file_noreplace() {
         ((test_passed++))
     fi
 
-    test_mvfile "mv -n test/'$filename' test/'$filename2'" $F_MOD "1" $filename $filename2 "1" "1" "1" $filename $filename2
+    test_mvfile "mv -n '$ROOT_DIR'/'$filename' '$ROOT_DIR'/'$filename2'" $F_MOD "1" $filename $filename2 "1" "1" "1" $filename $filename2
     ret=$?
 
     if [ "$ret" == 0 ]
@@ -1165,7 +1165,7 @@ test_move_file_overwrite() {
 
     echo "$(tput setaf 6)MOVE_FILE_NOREPLACE TESTS: "$test_count"$(tput setaf 7)"
 
-    test_create_file 'touch test/'$filename'' $F_MOD "1" $filename "" "FILE EMPTY" $filename "1"
+    test_create_file 'touch '$ROOT_DIR'/'$filename'' $F_MOD "1" $filename "" "FILE EMPTY" $filename "1"
     ret=$?
 
     if [ "$ret" == 0 ]
@@ -1173,7 +1173,7 @@ test_move_file_overwrite() {
         ((test_passed++))
     fi
 
-    test_create_file 'touch test/'$filename2'' $F_MOD "1" $filename2 "" "FILE EMPTY" $filename2 "1"
+    test_create_file 'touch '$ROOT_DIR'/'$filename2'' $F_MOD "1" $filename2 "" "FILE EMPTY" $filename2 "1"
     ret=$?
 
     if [ "$ret" == 0 ]
@@ -1182,7 +1182,7 @@ test_move_file_overwrite() {
     fi
 
 
-    test_mvfile "mv test/'$filename' test/'$filename2'" $F_MOD "1" $filename $filename2 "1" "1" "0" $filename $filename2
+    test_mvfile "mv '$ROOT_DIR'/'$filename' '$ROOT_DIR'/'$filename2'" $F_MOD "1" $filename $filename2 "1" "1" "0" $filename $filename2
     ret=$?
 
     if [ "$ret" == 0 ]
@@ -1205,7 +1205,7 @@ test_move_file_to_other_dir() {
 
     echo "$(tput setaf 6)MOVE_FILE_TO_OTHER_DIR TESTS: "$test_count"$(tput setaf 7)"
 
-    test_mkdir 'mkdir test/'$dirname'' $D_MOD "2" $dirname "1" "1"
+    test_mkdir 'mkdir '$ROOT_DIR'/'$dirname'' $D_MOD "2" $dirname "1" "1"
     ret=$?
 
     if [ "$ret" == 0 ]
@@ -1213,7 +1213,7 @@ test_move_file_to_other_dir() {
         ((test_passed++))
     fi
 
-    test_mkdir 'mkdir test/'$dirname2'' $D_MOD "2" $dirname2 "1" "1"
+    test_mkdir 'mkdir '$ROOT_DIR'/'$dirname2'' $D_MOD "2" $dirname2 "1" "1"
     ret=$?
 
     if [ "$ret" == 0 ]
@@ -1221,7 +1221,7 @@ test_move_file_to_other_dir() {
         ((test_passed++))
     fi
 
-    test_create_file 'touch test/'$dirname'/'$filename'' $F_MOD "1" "$dirname/$filename" "" "FILE EMPTY" "$filename" "1"
+    test_create_file 'touch '$ROOT_DIR'/'$dirname'/'$filename'' $F_MOD "1" "$dirname/$filename" "" "FILE EMPTY" "$filename" "1"
     ret=$?
 
     if [ "$ret" == 0 ]
@@ -1229,7 +1229,7 @@ test_move_file_to_other_dir() {
         ((test_passed++))
     fi
 
-    test_create_file 'touch test/'$dirname2'/'$filename2'' $F_MOD "1" "$dirname2/$filename2" "" "FILE EMPTY" "$filename2" "1"
+    test_create_file 'touch '$ROOT_DIR'/'$dirname2'/'$filename2'' $F_MOD "1" "$dirname2/$filename2" "" "FILE EMPTY" "$filename2" "1"
     ret=$?
 
     if [ "$ret" == 0 ]
@@ -1238,7 +1238,7 @@ test_move_file_to_other_dir() {
     fi
 
 
-    test_mvfile "mv test/'$dirname'/'$filename' test/'$dirname2'/'$filename2'" $F_MOD "1" "$filename" "$filename2" "1" "1" "0" "$filename" "$filename2"
+    test_mvfile "mv '$ROOT_DIR'/'$dirname'/'$filename' '$ROOT_DIR'/'$dirname2'/'$filename2'" $F_MOD "1" "$filename" "$filename2" "1" "1" "0" "$filename" "$filename2"
     ret=$?
 
     if [ "$ret" == 0 ]
@@ -1257,7 +1257,7 @@ test_move_dir_simple() {
 
     echo "$(tput setaf 6)MOVE DIR EMPTY TESTS: "$test_count"$(tput setaf 7)"
 
-    test_mkdir 'mkdir test/'$dirname'' $D_MOD "2" $dirname "1" "1"
+    test_mkdir 'mkdir '$ROOT_DIR'/'$dirname'' $D_MOD "2" $dirname "1" "1"
     ret=$?
 
     if [ "$ret" == 0 ]
@@ -1265,7 +1265,7 @@ test_move_dir_simple() {
         ((test_passed++))
     fi
 
-    test_mvfile 'mv test/'$dirname' test/'$dirname2'' $D_MOD "2" $dirname $dirname2 "1" "1" "0" $dirname $dirname2
+    test_mvfile 'mv '$ROOT_DIR'/'$dirname' '$ROOT_DIR'/'$dirname2'' $D_MOD "2" $dirname $dirname2 "1" "1" "0" $dirname $dirname2
     ret=$?
 
     if [ "$ret" == 0 ]
@@ -1284,7 +1284,7 @@ test_move_dir_in_dir() {
 
     echo "$(tput setaf 6)MOVE_DIR_IN_DIR TESTS: "$test_count"$(tput setaf 7)"
 
-    test_mkdir 'mkdir test/'$dirname'' $D_MOD "2" $dirname "1" "1"
+    test_mkdir 'mkdir '$ROOT_DIR'/'$dirname'' $D_MOD "2" $dirname "1" "1"
     ret=$?
 
     if [ "$ret" == 0 ]
@@ -1292,7 +1292,7 @@ test_move_dir_in_dir() {
         ((test_passed++))
     fi
 
-    test_mkdir 'mkdir test/'$dirname2'' $D_MOD "2" $dirname2 "1" "1"
+    test_mkdir 'mkdir '$ROOT_DIR'/'$dirname2'' $D_MOD "2" $dirname2 "1" "1"
     ret=$?
 
     if [ "$ret" == 0 ]
@@ -1300,7 +1300,7 @@ test_move_dir_in_dir() {
         ((test_passed++))
     fi
 
-    test_mvfile 'mv -n test/'$dirname' test/'$dirname2'' $D_MOD "2" $dirname $dirname2 "1" "1" "1" $dirname $dirname2
+    test_mvfile 'mv -n '$ROOT_DIR'/'$dirname' '$ROOT_DIR'/'$dirname2'' $D_MOD "2" $dirname $dirname2 "1" "1" "1" $dirname $dirname2
     ret=$?
 
     if [ "$ret" == 0 ]
@@ -1319,7 +1319,7 @@ test_move_advanced() {
 
     echo "$(tput setaf 6)MOVE_ADVANCED $(tput setaf 7)"
 
-    test_mkdir 'mkdir test/'$dirname'' $D_MOD "2" $dirname "1" "0"
+    test_mkdir 'mkdir '$ROOT_DIR'/'$dirname'' $D_MOD "2" $dirname "1" "0"
     ret=$?
 
     if [ "$ret" == 0 ]
@@ -1346,7 +1346,7 @@ test_move_advanced() {
         dirname+="/"
         dirname+=$tmp_dirname
 
-        test_mkdir 'mkdir test/'$dirname'' $D_MOD "3" $tmp_dirname "1" $i
+        test_mkdir 'mkdir '$ROOT_DIR'/'$dirname'' $D_MOD "3" $tmp_dirname "1" $i
         ret=$?
 
         if [ "$ret" == 0 ]
@@ -1354,7 +1354,7 @@ test_move_advanced() {
                 ((test_passed++))
         fi
 
-        test_mkdir 'mkdir test/'$dirname2'' $D_MOD "3" $tmp_dirname2 "1" $i
+        test_mkdir 'mkdir '$ROOT_DIR'/'$dirname2'' $D_MOD "3" $tmp_dirname2 "1" $i
         ret=$?
 
         if [ "$ret" == 0 ]
@@ -1362,7 +1362,7 @@ test_move_advanced() {
                 ((test_passed++))
         fi
 
-        test_mkdir 'mkdir test/'$dirname3'' $D_MOD "3" $tmp_dirname3 "1" $i
+        test_mkdir 'mkdir '$ROOT_DIR'/'$dirname3'' $D_MOD "3" $tmp_dirname3 "1" $i
         ret=$?
 
         if [ "$ret" == 0 ]
@@ -1370,7 +1370,7 @@ test_move_advanced() {
                 ((test_passed++))
         fi
 
-        test_mkdir 'mkdir test/'$dirname4'' $D_MOD "3" $tmp_dirname4 "1" $i
+        test_mkdir 'mkdir '$ROOT_DIR'/'$dirname4'' $D_MOD "3" $tmp_dirname4 "1" $i
         ret=$?
 
         if [ "$ret" == 0 ]
@@ -1397,23 +1397,23 @@ test_move_advanced() {
 
             if [ "$remainder2" == 0 ]
             then
-                test_create_file 'echo "'$msg'" > test/'$filename1'' $F_MOD "1" $filename1 $msg "FILE NONEMPTY" $filename1 "1"
+                test_create_file 'echo "'$msg'" > '$ROOT_DIR'/'$filename1'' $F_MOD "1" $filename1 $msg "FILE NONEMPTY" $filename1 "1"
                 ret1=$?
 
-                test_create_file 'touch test/'$dirname'/'$filename2'' $F_MOD "1" "$dirname/$filename2" "" "FILE EMPTY" "$filename2" "1"
+                test_create_file 'touch '$ROOT_DIR'/'$dirname'/'$filename2'' $F_MOD "1" "$dirname/$filename2" "" "FILE EMPTY" "$filename2" "1"
                 ret2=$?
 
-                test_create_file 'echo "'$msg'" > test/'$dirname2'/'$filename3'' $F_MOD "1" "$dirname2/$filename3" $msg "FILE NONEMPTY" "$filename3" "1"
+                test_create_file 'echo "'$msg'" > '$ROOT_DIR'/'$dirname2'/'$filename3'' $F_MOD "1" "$dirname2/$filename3" $msg "FILE NONEMPTY" "$filename3" "1"
                 ret3=$?
 
             else
-                test_create_file 'touch test/'$filename1'' $F_MOD "1" $filename1 "" "FILE EMPTY" $filename1 "1"
+                test_create_file 'touch '$ROOT_DIR'/'$filename1'' $F_MOD "1" $filename1 "" "FILE EMPTY" $filename1 "1"
                 ret1=$?
 
-                test_create_file 'echo "'$msg'" > test/'$dirname'/'$filename2'' $F_MOD "1" "$dirname/$filename2" $msg "FILE NONEMPTY" "$filename2" "1"
+                test_create_file 'echo "'$msg'" > '$ROOT_DIR'/'$dirname'/'$filename2'' $F_MOD "1" "$dirname/$filename2" $msg "FILE NONEMPTY" "$filename2" "1"
                 ret2=$?
 
-                test_create_file 'touch test/'$dirname3'/'$filename4'' $F_MOD "1" "$dirname3/$filename4" "" "FILE EMPTY" "$filename4" "1"
+                test_create_file 'touch '$ROOT_DIR'/'$dirname3'/'$filename4'' $F_MOD "1" "$dirname3/$filename4" "" "FILE EMPTY" "$filename4" "1"
                 ret3=$?
             fi
 
@@ -1442,23 +1442,23 @@ test_move_advanced() {
                 if [ "$remainder2" == 0 ]
                 then
                     printf -v exp_msg "%s\n%s" "$msg $msg2"
-                    test_write_file 'echo "'$msg2'" >> test/'$filename1'' $F_MOD "1" $filename1 $msg "$exp_msg"
+                    test_write_file 'echo "'$msg2'" >> '$ROOT_DIR'/'$filename1'' $F_MOD "1" $filename1 $msg "$exp_msg"
                     ret1=$?
 
-                    test_write_file 'echo "'$msg'" >> test/'$dirname'/'$filename2'' $F_MOD "1" $dirname'/'$filename2 "" $msg
+                    test_write_file 'echo "'$msg'" >> '$ROOT_DIR'/'$dirname'/'$filename2'' $F_MOD "1" $dirname'/'$filename2 "" $msg
                     ret2=$?
 
-                    test_mvfile "mv test/'$filename1' test/'$dirname2'/'$filename5'" $F_MOD "1" $filename1 $filename5 "1" "1" "0" $filename1 $filename5
+                    test_mvfile "mv '$ROOT_DIR'/'$filename1' '$ROOT_DIR'/'$dirname2'/'$filename5'" $F_MOD "1" $filename1 $filename5 "1" "1" "0" $filename1 $filename5
                     ret3=$?
                 else
-                    test_write_file 'echo "'$msg2'" >> test/'$filename1'' $F_MOD "1" $filename1 "" $msg2
+                    test_write_file 'echo "'$msg2'" >> '$ROOT_DIR'/'$filename1'' $F_MOD "1" $filename1 "" $msg2
                     ret1=$?
 
                     printf -v exp_msg "%s\n%s" "$msg $msg2"
-                    test_write_file 'echo "'$msg2'" >> test/'$dirname3'/'$filename4'' $F_MOD "1" $dirname3'/'$filename4 $msg "$exp_msg"
+                    test_write_file 'echo "'$msg2'" >> '$ROOT_DIR'/'$dirname3'/'$filename4'' $F_MOD "1" $dirname3'/'$filename4 $msg "$exp_msg"
                     ret2=$?
 
-                    test_mvfile "mv test/'$filename1' test/'$dirname3'/'$filename4'" $F_MOD "1" $filename1 $filename4 "1" "1" "0" $filename1 $filename4
+                    test_mvfile "mv '$ROOT_DIR'/'$filename1' '$ROOT_DIR'/'$dirname3'/'$filename4'" $F_MOD "1" $filename1 $filename4 "1" "1" "0" $filename1 $filename4
                     ret3=$?
                 fi
 
@@ -1481,7 +1481,7 @@ test_move_advanced() {
 
         done
 
-        test_rmdir 'rm -rf test/'$dirname2'' $D_MOD "2" $tmp_dirname2 "1"
+        test_rmdir 'rm -rf '$ROOT_DIR'/'$dirname2'' $D_MOD "2" $tmp_dirname2 "1"
         ret=$?
 
         if [ "$ret" == 0 ]
@@ -1489,7 +1489,7 @@ test_move_advanced() {
             ((test_passed++))
         fi
 
-        test_rmdir 'rm -rf test/'$dirname2'' $D_MOD "2" $tmp_dirname2 "0"
+        test_rmdir 'rm -rf '$ROOT_DIR'/'$dirname2'' $D_MOD "2" $tmp_dirname2 "0"
         ret=$?
 
         if [ "$ret" == 0 ]
@@ -1497,7 +1497,7 @@ test_move_advanced() {
             ((test_passed++))
         fi
 
-        test_mvfile 'mv test/'$dirname3' test/'$dirname4'' $D_MOD "2" "$dirname3" "$dirname4" "1" "1" "1" "$tmp_dirname3" "$tmp_dirname4"
+        test_mvfile 'mv '$ROOT_DIR'/'$dirname3' '$ROOT_DIR'/'$dirname4'' $D_MOD "2" "$dirname3" "$dirname4" "1" "1" "1" "$tmp_dirname3" "$tmp_dirname4"
         ret=$?
 
         if [ "$ret" == 0 ]
@@ -1532,10 +1532,10 @@ test_advanced_sequence_1() {
 
         if [ "$remainder2" == 0 ]
         then
-            test_create_file 'echo "'$msg'" > test/'$filename'' $F_MOD "1" $filename $msg "FILE NONEMPTY" $filename "1"
+            test_create_file 'echo "'$msg'" > '$ROOT_DIR'/'$filename'' $F_MOD "1" $filename $msg "FILE NONEMPTY" $filename "1"
             ret=$?
         else
-            test_create_file 'touch test/'$filename'' $F_MOD "1" $filename "" "FILE EMPTY" $filename "1"
+            test_create_file 'touch '$ROOT_DIR'/'$filename'' $F_MOD "1" $filename "" "FILE EMPTY" $filename "1"
             ret=$?
         fi
 
@@ -1553,10 +1553,10 @@ test_advanced_sequence_1() {
             if [ "$remainder2" == 0 ]
             then
                 printf -v exp_msg "%s\n%s" "$msg $msg2"
-                test_write_file 'echo "'$msg2'" >> test/'$filename'' $F_MOD "1" $filename $msg "$exp_msg"
+                test_write_file 'echo "'$msg2'" >> '$ROOT_DIR'/'$filename'' $F_MOD "1" $filename $msg "$exp_msg"
                 ret=$?
             else
-                test_write_file 'echo "'$msg2'" >> test/'$filename'' $F_MOD "1" $filename "" $msg2
+                test_write_file 'echo "'$msg2'" >> '$ROOT_DIR'/'$filename'' $F_MOD "1" $filename "" $msg2
                 ret=$?
             fi
 
@@ -1570,7 +1570,7 @@ test_advanced_sequence_1() {
         if [ "$remainder5" == 0 ]
         then
             ((test_count++))
-            test_rmfile 'rm -rf test/'$filename'' $F_MOD "1" $filename "1"
+            test_rmfile 'rm -rf '$ROOT_DIR'/'$filename'' $F_MOD "1" $filename "1"
             ret=$?
 
             if [ "$ret" == 0 ]
@@ -1594,7 +1594,7 @@ test_advanced_sequence_2() {
 
     echo "$(tput setaf 6)ADVANCED SEQUENCE_2 TESTS:$(tput setaf 7)"
 
-    test_mkdir 'mkdir test/'$dirname'' $D_MOD "2" $dirname "1" "1"
+    test_mkdir 'mkdir '$ROOT_DIR'/'$dirname'' $D_MOD "2" $dirname "1" "1"
     ret=$?
 
     if [ "$ret" == 0 ]
@@ -1617,17 +1617,17 @@ test_advanced_sequence_2() {
 
         if [ "$remainder2" == 0 ]
         then
-            test_create_file 'echo "'$msg'" > test/'$filename1'' $F_MOD "1" $filename1 $msg "FILE NONEMPTY" $filename1 "1"
+            test_create_file 'echo "'$msg'" > '$ROOT_DIR'/'$filename1'' $F_MOD "1" $filename1 $msg "FILE NONEMPTY" $filename1 "1"
             ret1=$?
 
-            test_create_file 'touch test/'$dirname'/'$filename2'' $F_MOD "1" "$dirname/$filename2" "" "FILE EMPTY" "$filename2" "1"
+            test_create_file 'touch '$ROOT_DIR'/'$dirname'/'$filename2'' $F_MOD "1" "$dirname/$filename2" "" "FILE EMPTY" "$filename2" "1"
             ret2=$?
 
         else
-            test_create_file 'touch test/'$filename1'' $F_MOD "1" $filename1 "" "FILE EMPTY" $filename1 "1"
+            test_create_file 'touch '$ROOT_DIR'/'$filename1'' $F_MOD "1" $filename1 "" "FILE EMPTY" $filename1 "1"
             ret1=$?
 
-            test_create_file 'echo "'$msg'" > test/'$dirname'/'$filename2'' $F_MOD "1" "$dirname/$filename2" $msg "FILE NONEMPTY" "$filename2" "1"
+            test_create_file 'echo "'$msg'" > '$ROOT_DIR'/'$dirname'/'$filename2'' $F_MOD "1" "$dirname/$filename2" $msg "FILE NONEMPTY" "$filename2" "1"
             ret2=$?
         fi
 
@@ -1650,17 +1650,17 @@ test_advanced_sequence_2() {
             if [ "$remainder2" == 0 ]
             then
                 printf -v exp_msg "%s\n%s" "$msg $msg2"
-                test_write_file 'echo "'$msg2'" >> test/'$filename1'' $F_MOD "1" $filename1 $msg "$exp_msg"
+                test_write_file 'echo "'$msg2'" >> '$ROOT_DIR'/'$filename1'' $F_MOD "1" $filename1 $msg "$exp_msg"
                 ret1=$?
 
-                test_write_file 'echo "'$msg'" >> test/'$dirname'/'$filename2'' $F_MOD "1" $dirname'/'$filename2 "" $msg
+                test_write_file 'echo "'$msg'" >> '$ROOT_DIR'/'$dirname'/'$filename2'' $F_MOD "1" $dirname'/'$filename2 "" $msg
                 ret2=$?
             else
-                test_write_file 'echo "'$msg2'" >> test/'$filename1'' $F_MOD "1" $filename1 "" $msg2
+                test_write_file 'echo "'$msg2'" >> '$ROOT_DIR'/'$filename1'' $F_MOD "1" $filename1 "" $msg2
                 ret1=$?
 
                 printf -v exp_msg "%s\n%s" "$msg $msg2"
-                test_write_file 'echo "'$msg2'" >> test/'$dirname'/'$filename2'' $F_MOD "1" $dirname'/'$filename2 $msg "$exp_msg"
+                test_write_file 'echo "'$msg2'" >> '$ROOT_DIR'/'$dirname'/'$filename2'' $F_MOD "1" $dirname'/'$filename2 $msg "$exp_msg"
                 ret2=$?
             fi
 
@@ -1679,7 +1679,7 @@ test_advanced_sequence_2() {
         if [ "$remainder4" == 0 ]
         then
             ((test_count++))
-            test_rmfile 'rm -rf test/'$dirname'/'$filename2'' $F_MOD "1" $filename2 "1"
+            test_rmfile 'rm -rf '$ROOT_DIR'/'$dirname'/'$filename2'' $F_MOD "1" $filename2 "1"
             ret=$?
 
             if [ "$ret" == 0 ]
@@ -1691,7 +1691,7 @@ test_advanced_sequence_2() {
         if [ "$remainder5" == 0 ]
         then
             ((test_count++))
-            test_rmfile 'rm -rf test/'$filename1'' $F_MOD "1" $filename1 "1"
+            test_rmfile 'rm -rf '$ROOT_DIR'/'$filename1'' $F_MOD "1" $filename1 "1"
             ret=$?
 
             if [ "$ret" == 0 ]
@@ -1714,7 +1714,7 @@ test_advanced_sequence_3() {
 
     echo "$(tput setaf 6)ADVANCED_SEQUENCE_3 $(tput setaf 7)"
 
-    test_mkdir 'mkdir test/'$dirname'' $D_MOD "2" $dirname "1" "1"
+    test_mkdir 'mkdir '$ROOT_DIR'/'$dirname'' $D_MOD "2" $dirname "1" "1"
     ret=$?
 
     if [ "$ret" == 0 ]
@@ -1732,7 +1732,7 @@ test_advanced_sequence_3() {
         dirname+="/"
         dirname+=$tmp_dirname
         
-        test_mkdir 'mkdir test/'$dirname'' $D_MOD "3" $tmp_dirname "1" $i
+        test_mkdir 'mkdir '$ROOT_DIR'/'$dirname'' $D_MOD "3" $tmp_dirname "1" $i
         ret=$?
 
         if [ "$ret" == 0 ]
@@ -1755,17 +1755,17 @@ test_advanced_sequence_3() {
 
             if [ "$remainder2" == 0 ]
             then
-                test_create_file 'echo "'$msg'" > test/'$filename1'' $F_MOD "1" $filename1 $msg "FILE NONEMPTY" $filename1 "1"
+                test_create_file 'echo "'$msg'" > '$ROOT_DIR'/'$filename1'' $F_MOD "1" $filename1 $msg "FILE NONEMPTY" $filename1 "1"
                 ret1=$?
 
-                test_create_file 'touch test/'$dirname'/'$filename2'' $F_MOD "1" "$dirname/$filename2" "" "FILE EMPTY" "$filename2" "1"
+                test_create_file 'touch '$ROOT_DIR'/'$dirname'/'$filename2'' $F_MOD "1" "$dirname/$filename2" "" "FILE EMPTY" "$filename2" "1"
                 ret2=$?
 
             else
-                test_create_file 'touch test/'$filename1'' $F_MOD "1" $filename1 "" "FILE EMPTY" $filename1 "1"
+                test_create_file 'touch '$ROOT_DIR'/'$filename1'' $F_MOD "1" $filename1 "" "FILE EMPTY" $filename1 "1"
                 ret1=$?
 
-                test_create_file 'echo "'$msg'" > test/'$dirname'/'$filename2'' $F_MOD "1" "$dirname/$filename2" $msg "FILE NONEMPTY" "$filename2" "1"
+                test_create_file 'echo "'$msg'" > '$ROOT_DIR'/'$dirname'/'$filename2'' $F_MOD "1" "$dirname/$filename2" $msg "FILE NONEMPTY" "$filename2" "1"
                 ret2=$?
             fi
 
@@ -1788,17 +1788,17 @@ test_advanced_sequence_3() {
                 if [ "$remainder2" == 0 ]
                 then
                     printf -v exp_msg "%s\n%s" "$msg $msg2"
-                    test_write_file 'echo "'$msg2'" >> test/'$filename1'' $F_MOD "1" $filename1 $msg "$exp_msg"
+                    test_write_file 'echo "'$msg2'" >> '$ROOT_DIR'/'$filename1'' $F_MOD "1" $filename1 $msg "$exp_msg"
                     ret1=$?
 
-                    test_write_file 'echo "'$msg'" >> test/'$dirname'/'$filename2'' $F_MOD "1" $dirname'/'$filename2 "" $msg
+                    test_write_file 'echo "'$msg'" >> '$ROOT_DIR'/'$dirname'/'$filename2'' $F_MOD "1" $dirname'/'$filename2 "" $msg
                     ret2=$?
                 else
-                    test_write_file 'echo "'$msg2'" >> test/'$filename1'' $F_MOD "1" $filename1 "" $msg2
+                    test_write_file 'echo "'$msg2'" >> '$ROOT_DIR'/'$filename1'' $F_MOD "1" $filename1 "" $msg2
                     ret1=$?
 
                     printf -v exp_msg "%s\n%s" "$msg $msg2"
-                    test_write_file 'echo "'$msg2'" >> test/'$dirname'/'$filename2'' $F_MOD "1" $dirname'/'$filename2 $msg "$exp_msg"
+                    test_write_file 'echo "'$msg2'" >> '$ROOT_DIR'/'$dirname'/'$filename2'' $F_MOD "1" $dirname'/'$filename2 $msg "$exp_msg"
                     ret2=$?
                 fi
 
@@ -1817,7 +1817,7 @@ test_advanced_sequence_3() {
             if [ "$remainder4" == 0 ]
             then
                 ((test_count++))
-                test_rmfile 'rm -rf test/'$dirname'/'$filename2'' $F_MOD "1" $filename2 "1"
+                test_rmfile 'rm -rf '$ROOT_DIR'/'$dirname'/'$filename2'' $F_MOD "1" $filename2 "1"
                 ret=$?
 
                 if [ "$ret" == 0 ]
@@ -1829,7 +1829,7 @@ test_advanced_sequence_3() {
             if [ "$remainder5" == 0 ]
             then
                 ((test_count++))
-                test_rmfile 'rm -rf test/'$filename1'' $F_MOD "1" $filename1 "1"
+                test_rmfile 'rm -rf '$ROOT_DIR'/'$filename1'' $F_MOD "1" $filename1 "1"
                 ret=$?
 
                 if [ "$ret" == 0 ]
@@ -1853,7 +1853,7 @@ test_advanced_sequence_4() {
 
     echo "$(tput setaf 6)ADVANCED_SEQUENCE_4 $(tput setaf 7)"
 
-    test_mkdir 'mkdir test/'$dirname'' $D_MOD "2" $dirname "1" "0"
+    test_mkdir 'mkdir '$ROOT_DIR'/'$dirname'' $D_MOD "2" $dirname "1" "0"
     ret=$?
 
     if [ "$ret" == 0 ]
@@ -1878,7 +1878,7 @@ test_advanced_sequence_4() {
         dirname+="/"
         dirname+=$tmp_dirname
 
-        test_mkdir 'mkdir test/'$dirname'' $D_MOD "3" $tmp_dirname "1" $i
+        test_mkdir 'mkdir '$ROOT_DIR'/'$dirname'' $D_MOD "3" $tmp_dirname "1" $i
         ret=$?
 
         if [ "$ret" == 0 ]
@@ -1886,7 +1886,7 @@ test_advanced_sequence_4() {
                 ((test_passed++))
         fi
 
-        test_mkdir 'mkdir test/'$dirname2'' $D_MOD "3" $tmp_dirname2 "1" $i
+        test_mkdir 'mkdir '$ROOT_DIR'/'$dirname2'' $D_MOD "3" $tmp_dirname2 "1" $i
         ret=$?
 
         if [ "$ret" == 0 ]
@@ -1894,7 +1894,7 @@ test_advanced_sequence_4() {
                 ((test_passed++))
         fi
 
-        test_mkdir 'mkdir test/'$dirname3'' $D_MOD "3" $tmp_dirname3 "1" $i
+        test_mkdir 'mkdir '$ROOT_DIR'/'$dirname3'' $D_MOD "3" $tmp_dirname3 "1" $i
         ret=$?
 
         if [ "$ret" == 0 ]
@@ -1921,23 +1921,23 @@ test_advanced_sequence_4() {
 
             if [ "$remainder2" == 0 ]
             then
-                test_create_file 'echo "'$msg'" > test/'$filename1'' $F_MOD "1" $filename1 $msg "FILE NONEMPTY" $filename1 "1"
+                test_create_file 'echo "'$msg'" > '$ROOT_DIR'/'$filename1'' $F_MOD "1" $filename1 $msg "FILE NONEMPTY" $filename1 "1"
                 ret1=$?
 
-                test_create_file 'touch test/'$dirname'/'$filename2'' $F_MOD "1" "$dirname/$filename2" "" "FILE EMPTY" "$filename2" "1"
+                test_create_file 'touch '$ROOT_DIR'/'$dirname'/'$filename2'' $F_MOD "1" "$dirname/$filename2" "" "FILE EMPTY" "$filename2" "1"
                 ret2=$?
 
-                test_create_file 'echo "'$msg'" > test/'$dirname2'/'$filename3'' $F_MOD "1" "$dirname2/$filename3" $msg "FILE NONEMPTY" "$filename3" "1"
+                test_create_file 'echo "'$msg'" > '$ROOT_DIR'/'$dirname2'/'$filename3'' $F_MOD "1" "$dirname2/$filename3" $msg "FILE NONEMPTY" "$filename3" "1"
                 ret3=$?
 
             else
-                test_create_file 'touch test/'$filename1'' $F_MOD "1" $filename1 "" "FILE EMPTY" $filename1 "1"
+                test_create_file 'touch '$ROOT_DIR'/'$filename1'' $F_MOD "1" $filename1 "" "FILE EMPTY" $filename1 "1"
                 ret1=$?
 
-                test_create_file 'echo "'$msg'" > test/'$dirname'/'$filename2'' $F_MOD "1" "$dirname/$filename2" $msg "FILE NONEMPTY" "$filename2" "1"
+                test_create_file 'echo "'$msg'" > '$ROOT_DIR'/'$dirname'/'$filename2'' $F_MOD "1" "$dirname/$filename2" $msg "FILE NONEMPTY" "$filename2" "1"
                 ret2=$?
 
-                test_create_file 'touch test/'$dirname3'/'$filename4'' $F_MOD "1" "$dirname3/$filename4" "" "FILE EMPTY" "$filename4" "1"
+                test_create_file 'touch '$ROOT_DIR'/'$dirname3'/'$filename4'' $F_MOD "1" "$dirname3/$filename4" "" "FILE EMPTY" "$filename4" "1"
                 ret3=$?
             fi
 
@@ -1965,17 +1965,17 @@ test_advanced_sequence_4() {
                 if [ "$remainder2" == 0 ]
                 then
                     printf -v exp_msg "%s\n%s" "$msg $msg2"
-                    test_write_file 'echo "'$msg2'" >> test/'$filename1'' $F_MOD "1" $filename1 $msg "$exp_msg"
+                    test_write_file 'echo "'$msg2'" >> '$ROOT_DIR'/'$filename1'' $F_MOD "1" $filename1 $msg "$exp_msg"
                     ret1=$?
 
-                    test_write_file 'echo "'$msg'" >> test/'$dirname'/'$filename2'' $F_MOD "1" $dirname'/'$filename2 "" $msg
+                    test_write_file 'echo "'$msg'" >> '$ROOT_DIR'/'$dirname'/'$filename2'' $F_MOD "1" $dirname'/'$filename2 "" $msg
                     ret2=$?
                 else
-                    test_write_file 'echo "'$msg2'" >> test/'$filename1'' $F_MOD "1" $filename1 "" $msg2
+                    test_write_file 'echo "'$msg2'" >> '$ROOT_DIR'/'$filename1'' $F_MOD "1" $filename1 "" $msg2
                     ret1=$?
 
                     printf -v exp_msg "%s\n%s" "$msg $msg2"
-                    test_write_file 'echo "'$msg2'" >> test/'$dirname'/'$filename2'' $F_MOD "1" $dirname'/'$filename2 $msg "$exp_msg"
+                    test_write_file 'echo "'$msg2'" >> '$ROOT_DIR'/'$dirname'/'$filename2'' $F_MOD "1" $dirname'/'$filename2 $msg "$exp_msg"
                     ret2=$?
                 fi
 
@@ -1994,7 +1994,7 @@ test_advanced_sequence_4() {
             if [ "$remainder4" == 0 ]
             then
                 ((test_count=test_count+2))
-                test_rmfile 'rm -rf test/'$dirname'/'$filename2'' $F_MOD "1" $filename2 "1"
+                test_rmfile 'rm -rf '$ROOT_DIR'/'$dirname'/'$filename2'' $F_MOD "1" $filename2 "1"
                 ret=$?
 
                 if [ "$ret" == 0 ]
@@ -2002,7 +2002,7 @@ test_advanced_sequence_4() {
                     ((test_passed++))
                 fi
 
-                test_rmfile 'rm -rf test/'$dirname2'/'$filename3'' $F_MOD "1" $filename3 "1"
+                test_rmfile 'rm -rf '$ROOT_DIR'/'$dirname2'/'$filename3'' $F_MOD "1" $filename3 "1"
                 ret=$?
 
                 if [ "$ret" == 0 ]
@@ -2016,7 +2016,7 @@ test_advanced_sequence_4() {
                 echo remainder 5
                 ((test_count++))
                 echo current filename: $filename1
-                test_rmfile 'rm -rf test/'$filename1'' $F_MOD "1" $filename1 "1"
+                test_rmfile 'rm -rf '$ROOT_DIR'/'$filename1'' $F_MOD "1" $filename1 "1"
                 ret=$?
 
                 if [ "$ret" == 0 ]
@@ -2026,7 +2026,7 @@ test_advanced_sequence_4() {
             fi
         done
 
-        test_rmdir 'rm -rf test/'$dirname2'' $D_MOD "2" $tmp_dirname2 "1"
+        test_rmdir 'rm -rf '$ROOT_DIR'/'$dirname2'' $D_MOD "2" $tmp_dirname2 "1"
         ret=$?
 
         if [ "$ret" == 0 ]
@@ -2034,7 +2034,7 @@ test_advanced_sequence_4() {
             ((test_passed++))
         fi
 
-        test_rmdir 'rm -rf test/'$dirname2'' $D_MOD "2" $tmp_dirname2 "0"
+        test_rmdir 'rm -rf '$ROOT_DIR'/'$dirname2'' $D_MOD "2" $tmp_dirname2 "0"
         ret=$?
 
         if [ "$ret" == 0 ]
@@ -2050,13 +2050,24 @@ init() {
     make
     sudo insmod basicbtfs.ko
     mkdir -p test
-    dd if=/dev/zero of=test.img bs=10M count=50
-    ./mkfs.basicbtfs test.img
-    sudo mount -o loop -t basicbtfs test.img test
+    sudo mount -t tmpfs -o size=20G tmpfs test
+    # # dd if=/dev/zero of='$ROOT_DIR'/test.img bs=1M count=50
+    mkdir $ROOT_DIR
+    dd if=/dev/zero of=test/test.img bs=1 count=0 seek=15G
+    ./mkfs.basicbtfs test/test.img
+    sudo mount -o loop -t basicbtfs test/test.img $ROOT_DIR
+    # sudo mount -o loop -t basicbtfs '$ROOT_DIR'/test.img test
+
+    # make
+    # sudo insmod basicbtfs.ko
+    # mkdir -p $ROOT_DIR
+    # dd if=/dev/zero of=test.img bs=10M count=50
+    # ./mkfs.basicbtfs test.img
+    # sudo mount -o loop -t basicbtfs test.img $ROOT_DIR
 }
 
 test_create_root $D_MOD "2" "test" "root"
-test_create_file_empty
+
 test_create_file_nonempty
 test_create_file_toolong
 test_create_already_exist

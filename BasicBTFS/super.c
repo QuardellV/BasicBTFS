@@ -194,8 +194,8 @@ static int basicbtfs_sync_fs(struct super_block *sb, int wait)
     ret = flush_bitmap(sb, sbi->s_ifree_bitmap, sbi->s_imap_blocks, 1, wait);
     if (ret < 0) return ret;
     ret = flush_bitmap(sb, sbi->s_bfree_bitmap, sbi->s_bmap_blocks, sbi->s_imap_blocks + 1, wait);
-    if (ret < 0) return ret;
-    ret = flush_filemap(sb, sbi->s_fileblock_map, sbi->s_filemap_blocks, sbi->s_imap_blocks + sbi->s_bmap_blocks + sbi->s_inode_blocks + 1, wait);
+    // if (ret < 0) return ret;
+    // ret = flush_filemap(sb, sbi->s_fileblock_map, sbi->s_filemap_blocks, sbi->s_imap_blocks + sbi->s_bmap_blocks + sbi->s_inode_blocks + 1, wait);
 
     return ret;
 }
@@ -304,6 +304,8 @@ int basicbtfs_fill_super(struct super_block *sb, void *data, int silent)
     printk("possible size of btree node %d\n", test_size);
     ret = init_super_block(sb);
 
+    printk("initialized superblock\n");
+
     if (ret < 0) return ret;
 
     bh = sb_bread(sb, BASICBTFS_SB_BNO);
@@ -331,6 +333,7 @@ int basicbtfs_fill_super(struct super_block *sb, void *data, int silent)
     sbi->s_ifree_bitmap = kzalloc(sbi->s_imap_blocks * BASICBTFS_BLOCKSIZE, GFP_KERNEL);
     if (!sbi->s_ifree_bitmap) {
         kfree(sbi);
+        printk("not sufficient memory for ifree bitmap\n");
         return -ENOMEM;
     }
 
@@ -340,6 +343,7 @@ int basicbtfs_fill_super(struct super_block *sb, void *data, int silent)
 
     sbi->s_bfree_bitmap = kzalloc(sbi->s_bmap_blocks * BASICBTFS_BLOCKSIZE, GFP_KERNEL);
     if (!sbi->s_bfree_bitmap) {
+        printk("not sufficient memory for bfree bitmap\n");
         kfree(sbi->s_ifree_bitmap);
         kfree(sbi);
         return -ENOMEM;
@@ -347,15 +351,18 @@ int basicbtfs_fill_super(struct super_block *sb, void *data, int silent)
 
     init_bitmap(sb, sbi->s_bfree_bitmap, sbi->s_bmap_blocks, sbi->s_imap_blocks + 1);
 
-    sbi->s_fileblock_map = kzalloc(sbi->s_filemap_blocks * BASICBTFS_BLOCKSIZE, GFP_KERNEL);
-    if (!sbi->s_fileblock_map) {
-        kfree(sbi->s_bfree_bitmap);
-        kfree(sbi->s_ifree_bitmap);
-        kfree(sbi);
-        return -ENOMEM;
-    }
+    // sbi->s_fileblock_map = kzalloc(sbi->s_filemap_blocks * BASICBTFS_BLOCKSIZE, GFP_KERNEL);
+    // if (!sbi->s_fileblock_map) {
+    //     printk("not sufficient memory for filemap\n");
+    //     kfree(sbi->s_bfree_bitmap);
+    //     kfree(sbi->s_ifree_bitmap);
+    //     kfree(sbi);
+    //     return -ENOMEM;
+    // }
 
-    init_filemap(sb, sbi->s_fileblock_map, sbi->s_filemap_blocks, sbi->s_imap_blocks + sbi->s_bmap_blocks + sbi->s_inode_blocks + 1);
+    // init_filemap(sb, sbi->s_fileblock_map, sbi->s_filemap_blocks, sbi->s_imap_blocks + sbi->s_bmap_blocks + sbi->s_inode_blocks + 1);
+
+    printk("initialized bitmaps\n");
 
     root_inode = basicbtfs_iget(sb, 0);
     if (IS_ERR(root_inode)) {

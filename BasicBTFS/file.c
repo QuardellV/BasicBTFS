@@ -6,6 +6,7 @@
 #include <linux/mpage.h>
 
 #include "bitmap.h"
+#include "io.h"
 #include "basicbtfs.h"
 
 uint32_t basicbtfs_search_cluster(struct basicbtfs_cluster_table *cluster_table, uint32_t iblock) {
@@ -59,9 +60,11 @@ int basicbtfs_file_free_blocks(struct inode *inode) {
     struct basicbtfs_cluster_table *cluster_list;
     struct basicbtfs_disk_block *disk_block;
     struct basicbtfs_block *disk_file_block;
-    struct buffer_head *bh, *bh_block;
+    struct buffer_head *bh, *bh_block, *bh_file_info;
+    struct basicbtfs_fileblock_info *file_info; 
     int ret = 0, bno, i;
     uint32_t cluster_index = 0, block_index = 0, disk_block_offset;
+    uint32_t fblock_info_bno, fblock_info_index;
 
     bh = sb_bread(sb, ci->i_bno);
 
@@ -78,16 +81,20 @@ int basicbtfs_file_free_blocks(struct inode *inode) {
             printk("end of cluster table with index: %d\n", cluster_index);
             break;
         }
+        disk_block_offset = cluster_list->table[cluster_index].start_bno;
         for (block_index = 0; block_index < cluster_list->table[cluster_index].cluster_length; block_index++) {
-            disk_block_offset = cluster_list->table[cluster_index].start_bno;
+            disk_block_offset = cluster_list->table[cluster_index].start_bno + block_index;
 
             bh_block = sb_bread(sb, disk_block_offset);
 
             if (!bh_block) return -EIO;
 
             disk_file_block = (struct basicbtfs_block *) bh_block->b_data;
-            sbi->s_fileblock_map[disk_block_offset].cluster_index = 0;
-            sbi->s_fileblock_map[disk_block_offset].ino = 0;
+
+            basicbtfs_update_file_info(sb, disk_block_offset, 0, 0);
+
+            // sbi->s_fileblock_map[disk_block_offset].cluster_index = 0;
+            // sbi->s_fileblock_map[disk_block_offset].ino = 0;
 
             brelse(bh_block);
             put_blocks(sbi, disk_block_offset, 1);
@@ -144,8 +151,9 @@ static int basicbtfs_file_get_block(struct inode *inode, sector_t iblock, struct
         disk_block->block_type.cluster_table.table[cluster_index].cluster_length = BASICBTFS_MAX_BLOCKS_PER_CLUSTER;
 
         for (i = 0; i < BASICBTFS_MAX_BLOCKS_PER_CLUSTER; i++) {
-            sbi->s_fileblock_map[bno + i].ino = inode->i_ino;
-            sbi->s_fileblock_map[bno + i].cluster_index = cluster_index;
+            basicbtfs_update_file_info(sb, bno + i, inode->i_ino, cluster_index);
+            // sbi->s_fileblock_map[bno + i].ino = inode->i_ino;
+            // sbi->s_fileblock_map[bno + i].cluster_index = cluster_index;
 
             bh_block = sb_bread(sb, bno + i);
             disk_file_block = (struct basicbtfs_block *) bh_block->b_data;

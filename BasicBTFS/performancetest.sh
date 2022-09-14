@@ -63,6 +63,9 @@ do
     iostat -c -d -x -t -m /dev/loop22 >> iostat$i.out
 done
 
+fio --name=random-write --ioengine=posixaio --rw=randrw --bs=4K --size=1M --numjobs=1 --iodepth=1 --runtime=300 --time_based --end_fsync=1 --group_reporting
+
+fio --name=random-write --ioengine=posixaio --rw=randrw --bs=4K --size=4K --numjobs=1 --iodepth=128 --runtime=300 --time_based --end_fsync=1 --group_reporting
 
 
 # 2. Application benchmarks with and without defragmentation test defragmentation by regularly defragmenting the thing

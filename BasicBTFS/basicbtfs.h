@@ -58,6 +58,7 @@ struct basicbtfs_fileblock_info {
 
 
 #define BASICBTFS_INODES_PER_BLOCK (BASICBTFS_BLOCKSIZE / sizeof(struct basicbtfs_inode))
+#define BASICBTFS_FBLOCK_INFO_PER_BLOCK (BASICBTFS_BLOCKSIZE / sizeof(struct basicbtfs_fileblock_info))
 
 struct basicbtfs_sb_info {
     uint32_t s_magic;
@@ -75,7 +76,6 @@ struct basicbtfs_sb_info {
 #ifdef __KERNEL__
     unsigned long *s_ifree_bitmap;
     unsigned long *s_bfree_bitmap;
-    struct basicbtfs_fileblock_info *s_fileblock_map;
 #endif
 };
 
@@ -270,6 +270,8 @@ extern uint32_t nr_of_inode_operations;
 #define BASICBTFS_GET_INODE_BLOCK_IDX(ino) (ino % BASICBTFS_INODES_PER_BLOCK)
 #define BASICBTFS_GET_BLOCK_IDX(pos) (pos / BASICBTFS_ENTRIES_PER_BLOCK)
 #define BASICBTFS_GET_ENTRY_IDX(pos) (pos % BASICBTFS_ENTRIES_PER_BLOCK)
+#define BASICBTFS_GET_FILEBLOCK(bno, inode_bmap_bsize, blocks_bmap_bsize, inode_info_blocks) ((bno / BASICBTFS_FBLOCK_INFO_PER_BLOCK) + inode_bmap_bsize + blocks_bmap_bsize + inode_info_blocks + 1)
+#define BASICBTFS_GET_FILEBLOCK_IDX(bno) (bno % BASICBTFS_FBLOCK_INFO_PER_BLOCK)
 
 #endif
 
