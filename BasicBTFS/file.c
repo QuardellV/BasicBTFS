@@ -78,7 +78,6 @@ int basicbtfs_file_free_blocks(struct inode *inode) {
     for (cluster_index = 0; cluster_index < BASICBTFS_ATABLE_MAX_CLUSTERS; cluster_index++) {
 
         if (cluster_list->table[cluster_index].start_bno == 0) {
-            printk("end of cluster table with index: %d\n", cluster_index);
             break;
         }
         disk_block_offset = cluster_list->table[cluster_index].start_bno;
@@ -119,7 +118,6 @@ static int basicbtfs_file_get_block(struct inode *inode, sector_t iblock, struct
     struct buffer_head *bh_index, *bh_block;
     int ret = 0, bno, i;
     uint32_t cluster_index = 0;
-    printk("block vs max: %d | %ld\n", iblock, BASICBTFS_MAX_BLOCKS_PER_DIR);
     if (iblock >= BASICBTFS_MAX_BLOCKS_PER_DIR) {
         return -EFBIG;
     }
@@ -146,7 +144,7 @@ static int basicbtfs_file_get_block(struct inode *inode, sector_t iblock, struct
             brelse(bh_index);
             return -ENOSPC;
         }
-        printk("new block: %d till %d\n", bno, bno + 3);
+
         disk_block->block_type.cluster_table.table[cluster_index].start_bno = bno;
         disk_block->block_type.cluster_table.table[cluster_index].cluster_length = BASICBTFS_MAX_BLOCKS_PER_CLUSTER;
 
@@ -188,7 +186,7 @@ static int basicbtfs_write_begin(struct file *file,
                                 struct page **pagep,
                                 void **fsdata) {
     int err;
-    printk(KERN_INFO "basicftfs_write_begin()");
+    // printk(KERN_INFO "basicftfs_write_begin()");
 
     /* prepare the write */
     err = block_write_begin(mapping, pos, len, flags, pagep, basicbtfs_file_get_block);
@@ -209,7 +207,7 @@ static int basicbtfs_write_end(struct file *file,
     struct inode *inode = file->f_inode;
 
     int ret = generic_write_end(file, mapping, pos, len, copied, page, fsdata);
-    printk(KERN_INFO "basicftfs_write_end()");
+    // printk(KERN_INFO "basicftfs_write_end()");
     if (ret < len) {
         pr_err("wrote less than requested.");
         return ret;

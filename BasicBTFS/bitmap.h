@@ -30,9 +30,7 @@ static inline bool is_bit_empty(unsigned long *freemap, unsigned long size, unsi
     // if (block_index > 2) return false;
 
     if (!(cur_map[index] & (1 << offset))) {
-        printk("yay 0\n");
     } else {
-        printk("no 1");
     }
     return !(cur_map[index] & (1 << offset));
 }
@@ -83,7 +81,6 @@ static inline uint32_t get_free_inode(struct basicbtfs_sb_info *sbi) {
 
 static inline uint32_t get_free_blocks(struct basicbtfs_sb_info *sbi, uint32_t len) {
     uint32_t start_bno = get_first_free_bits(sbi->s_bfree_bitmap, sbi->s_nblocks, len);
-    printk("start bno: %d | %d\n", start_bno, len);
     if (start_bno > 0) {
         sbi->s_nfree_blocks -= len;
     }

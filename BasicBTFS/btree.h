@@ -972,7 +972,7 @@ static inline int basicbtfs_btree_node_delete(struct super_block *sb, uint32_t b
         }
     } else {
         if (node->leaf) {
-            printk(KERN_INFO "File %d doesn't exist with index %d\n", hash, index);
+            // printk(KERN_INFO "File %d doesn't exist with index %d\n", hash, index);
         }
 
         bh2 = sb_bread(sb, node->children[index]);
@@ -1090,7 +1090,7 @@ static inline int basicbtfs_btree_traverse_debug(struct super_block *sb, uint32_
     node = &disk_block->block_type.btree_node;
 
     if (node->root) {
-        printk("nr of files and keys: %d | %d\n", node->nr_of_files, node->nr_of_keys);
+        // printk("nr of files and keys: %d | %d\n", node->nr_of_files, node->nr_of_keys);
     }
 
     for (index = 0; index < node->nr_of_keys; index++) {
@@ -1102,7 +1102,7 @@ static inline int basicbtfs_btree_traverse_debug(struct super_block *sb, uint32_
                 return ret;
             }
         }
-        printk(KERN_INFO "file: %d | ino: %d\n", node->entries[index].hash, node->entries[index].ino);
+        // printk(KERN_INFO "file: %d | ino: %d\n", node->entries[index].hash, node->entries[index].ino);
     }
 
     if (!node->leaf) {

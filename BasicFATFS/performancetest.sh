@@ -67,8 +67,8 @@
 
 # fio --name=random-write --ioengine=posixaio --rw=randrw --bs=4K --size=4K --numjobs=1 --iodepth=128 --runtime=300 --time_based --end_fsync=1 --group_reporting
 
-sudo rm -rf ../Results/tmpfs/bandwidth/btfsbw
-mkdir ../Results/tmpfs/bandwidth/btfsbw
+sudo rm -rf ../Results/tmpfs/bandwidth/ftfsbw
+mkdir ../Results/tmpfs/bandwidth/ftfsbw
 
 for i in {2..9..1};
 do  
@@ -77,8 +77,8 @@ do
 
     ./clean.sh && ./test.sh
     cd test/mnt
-    sudo fio --output-format=json+  --output=../../../Results/tmpfs/bandwidth/btfsbw/btfsbw${tmp}K.output --size=${tmp}K ../../perfbw.fio
-    fio_jsonplus_clat2csv ../../../Results/tmpfs/bandwidth/btfsbw/btfsbw${tmp}K.output ../../../Results/tmpfs/bandwidth/btfsbw/btfsbw${tmp}K.csv
+    sudo fio --output-format=json+  --output=../../../Results/tmpfs/bandwidth/ftfsbw/ftfsbw${tmp}K.output --size=${tmp}K ../../perfbw.fio
+    fio_jsonplus_clat2csv ../../../Results/tmpfs/bandwidth/ftfsbw/ftfsbw${tmp}K.output ../../../Results/tmpfs/bandwidth/ftfsbw/ftfsbw${tmp}K.csv
     cd ../..
 
 done
@@ -90,13 +90,13 @@ do
 
     ./clean.sh && ./test.sh
     cd test/mnt
-    sudo fio --output-format=json+  --output=../../../Results/tmpfs/bandwidth/btfsbw/btfsbw${tmp}M.output --size=${tmp}M ../../perfbw.fio
-    fio_jsonplus_clat2csv ../../../Results/tmpfs/bandwidth/btfsbw/btfsbw${tmp}M.output ../../../Results/tmpfs/bandwidth/btfsbw/btfsbw${tmp}M.csv
+    sudo fio --output-format=json+  --output=../../../Results/tmpfs/bandwidth/ftfsbw/ftfsbw${tmp}M.output --size=${tmp}M ../../perfbw.fio
+    fio_jsonplus_clat2csv ../../../Results/tmpfs/bandwidth/ftfsbw/ftfsbw${tmp}M.output ../../../Results/tmpfs/bandwidth/ftfsbw/ftfsbw${tmp}M.csv
     cd ../..
 done
 
-sudo rm -rf ../Results/tmpfs/latency/btfsbw
-mkdir ../Results/tmpfs/latency/btfsbw
+sudo rm -rf ../Results/tmpfs/latency/ftfsbw
+mkdir ../Results/tmpfs/latency/ftfsbw
 
 for i in {2..9..1};
 do  
@@ -105,8 +105,8 @@ do
 
     ./clean.sh && ./test.sh
     cd test/mnt
-    sudo fio --output-format=json+  --output=../../../Results/tmpfs/latency/btfsbw/btfsbw${tmp}K.output --size=${tmp}K ../../perflatency.fio
-    fio_jsonplus_clat2csv ../../../Results/tmpfs/latency/btfsbw/btfsbw${tmp}K.output ../../../Results/tmpfs/latency/btfsbw/btfsbw${tmp}K.csv
+    sudo fio --output-format=json+  --output=../../../Results/tmpfs/latency/ftfsbw/ftfsbw${tmp}K.output --size=${tmp}K ../../perflatency.fio
+    fio_jsonplus_clat2csv ../../../Results/tmpfs/latency/ftfsbw/ftfsbw${tmp}K.output ../../../Results/tmpfs/latency/ftfsbw/ftfsbw${tmp}K.csv
     cd ../..
 done
 
@@ -114,12 +114,12 @@ for i in {0..9..1};
 do
     tmp=$((2 ** i))
     echo $tmp
-    touch ../Results/tmpfs/latency/btfsbw/btfsbw${tmp}M
+    touch ../Results/tmpfs/latency/ftfsbw/ftfsbw${tmp}M
 
     ./clean.sh && ./test.sh
     cd test/mnt
-    sudo fio --output-format=json+  --output=../../../Results/tmpfs/latency/btfsbw/btfsbw${tmp}M.output --size=${tmp}M ../../perflatency.fio
-    fio_jsonplus_clat2csv ../../../Results/tmpfs/latency/btfsbw/btfsbw${tmp}M.output ../../../Results/tmpfs/latency/btfsbw/btfsbw${tmp}M.csv
+    sudo fio --output-format=json+  --output=../../../Results/tmpfs/latency/ftfsbw/ftfsbw${tmp}M.output --size=${tmp}M ../../perflatency.fio
+    fio_jsonplus_clat2csv ../../../Results/tmpfs/latency/ftfsbw/ftfsbw${tmp}M.output ../../../Results/tmpfs/latency/ftfsbw/ftfsbw${tmp}M.csv
     cd ../..
 done
 

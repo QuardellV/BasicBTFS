@@ -50,7 +50,7 @@ static int basicftfs_write_inode(struct inode *inode, struct writeback_control *
 
     if (ino >= sbi->s_ninodes) return 0;
 
-    printk("basicftfs_write_inode() inode_block: %d\n", inode_block);
+    // printk("basicftfs_write_inode() inode_block: %d\n", inode_block);
     bh = sb_bread(sb, inode_block);
 
     if (!bh) return -EIO;
@@ -77,7 +77,7 @@ static int basicftfs_sync_fs(struct super_block *sb, int wait)
     int ret = 0;
 
     /* Flush superblock */
-    printk("basicftfs_sync_fs() 0: %d\n", 0);
+    // printk("basicftfs_sync_fs() 0: %d\n", 0);
     ret = flush_superblock(sb, wait);
     if (ret < 0) return ret;
     ret = flush_bitmap(sb, sbi->s_ifree_bitmap, sbi->s_imap_blocks, 1, wait);

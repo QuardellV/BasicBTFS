@@ -2067,12 +2067,8 @@ init() {
 }
 
 test_create_root $D_MOD "2" "test" "root"
-<<<<<<< HEAD
-
-=======
 startA=`date +%s.%N`
 test_create_file_empty
->>>>>>> 9c42c1e09f5b1af5805ae81fb5b08493e915463e
 test_create_file_nonempty
 test_create_file_toolong
 test_create_already_exist

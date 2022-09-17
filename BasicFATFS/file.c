@@ -50,12 +50,12 @@ static int basicftfs_file_get_block(struct inode *inode, sector_t iblock, struct
 }
 
 static int basicftfs_readpage(struct file *file, struct page *page) {
-    printk(KERN_INFO "basicftfs_readpage()");
+    // printk(KERN_INFO "basicftfs_readpage()");
     return mpage_readpage(page, basicftfs_file_get_block);
 }
 
 static int basicftfs_writepage(struct page *page, struct writeback_control *wbc) {
-    printk(KERN_INFO "basicftfs_write_page()");
+    // printk(KERN_INFO "basicftfs_write_page()");
     return block_write_full_page(page, basicftfs_file_get_block, wbc);
 }
 
@@ -67,7 +67,7 @@ static int basicftfs_write_begin(struct file *file,
                                 struct page **pagep,
                                 void **fsdata) {
     int err;
-    printk(KERN_INFO "basicftfs_write_begin()");
+    // printk(KERN_INFO "basicftfs_write_begin()");
 
     /* prepare the write */
     err = block_write_begin(mapping, pos, len, flags, pagep, basicftfs_file_get_block);
@@ -88,7 +88,7 @@ static int basicftfs_write_end(struct file *file,
     struct inode *inode = file->f_inode;
 
     int ret = generic_write_end(file, mapping, pos, len, copied, page, fsdata);
-    printk(KERN_INFO "basicftfs_write_end()");
+    // printk(KERN_INFO "basicftfs_write_end()");
     if (ret < len) {
         pr_err("wrote less than requested.");
         return ret;
