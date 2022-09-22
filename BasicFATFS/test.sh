@@ -2050,10 +2050,10 @@ init() {
     make
     sudo insmod basicftfs.ko
     mkdir -p test
-    sudo mount -t tmpfs -o size=20G tmpfs test
+    sudo mount -t tmpfs -o size=10G tmpfs test
     # # dd if=/dev/zero of='$ROOT_DIR'/test.img bs=1M count=50
     mkdir $ROOT_DIR
-    dd if=/dev/zero of=test/test.img bs=1 count=0 seek=15G
+    dd if=/dev/zero of=test/test.img bs=1 count=0 seek=5G
     ./mkfs.basicftfs test/test.img
     sudo mount -o loop -t basicftfs test/test.img $ROOT_DIR
     # sudo mount -o loop -t basicbtfs '$ROOT_DIR'/test.img test
