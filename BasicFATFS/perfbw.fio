@@ -4,7 +4,7 @@ rw=randrw
 bs=4K
 numjobs=1
 iodepth=1
-runtime=300
+runtime=5
 time_based
 end_fsync=1
 group_reporting
