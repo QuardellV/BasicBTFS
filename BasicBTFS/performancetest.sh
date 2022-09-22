@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 #!/bin/bash
 
+BW_DIR=Results/tmpfs/bandwidth/btfsbw
+LAT_DIR=Results/tmpfs/latency/btfslat
 # SSD/HDD
 
 # 1. Microbenchmark Analysis with and without defragmentation using iozone and iostat:
@@ -67,19 +69,34 @@
 
 # fio --name=random-write --ioengine=posixaio --rw=randrw --bs=4K --size=4K --numjobs=1 --iodepth=128 --runtime=300 --time_based --end_fsync=1 --group_reporting
 
-sudo rm -rf ../Results/tmpfs/bandwidth/btfsbw
-mkdir ../Results/tmpfs/bandwidth/btfsbw
+sudo rm -rf ../$BW_DIR
+mkdir ../$BW_DIR
 
 for i in {2..9..1};
 do  
     tmp=$((2 ** i))
+    tmp_dir=$BW_DIR/${tmp}K
     echo $tmp
+
+    mkdir ../$tmp_dir
 
     ./clean.sh && ./test.sh
     cd test/mnt
-    sudo fio --output-format=json+  --output=../../../Results/tmpfs/bandwidth/btfsbw/btfsbw${tmp}K.output --size=${tmp}K ../../perfbw.fio
-    fio_jsonplus_clat2csv ../../../Results/tmpfs/bandwidth/btfsbw/btfsbw${tmp}K.output ../../../Results/tmpfs/bandwidth/btfsbw/btfsbw${tmp}K.csv
-    cd ../..
+    sudo fio --output-format=json+  --output=../../../$tmp_dir/btfsbw${tmp}K.output --size=${tmp}K \
+    --write_bw_log=../../../$tmp_dir/${tmp}K  --write_lat_log=../../../$tmp_dir/${tmp}K \
+    --write_iops_log=../../../$tmp_dir/${tmp}K ../../perfbw.fio
+
+    fio_jsonplus_clat2csv ../../../$tmp_dir/btfsbw${tmp}K.output ../../../$tmp_dir/btfsbw${tmp}K.csv
+    cd ../../../$tmp_dir
+    fio_generate_plots ${tmp}K_bw.1.log
+
+    rm -rf ${tmp}K_bw.1.log
+    rm -rf ${tmp}K_clat.1.log
+    rm -rf ${tmp}K_iops.1.log
+    rm -rf ${tmp}K_lat.1.log
+    rm -rf ${tmp}K_slat.1.log
+
+    cd ../../../../../BasicBTFS
 
 done
 
@@ -87,43 +104,82 @@ for i in {0..9..1};
 do
     tmp=$((2 ** i))
     echo $tmp
+    tmp_dir=$BW_DIR/${tmp}M
+
+    mkdir ../$tmp_dir
 
     ./clean.sh && ./test.sh
     cd test/mnt
-    sudo fio --output-format=json+  --output=../../../Results/tmpfs/bandwidth/btfsbw/btfsbw${tmp}M.output --size=${tmp}M ../../perfbw.fio
-    fio_jsonplus_clat2csv ../../../Results/tmpfs/bandwidth/btfsbw/btfsbw${tmp}M.output ../../../Results/tmpfs/bandwidth/btfsbw/btfsbw${tmp}M.csv
-    cd ../..
+    sudo fio --output-format=json+  --output=../../../$tmp_dir/btfsbw${tmp}M.output --size=${tmp}M \
+    --write_bw_log=../../../$tmp_dir/${tmp}M  --write_lat_log=../../../$tmp_dir/${tmp}M \
+    --write_iops_log=../../../$tmp_dir/${tmp}M ../../perfbw.fio
+
+    fio_jsonplus_clat2csv ../../../$tmp_dir/btfsbw${tmp}M.output ../../../$tmp_dir/btfsbw${tmp}M.csv
+    cd ../../../$tmp_dir
+    fio_generate_plots ${tmp}M_bw.1.log
+
+    rm -rf ${tmp}M_bw.1.log
+    rm -rf ${tmp}M_clat.1.log
+    rm -rf ${tmp}M_iops.1.log
+    rm -rf ${tmp}M_lat.1.log
+    rm -rf ${tmp}M_slat.1.log
+
+    cd ../../../../../BasicBTFS
 done
 
-sudo rm -rf ../Results/tmpfs/latency/btfsbw
-mkdir ../Results/tmpfs/latency/btfsbw
+sudo rm -rf ../$LAT_DIR
+mkdir ../$LAT_DIR
 
 for i in {2..9..1};
 do  
     tmp=$((2 ** i))
+    tmp_dir=$LAT_DIR/${tmp}K
     echo $tmp
+
+    mkdir ../$tmp_dir
 
     ./clean.sh && ./test.sh
     cd test/mnt
-    sudo fio --output-format=json+  --output=../../../Results/tmpfs/latency/btfsbw/btfsbw${tmp}K.output --size=${tmp}K ../../perflatency.fio
-    fio_jsonplus_clat2csv ../../../Results/tmpfs/latency/btfsbw/btfsbw${tmp}K.output ../../../Results/tmpfs/latency/btfsbw/btfsbw${tmp}K.csv
-    cd ../..
+    sudo fio --output-format=json+  --output=../../../$tmp_dir/btfslat${tmp}K.output --size=${tmp}K \
+    --write_bw_log=../../../$tmp_dir/${tmp}K  --write_lat_log=../../../$tmp_dir/${tmp}K \
+    --write_iops_log=../../../$tmp_dir/${tmp}K ../../perflatency.fio
+
+    fio_jsonplus_clat2csv ../../../$tmp_dir/btfslat${tmp}K.output ../../../$tmp_dir/btfslat${tmp}K.csv
+    cd ../../../$tmp_dir
+    fio_generate_plots ${tmp}K_lat.1.log
+    rm -rf ${tmp}K_bw.1.log
+    rm -rf ${tmp}K_clat.1.log
+    rm -rf ${tmp}K_iops.1.log
+    rm -rf ${tmp}K_lat.1.log
+    rm -rf ${tmp}K_slat.1.log
+    cd ../../../../../BasicBTFS
 done
 
 for i in {0..9..1};
 do
     tmp=$((2 ** i))
     echo $tmp
-    touch ../Results/tmpfs/latency/btfsbw/btfsbw${tmp}M
+    tmp_dir=$LAT_DIR/${tmp}M
+
+    mkdir ../$tmp_dir
 
     ./clean.sh && ./test.sh
     cd test/mnt
-    sudo fio --output-format=json+  --output=../../../Results/tmpfs/latency/btfsbw/btfsbw${tmp}M.output --size=${tmp}M ../../perflatency.fio
-    fio_jsonplus_clat2csv ../../../Results/tmpfs/latency/btfsbw/btfsbw${tmp}M.output ../../../Results/tmpfs/latency/btfsbw/btfsbw${tmp}M.csv
-    cd ../..
-done
+    sudo fio --output-format=json+  --output=../../../$tmp_dir/btfslat${tmp}M.output --size=${tmp}M \
+    --write_bw_log=../../../$tmp_dir/${tmp}M  --write_lat_log=../../../$tmp_dir/${tmp}M \
+    --write_iops_log=../../../$tmp_dir/${tmp}M ../../perflatency.fio
 
-fio --output=../../fio.output --output-format=json+ --ioengine=null --time_based --runtime=3s --size=4K --slat_percentiles=1 --clat_percentiles=1 --lat_percentiles=1 --name=test1 --rw=randrw --name=test2 --rw=read --name=test3 --rw=write
+    fio_jsonplus_clat2csv ../../../$tmp_dir/btfslat${tmp}M.output ../../../$tmp_dir/btfslat${tmp}M.csv
+    cd ../../../$tmp_dir
+    fio_generate_plots ${tmp}M_lat.1.log
+    rm -rf ${tmp}M_bw.1.log
+    rm -rf ${tmp}M_clat.1.log
+    rm -rf ${tmp}M_iops.1.log
+    rm -rf ${tmp}M_lat.1.log
+    rm -rf ${tmp}M_slat.1.log
+
+    cd ../../../../../BasicBTFS
+done
 
 # 2. Application benchmarks with and without defragmentation test defragmentation by regularly defragmenting the thing
 #   - Mail server
