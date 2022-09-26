@@ -17,8 +17,8 @@ cd BTRFS
 
 ./clean.sh && ./performancetest.sh && ./clean.sh
 
-cd ../FATFS
+# cd ../FATFS
 
-./clean.sh && ./performancetest.sh && ./clean.sh
+# ./clean.sh && ./performancetest.sh && ./clean.sh
 
 cd ..

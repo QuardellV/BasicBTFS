@@ -1,16 +1,16 @@
 fio: pid=0, err=27/file:filesetup.c:240, func=write, error=File too large
 {
   "fio version" : "fio-3.32-36-g5932",
-  "timestamp" : 1664203916,
-  "timestamp_ms" : 1664203916315,
-  "time" : "Mon Sep 26 16:51:56 2022",
+  "timestamp" : 1664231506,
+  "timestamp_ms" : 1664231506084,
+  "time" : "Tue Sep 27 00:31:46 2022",
   "global options" : {
     "size" : "128M",
     "rw" : "randrw",
     "bs" : "4K",
     "numjobs" : "1",
     "iodepth" : "1",
-    "runtime" : "300",
+    "runtime" : "15",
     "end_fsync" : "1",
     "lat_percentiles" : "1",
     "slat_percentiles" : "1",
@@ -22,7 +22,7 @@ fio: pid=0, err=27/file:filesetup.c:240, func=write, error=File too large
       "groupid" : 0,
       "error" : 27,
       "eta" : 2147483647,
-      "elapsed" : 1,
+      "elapsed" : 0,
       "job options" : {
         "name" : "random-rw"
       },
