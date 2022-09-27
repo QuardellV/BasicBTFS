@@ -13,12 +13,12 @@
 
 # ./clean.sh && ./performancetest.sh && ./clean.sh
 
-cd BTRFS
-
-./clean.sh && ./performancetest.sh && ./clean.sh
-
-# cd ../FATFS
+# cd BTRFS
 
 # ./clean.sh && ./performancetest.sh && ./clean.sh
+
+cd FATFS
+
+./clean.sh && ./performancetest.sh && ./clean.sh
 
 cd ..
