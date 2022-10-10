@@ -21,11 +21,6 @@ long basicbtfs_ioctl(struct file *file, unsigned int cmd, unsigned long arg) {
     // uint32_t first_block = 1 + sbi->s_imap_blocks + sbi->s_bmap_blocks + sbi->s_inode_blocks + sbi->s_filemap_blocks; // root node might be updated :)
     bool is_root = (inode->i_ino == 0) && (dentry->d_name.name && dentry->d_name.name[0] == '/');
     // struct basicbtfs_sb_info *sbi = (struct basicbtfs_sb_info *) BASICBTFS_SB(sb);
-    if (is_root) {
-        printk("this is the root\n");
-    } else {
-        printk("this is not the root\n");
-    }
     printk("something has been sent: %d and filename %s\n", inode_info->i_bno, dentry->d_name.name);
 
     switch (cmd) {

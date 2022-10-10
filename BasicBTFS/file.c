@@ -60,11 +60,9 @@ int basicbtfs_file_free_blocks(struct inode *inode) {
     struct basicbtfs_cluster_table *cluster_list;
     struct basicbtfs_disk_block *disk_block;
     struct basicbtfs_block *disk_file_block;
-    struct buffer_head *bh, *bh_block, *bh_file_info;
-    struct basicbtfs_fileblock_info *file_info; 
-    int ret = 0, bno, i;
+    struct buffer_head *bh, *bh_block;
+    int bno = 0;
     uint32_t cluster_index = 0, block_index = 0, disk_block_offset;
-    uint32_t fblock_info_bno, fblock_info_index;
 
     bh = sb_bread(sb, ci->i_bno);
 

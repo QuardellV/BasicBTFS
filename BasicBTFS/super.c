@@ -299,8 +299,8 @@ int basicbtfs_fill_super(struct super_block *sb, void *data, int silent)
     int tmp_degree = 80;
     int test_size = 28 + (2 * tmp_degree - 1) * sizeof(struct basicbtfs_entry) + 4 * 2 * tmp_degree;
 
-    printk("size of diskblock: %d\n", sizeof(struct basicbtfs_disk_block));
-    printk("size of btree node: %d\n", sizeof(struct basicbtfs_btree_node));
+    printk("size of diskblock: %ld\n", sizeof(struct basicbtfs_disk_block));
+    printk("size of btree node: %ld\n", sizeof(struct basicbtfs_btree_node));
     printk("possible size of btree node %d\n", test_size);
     ret = init_super_block(sb);
 

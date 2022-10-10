@@ -15,26 +15,15 @@
 #include "defrag.h"
 
 static int basicbtfs_iterate(struct file *dir, struct dir_context *ctx) {
-    struct inode *inode = file_inode(dir), *root_inode;
+    struct inode *inode = file_inode(dir);
     struct basicbtfs_inode_info *inode_info = BASICBTFS_INODE(inode);
     struct super_block *sb = inode->i_sb;
     uint32_t name_bno = 0, nr_of_files = 0;
     struct buffer_head *bh = NULL;
     struct basicbtfs_disk_block *disk_block = NULL;
     struct basicbtfs_btree_node *node = NULL;
-    int ret = 0;
 
     nr_of_inode_operations = increase_counter(nr_of_inode_operations, BASICBTFS_DEFRAG_PERIOD);
-        // if (should_defrag && defrag_now) {
-        //     printk("defrag after lookup\n");
-        //     root_inode = basicbtfs_iget(sb, 0);
-        //     ret = basicbtfs_defrag_disk(sb, root_inode);
-        //     if (ret < 0) {
-        //         printk("something went wrong\n");
-        //         return ret;
-        //     }
-        //     defrag_now = false;
-        // }
 
     if (!S_ISDIR(inode->i_mode)) {
         printk(KERN_ERR "This file is not a directory\n");
@@ -357,20 +346,13 @@ int basicbtfs_nametree_free_namelist_blocks(struct super_block *sb, uint32_t nam
     struct buffer_head *bh = NULL;
     struct basicbtfs_name_list_hdr *name_list_hdr = NULL;
     struct basicbtfs_disk_block *disk_block = NULL;
-    struct basicbtfs_name_entry *cur_entry = NULL;
     struct basicbtfs_sb_info *sbi = BASICBTFS_SB(sb);
     uint32_t next_bno, cur_bno = name_bno;
-    char *block = NULL;
-    char *filename = NULL;
-    uint32_t current_index = 0;
-    uint32_t total_nr_entries = 0;
-    int i = 0;
     
     bh = sb_bread(sb, name_bno);
 
     if (!bh) return -EIO;
 
-    // name_list_hdr = (struct basicbtfs_name_list_hdr *) bh->b_data;
     disk_block = (struct basicbtfs_disk_block *) bh->b_data;
     name_list_hdr = &disk_block->block_type.name_list_hdr;
 

@@ -29,7 +29,6 @@ static inline int basicbtfs_defrag_btree_node(struct super_block *sb, uint32_t o
      */
     struct buffer_head *bh_old = NULL, *bh_new, *bh_swap;
     struct basicbtfs_sb_info *sbi = BASICBTFS_SB(sb);
-    struct basicbtfs_btree_node *node = NULL;
     struct basicbtfs_disk_block *disk_block_swap, *disk_block_old, *disk_block_new;
     uint32_t tmp_bno, new_bno;
     int ret = 0, i = 0;
