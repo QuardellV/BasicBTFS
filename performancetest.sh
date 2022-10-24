@@ -1,23 +1,23 @@
 #!/usr/bin/env bash
 #!/bin/bash
 
-# cd BasicBTFS
+cd BasicBTFS
 
-# ./clean.sh && ./performancetest.sh && ./clean.sh
+./clean.sh && ./performancetest.sh && ./clean.sh
 
-# cd ../BasicBTFSNC
+cd ../BasicBTFSNC
 
-# ./clean.sh && ./performancetest.sh && ./clean.sh
+./clean.sh && ./performancetest.sh && ./clean.sh
 
-# cd ../BasicFATFS
+cd ../BasicFATFS
 
-# ./clean.sh && ./performancetest.sh && ./clean.sh
+./clean.sh && ./performancetest.sh && ./clean.sh
 
-# cd BTRFS
+cd ../BTRFS
 
-# ./clean.sh && ./performancetest.sh && ./clean.sh
+./clean.sh && ./performancetest.sh && ./clean.sh
 
-cd FATFS
+cd ../FATFS
 
 ./clean.sh && ./performancetest.sh && ./clean.sh
 
