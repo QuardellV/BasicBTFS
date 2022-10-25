@@ -1,6 +1,0 @@
-make --dry-run --always-make --keep-going --print-directory
-make: Entering directory '/home/quardell/Documents/School/SimpleBtreeFS/SimpleBtreeFS'
-make: Leaving directory '/home/quardell/Documents/School/SimpleBtreeFS/SimpleBtreeFS'
- 
-make: *** No targets specified and no makefile found.  Stop.
-
