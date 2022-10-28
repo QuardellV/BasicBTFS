@@ -2049,73 +2049,11 @@ test_advanced_sequence_4() {
 init() {
     mkdir -p test
     sudo mount -t tmpfs -o size=20G tmpfs test
-    # # dd if=/dev/zero of='$ROOT_DIR'/test.img bs=1M count=50
     mkdir $ROOT_DIR
     dd if=/dev/zero of=test/test.img bs=1 count=0 seek=15G
     mkfs.fat test/test.img
     sudo mount -o loop -t vfat test/test.img $ROOT_DIR
-    # sudo mount -o loop -t basicbtfs '$ROOT_DIR'/test.img test
-
-    # make
-    # sudo insmod basicbtfs.ko
-    # mkdir -p $ROOT_DIR
-    # dd if=/dev/zero of=test.img bs=10M count=50
-    # ./mkfs.basicbtfs test.img
-    # sudo mount -o loop -t basicbtfs test.img $ROOT_DIR
 }
 
 test_create_root $D_MOD "2" "test" "root"
-# startA=`date +%s.%N`
-# test_create_file_empty
-# test_create_file_nonempty
-# test_create_file_toolong
-# test_create_already_exist
-
-# test_mkdir_depth_1
-# test_mkdir_depth_n
-# endA=`date +%s.%N`
-# runtimeA=$( echo "$endA - $startA" | bc -l )
-# ./btfs defrag test
-# startB=`date +%s.%N`
-# # ./btfs defrag test
-# test_mkdir_toolong
-
-# test_create_file_subdir_1
-# test_create_file_subdir_n
-# # test_create_nfiles_subdir_1
-
-# test_write_small
-# # test_write_advanced
-
-# test_rm_empty
-# # ./btfs defrag test
-# test_rm_small
-# test_rm_large
-
-# test_rmdir_empty
-# test_rmdir_nonempty
-
-# test_rm_in_subdir
-# test_rm_subdir
-# endB=`date +%s.%N`
-# runtimeB=$( echo "$endB - $startB" | bc -l )
-# ./btfs defrag test
-# startC=`date +%s.%N`
-# # # # # # # test_move_file_simple
-# # # # # # # test_move_file_noreplace
-# # # # # # # test_move_file_overwrite
-# # # # # # # test_move_file_to_other_dir
-# # # # # # # # test_move_advanced
-
-# # # # # # # test_move_dir_simple
-# # # # # # # test_move_dir_in_dir
-
-# test_advanced_sequence_1
-# test_advanced_sequence_2
-# test_advanced_sequence_3
-# test_advanced_sequence_4
-# endC=`date +%s`
-# runtimeC=$( echo "$endC - $startC" | bc -l )
-# runtime=$( echo "$runtimeA + $runtimeB + $runtimeC" | bc -l )
-# echo "final time: $runtime"
 
