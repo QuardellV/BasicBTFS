@@ -59,7 +59,6 @@ static int basicbtfs_write_inode(struct inode *inode, struct writeback_control *
 
     if (ino >= sbi->s_ninodes) return 0;
 
-    // printk("basicbtfs_write_inode() inode_block: %d\n", inode_block);
     bh = sb_bread(sb, inode_block);
 
     if (!bh) return -EIO;
@@ -92,8 +91,6 @@ static int basicbtfs_sync_fs(struct super_block *sb, int wait)
     ret = flush_bitmap(sb, sbi->s_ifree_bitmap, sbi->s_imap_blocks, 1, wait);
     if (ret < 0) return ret;
     ret = flush_bitmap(sb, sbi->s_bfree_bitmap, sbi->s_bmap_blocks, sbi->s_imap_blocks + 1, wait);
-    // if (ret < 0) return ret;
-    // ret = flush_filemap(sb, sbi->s_fileblock_map, sbi->s_filemap_blocks, sbi->s_imap_blocks + sbi->s_bmap_blocks + sbi->s_inode_blocks + 1, wait);
 
     return ret;
 }
@@ -193,15 +190,8 @@ int basicbtfs_fill_super(struct super_block *sb, void *data, int silent)
     struct basicbtfs_disk_block *disk_block = NULL;
     struct basicbtfs_name_list_hdr *list_hdr = NULL;
     int ret = 0;
-    int tmp_degree = 80;
-    int test_size = 28 + (2 * tmp_degree - 1) * sizeof(struct basicbtfs_entry) + 4 * 2 * tmp_degree;
 
-    printk("size of diskblock: %ld\n", sizeof(struct basicbtfs_disk_block));
-    printk("size of btree node: %ld\n", sizeof(struct basicbtfs_btree_node));
-    printk("possible size of btree node %d\n", test_size);
     ret = init_super_block(sb);
-
-    printk("initialized superblock\n");
 
     if (ret < 0) return ret;
 
@@ -248,19 +238,6 @@ int basicbtfs_fill_super(struct super_block *sb, void *data, int silent)
 
     init_bitmap(sb, sbi->s_bfree_bitmap, sbi->s_bmap_blocks, sbi->s_imap_blocks + 1);
 
-    // sbi->s_fileblock_map = kzalloc(sbi->s_filemap_blocks * BASICBTFS_BLOCKSIZE, GFP_KERNEL);
-    // if (!sbi->s_fileblock_map) {
-    //     printk("not sufficient memory for filemap\n");
-    //     kfree(sbi->s_bfree_bitmap);
-    //     kfree(sbi->s_ifree_bitmap);
-    //     kfree(sbi);
-    //     return -ENOMEM;
-    // }
-
-    // init_filemap(sb, sbi->s_fileblock_map, sbi->s_filemap_blocks, sbi->s_imap_blocks + sbi->s_bmap_blocks + sbi->s_inode_blocks + 1);
-
-    printk("initialized bitmaps\n");
-
     root_inode = basicbtfs_iget(sb, 0);
     if (IS_ERR(root_inode)) {
         kfree(sbi->s_bfree_bitmap);
@@ -281,7 +258,6 @@ int basicbtfs_fill_super(struct super_block *sb, void *data, int silent)
     node = &disk_block->block_type.btree_node;
     node->leaf = true;
     node->root = true;
-    // node->block_type = BASICBTFS_BLOCKTYPE_BTREE_NODE;
     node->nr_of_keys = 0;
     node->nr_of_files = 0;
     node->parent = root_inode->i_ino;
@@ -304,10 +280,8 @@ int basicbtfs_fill_super(struct super_block *sb, void *data, int silent)
         disk_block->block_type_id =BASICBTFS_BLOCKTYPE_NAMETREE;
         list_hdr = &disk_block->block_type.name_list_hdr;
 
-        // list_hdr = (struct basicbtfs_name_list_hdr *)bh_name_table->b_data;
         list_hdr->free_bytes = BASICBTFS_EMPTY_NAME_TREE;
         list_hdr->start_unused_area = BASICBTFS_BLOCKSIZE - BASICBTFS_EMPTY_NAME_TREE;
-        // list_hdr->block_type = BASICBTFS_BLOCKTYPE_NAMETREE;
         list_hdr->first_list = true;
         list_hdr->prev_block = root_inode->i_ino;
         list_hdr->next_block = 0;
@@ -315,9 +289,6 @@ int basicbtfs_fill_super(struct super_block *sb, void *data, int silent)
         mark_buffer_dirty(bh_name_table);
         brelse(bh_name_table);
     }
-    // basicbtfs_cache_add_dir(sb, BASICBTFS_INODE(root_inode)->i_bno, node, (struct basicbtfs_block *)bh_name_table->b_data);
-    // basicbtfs_destroy_btree_node_data(node_cache);
-
 
     mark_buffer_dirty(bh);
     brelse(bh);

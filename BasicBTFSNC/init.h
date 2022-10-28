@@ -77,8 +77,6 @@ static inline unsigned long get_hash_from_block(char *filename, int length) {
 
     crc = crc32(crc, tmp_buffer, length);
 
-    // printk(KERN_INFO "Current unsigned long: %d\n", crc);
-
     kfree(tmp_buffer);
 
     return crc;

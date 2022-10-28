@@ -12,13 +12,10 @@
 static inline int basicbtfs_btree_node_delete(struct super_block *sb, uint32_t bno, uint32_t hash);
 
 static inline void basicbtfs_btree_node_init(struct super_block *sb, struct basicbtfs_btree_node *node, bool leaf, uint32_t dir_bno, uint32_t bno, uint32_t par_bno) {
-    // printk("new btree node: %d\n", bno);
     memset(node, 0, sizeof(struct basicbtfs_btree_node));
     node->nr_of_keys = 0;
     node->leaf = leaf;
     node->parent = par_bno;
-    // node->block_type = BASICBTFS_BLOCKTYPE_BTREE_NODE;
-    // basicbtfs_cache_add_node(sb, dir_bno, bno, node);
 }
 
 static inline int basicbtfs_btree_update_root(struct inode *inode, uint32_t bno) {
@@ -37,20 +34,6 @@ static inline int basicbtfs_btree_update_root(struct inode *inode, uint32_t bno)
     bh = sb_bread(sb, inode_block);
 
     if (!bh) return -EIO;
-
-    // printk("update root: %d | %d\n", inode_info->i_bno, bno);
-
-    // printk(KERN_INFO "START Debug btree traverse added update before\n");
-    // printk(KERN_INFO "CACHE: current dir_bno: %d\n", inode_info->i_bno);
-    // basicbtfs_cache_iterate_dir_debug(inode->i_sb, inode_info->i_bno);
-    // printk(KERN_INFO "END Debug btree traverse update before\n");
-
-    // basicbtfs_cache_update_root_node(sb, inode_info->i_bno, bno);
-
-    // printk(KERN_INFO "START Debug btree traverse added update after\n");
-    // printk(KERN_INFO "CACHE: current dir_bno: %d\n", bno);
-    // basicbtfs_cache_iterate_dir_debug(inode->i_sb, bno);
-    // printk(KERN_INFO "END Debug btree traverse update after\n");
 
     disk_inode = (struct basicbtfs_inode *) bh->b_data;
     disk_inode += inode_offset;
@@ -75,14 +58,13 @@ static inline uint32_t basicbtfs_btree_node_lookup(struct super_block *sb, uint3
     if (!bh) return 0;
     disk_block = (struct basicbtfs_disk_block *) bh->b_data;
     btr_node = &disk_block->block_type.btree_node;
-    // hash > btr_node->entries[index].hash
+
     while (index < btr_node->nr_of_keys && hash > btr_node->entries[index].hash) {
         index++;
         counter++;
     }
-    // btr_node->entries[index].hash == hash
+
     if (btr_node->entries[index].hash == hash) {
-        // printk(KERN_INFO "Current counter: %d of %d\n", counter, hash);
         ret = btr_node->entries[index].ino;
         brelse(bh);
         return ret;
@@ -117,15 +99,12 @@ static inline uint32_t basicbtfs_btree_node_update_namelist_info(struct super_bl
     disk_block = (struct basicbtfs_disk_block *) bh->b_data;
     btr_node = &disk_block->block_type.btree_node;
 
-    // hash > btr_node->entries[index].hash
     while (index < btr_node->nr_of_keys && hash > btr_node->entries[index].hash) {
         index++;
         counter++;
     }
 
-    // btr_node->entries[index].hash == hash
     if (btr_node->entries[index].hash == hash) {
-        printk("found :)\n");
         btr_node->entries[index].name_bno = name_bno;
         btr_node->entries[index].block_index = block_index;
         mark_buffer_dirty(bh);
@@ -158,14 +137,12 @@ static inline uint32_t basicbtfs_btree_node_lookup_with_entry(struct super_block
     disk_block = (struct basicbtfs_disk_block *) bh->b_data;
     btr_node = &disk_block->block_type.btree_node;
 
-    // hash > btr_node->entries[index].hash
     while (index < btr_node->nr_of_keys && hash > btr_node->entries[index].hash) {
         index++;
         counter++;
     }
-    // btr_node->entries[index].hash == hash
+
     if (btr_node->entries[index].hash == hash) {
-        // printk(KERN_INFO "Current counter: %d of %d with: %d | %d\n", counter, hash, btr_node->entries[index].name_bno, btr_node->entries[index].block_index);
         ret = btr_node->entries[index].ino;
         memcpy(entry, &btr_node->entries[index], sizeof(struct basicbtfs_entry));
         brelse(bh);
@@ -197,8 +174,6 @@ static inline int basicbtfs_btree_split_child(struct super_block *sb, uint32_t p
     bh_par = sb_bread(sb, par);
 
     if (!bh_par) return -EIO;
-
-    // node_par = (struct basicbtfs_btree_node *) bh_par->b_data;
 
     disk_block = (struct basicbtfs_disk_block *) bh_par->b_data;
     node_par = &disk_block->block_type.btree_node;
@@ -279,7 +254,7 @@ static inline int basicbtfs_btree_insert_non_full(struct super_block *sb, uint32
 
     if (node->leaf) {
         int index = node->nr_of_keys - 1;
-        // node->entries[index].hash > new_entry->hash
+
         while (index >= 0 && node->entries[index].hash > new_entry->hash) {
             memcpy(&node->entries[index + 1], &node->entries[index], sizeof(struct basicbtfs_entry));
             index--;
@@ -290,7 +265,7 @@ static inline int basicbtfs_btree_insert_non_full(struct super_block *sb, uint32
         mark_buffer_dirty(bh);
     } else {
         int index = node->nr_of_keys - 1;
-        // node->entries[index].hash > new_entry->hash
+
         while (index >= 0 && node->entries[index].hash > new_entry->hash) {
             index--;
         }
@@ -313,7 +288,7 @@ static inline int basicbtfs_btree_insert_non_full(struct super_block *sb, uint32
                 brelse(bh_child);
                 return ret;
             }
-            // node->entries[index+1].hash < new_entry->hash
+
             if (node->entries[index+1].hash < new_entry->hash) {
                 index++;
             }
@@ -340,14 +315,13 @@ static inline int basicbtfs_btree_node_update(struct super_block *sb, uint32_t r
 
     disk_block = (struct basicbtfs_disk_block *) bh->b_data;
     btr_node = &disk_block->block_type.btree_node;
-    // hash > btr_node->entries[index].hash
+
     while (index < btr_node->nr_of_keys && hash > btr_node->entries[index].hash) {
         index++;
         counter++;
     }
-    // btr_node->entries[index].hash == hash
+
     if (btr_node->entries[index].hash == hash) {
-        // printk(KERN_INFO "Current counter: %d\n", counter);
         btr_node->entries[index].ino = inode;
         mark_buffer_dirty(bh);
         brelse(bh);
@@ -376,9 +350,6 @@ static inline int basicbtfs_btree_node_insert(struct super_block *sb, struct ino
 
     disk_block = (struct basicbtfs_disk_block *) bh_old->b_data;
     old_node = &disk_block->block_type.btree_node;
-    // old_node = (struct basicbtfs_btree_node *) bh_old->b_data;
-
-    // printk("nr of keys non cache: %d\n", old_node->nr_of_keys);
 
     if (old_node->nr_of_keys == 2 * BASICBTFS_MIN_DEGREE -1) {
         int index = 0;
@@ -395,7 +366,6 @@ static inline int basicbtfs_btree_node_insert(struct super_block *sb, struct ino
             return -EIO;
         }
 
-        // new_node = (struct basicbtfs_btree_node *) bh_new->b_data;
         disk_block = (struct basicbtfs_disk_block *) bh_new->b_data;
         memset(disk_block, 0, sizeof(struct basicbtfs_disk_block));
         disk_block->block_type_id = BASICBTFS_BLOCKTYPE_BTREE_NODE;
@@ -410,7 +380,7 @@ static inline int basicbtfs_btree_node_insert(struct super_block *sb, struct ino
             brelse(bh_new);
             return ret;
         }
-        // new_node->entries[index].hash < entry->hash
+
         if (new_node->entries[index].hash < entry->hash) {
             index++;
         }
@@ -467,13 +437,11 @@ static inline int basicbtfs_btree_node_find_key(struct super_block *sb, uint32_t
 
     disk_block = (struct basicbtfs_disk_block *) bh->b_data;
     node = &disk_block->block_type.btree_node;
-    // node = (struct basicbtfs_btree_node *) bh->b_data;
-    // node->entries[index].hash < hash
+
     while (index < node->nr_of_keys && node->entries[index].hash < hash) {
         ++index;
     }
     brelse(bh);
-    // printk(KERN_INFO "Founded key: %d for filename %d\n", index, hash);
     return index;
 }
 
@@ -487,10 +455,8 @@ static inline int basicbtfs_btree_node_remove_from_leaf(struct super_block *sb, 
 
     if (!bh) return -1;
 
-    // node = (struct basicbtfs_btree_node *) bh->b_data;
     disk_block = (struct basicbtfs_disk_block *) bh->b_data;
     node = &disk_block->block_type.btree_node;
-    // printk(KERN_INFO "nr of keys: %d\n", index);
 
     for (i = index + 1; i < node->nr_of_keys; i++) {
         memcpy(&node->entries[i - 1], &node->entries[i], sizeof(struct basicbtfs_entry));
@@ -512,7 +478,6 @@ static inline int basicbtfs_btree_node_get_predecessor(struct super_block *sb, u
 
     if (!bh) return -EIO;
 
-    // node = (struct basicbtfs_btree_node *) bh->b_data;
     disk_block = (struct basicbtfs_disk_block *) bh->b_data;
     node = &disk_block->block_type.btree_node;
     bno_child = node->children[index];
@@ -524,7 +489,6 @@ static inline int basicbtfs_btree_node_get_predecessor(struct super_block *sb, u
 
     if (!bh) return -EIO;
 
-    // node = (struct basicbtfs_btree_node *) bh->b_data;
     disk_block = (struct basicbtfs_disk_block *) bh->b_data;
     node = &disk_block->block_type.btree_node;
 
@@ -540,8 +504,6 @@ static inline int basicbtfs_btree_node_get_predecessor(struct super_block *sb, u
         if (!bh) return -EIO;
         disk_block = (struct basicbtfs_disk_block *) bh->b_data;
         node = &disk_block->block_type.btree_node;
-
-        // node = (struct basicbtfs_btree_node *) bh->b_data;
     }
 
     memcpy(ret, &node->entries[node->nr_of_keys- 1], sizeof (struct basicbtfs_entry));
@@ -559,7 +521,6 @@ static inline int basicbtfs_btree_node_get_succesor(struct super_block *sb, uint
 
     if (!bh) return -EIO;
 
-    // node = (struct basicbtfs_btree_node *) bh->b_data;
     disk_block = (struct basicbtfs_disk_block *) bh->b_data;
     node = &disk_block->block_type.btree_node;
     bno_child = node->children[index + 1];
@@ -571,7 +532,6 @@ static inline int basicbtfs_btree_node_get_succesor(struct super_block *sb, uint
 
     if (!bh) return -EIO;
 
-    // node = (struct basicbtfs_btree_node *) bh->b_data;
     disk_block = (struct basicbtfs_disk_block *) bh->b_data;
     node = &disk_block->block_type.btree_node;
 
@@ -585,7 +545,6 @@ static inline int basicbtfs_btree_node_get_succesor(struct super_block *sb, uint
 
         if (!bh) return -EIO;
 
-        // node = (struct basicbtfs_btree_node *) bh->b_data;
         disk_block = (struct basicbtfs_disk_block *) bh->b_data;
         node = &disk_block->block_type.btree_node;
     }
@@ -606,7 +565,6 @@ static inline int basicbtfs_btree_node_merge(struct super_block *sb, uint32_t bn
 
     if (!bh_par) return -EIO;
 
-    // node = (struct basicbtfs_btree_node *) bh_par->b_data;
     disk_block = (struct basicbtfs_disk_block *) bh_par->b_data;
     node = &disk_block->block_type.btree_node;
 
@@ -617,7 +575,6 @@ static inline int basicbtfs_btree_node_merge(struct super_block *sb, uint32_t bn
         return -EIO;
     }
 
-    // lhs = (struct basicbtfs_btree_node *) bh_lhs->b_data;
     disk_block = (struct basicbtfs_disk_block *) bh_lhs->b_data;
     lhs = &disk_block->block_type.btree_node;
 
@@ -629,7 +586,6 @@ static inline int basicbtfs_btree_node_merge(struct super_block *sb, uint32_t bn
         return -EIO;
     }
 
-    // rhs = (struct basicbtfs_btree_node *) bh_rhs->b_data;
     disk_block = (struct basicbtfs_disk_block *) bh_rhs->b_data;
     rhs = &disk_block->block_type.btree_node;
 
@@ -680,7 +636,6 @@ static inline int basicbtfs_btree_node_remove_from_nonleaf(struct super_block *s
 
     if (!bh_par) return -EIO;
 
-    // node = (struct basicbtfs_btree_node *) bh_par->b_data;
     disk_block = (struct basicbtfs_disk_block *) bh_par->b_data;
     node = &disk_block->block_type.btree_node;
 
@@ -703,7 +658,6 @@ static inline int basicbtfs_btree_node_remove_from_nonleaf(struct super_block *s
         return -EIO;
     }
 
-    // rhs = (struct basicbtfs_btree_node *) bh_rhs->b_data;
     disk_block = (struct basicbtfs_disk_block *) bh_rhs->b_data;
     rhs = &disk_block->block_type.btree_node;
 
@@ -763,7 +717,6 @@ static inline int basicbtfs_btree_node_steal_from_previous(struct super_block *s
 
     if (!bh_par) return -EIO;
 
-    // node = (struct basicbtfs_btree_node *) bh_par->b_data;
     disk_block = (struct basicbtfs_disk_block *) bh_par->b_data;
     node = &disk_block->block_type.btree_node;
 
@@ -774,7 +727,6 @@ static inline int basicbtfs_btree_node_steal_from_previous(struct super_block *s
         return -EIO;
     }
 
-    // lhs = (struct basicbtfs_btree_node *) bh_lhs->b_data;
     disk_block = (struct basicbtfs_disk_block *) bh_lhs->b_data;
     lhs = &disk_block->block_type.btree_node;
 
@@ -786,7 +738,6 @@ static inline int basicbtfs_btree_node_steal_from_previous(struct super_block *s
         return -EIO;
     }
 
-    // rhs = (struct basicbtfs_btree_node *) bh_rhs->b_data;
     disk_block = (struct basicbtfs_disk_block *) bh_rhs->b_data;
     rhs = &disk_block->block_type.btree_node;
 
@@ -831,7 +782,6 @@ static inline int basicbtfs_btree_node_steal_from_next(struct super_block *sb, u
 
     if (!bh_par) return -EIO;
 
-    // node = (struct basicbtfs_btree_node *) bh_par->b_data;
     disk_block = (struct basicbtfs_disk_block *) bh_par->b_data;
     node = &disk_block->block_type.btree_node;
 
@@ -842,7 +792,6 @@ static inline int basicbtfs_btree_node_steal_from_next(struct super_block *sb, u
         return -EIO;
     }
 
-    // lhs = (struct basicbtfs_btree_node *) bh_lhs->b_data;
     disk_block = (struct basicbtfs_disk_block *) bh_lhs->b_data;
     lhs = &disk_block->block_type.btree_node;
 
@@ -854,7 +803,6 @@ static inline int basicbtfs_btree_node_steal_from_next(struct super_block *sb, u
         return -EIO;
     }
 
-    // rhs = (struct basicbtfs_btree_node *) bh_rhs->b_data;
     disk_block = (struct basicbtfs_disk_block *) bh_rhs->b_data;
     rhs = &disk_block->block_type.btree_node;
 
@@ -899,7 +847,6 @@ static inline int basicbtfs_btree_node_fill(struct super_block *sb, uint32_t bno
 
     if (!bh_par) return -EIO;
 
-    // node = (struct basicbtfs_btree_node *) bh_par->b_data;
     disk_block = (struct basicbtfs_disk_block *) bh_par->b_data;
     node = &disk_block->block_type.btree_node;
 
@@ -910,7 +857,6 @@ static inline int basicbtfs_btree_node_fill(struct super_block *sb, uint32_t bno
         return -EIO;
     }
 
-    // lhs = (struct basicbtfs_btree_node *) bh_lhs->b_data;
     disk_block = (struct basicbtfs_disk_block *) bh_lhs->b_data;
     lhs = &disk_block->block_type.btree_node;
 
@@ -922,7 +868,6 @@ static inline int basicbtfs_btree_node_fill(struct super_block *sb, uint32_t bno
         return -EIO;
     }
 
-    // rhs = (struct basicbtfs_btree_node *) bh_rhs->b_data;
     disk_block = (struct basicbtfs_disk_block *) bh_rhs->b_data;
     rhs = &disk_block->block_type.btree_node;
 
@@ -956,20 +901,18 @@ static inline int basicbtfs_btree_node_delete(struct super_block *sb, uint32_t b
 
     if (!bh) return -EIO;
 
-    // node = (struct basicbtfs_btree_node *) bh->b_data;
     disk_block = (struct basicbtfs_disk_block *) bh->b_data;
     node = &disk_block->block_type.btree_node;
-    // node->entries[index].hash == new_entry->hash
+
     if (index < node->nr_of_keys && node->entries[index].hash == hash) {
         if (node->leaf) {
-            // printk("leaf\n");
             ret = basicbtfs_btree_node_remove_from_leaf(sb, bno, index);
         } else {
-            // printk("no leaf\n");
             ret = basicbtfs_btree_node_remove_from_nonleaf(sb, bno, index);
         }
     } else {
         if (node->leaf) {
+            //TODO: Fix this
             // printk(KERN_INFO "File %d doesn't exist with index %d\n", hash, index);
         }
 
@@ -980,7 +923,6 @@ static inline int basicbtfs_btree_node_delete(struct super_block *sb, uint32_t b
             return -EIO;
         }
 
-        // child = (struct basicbtfs_btree_node *) bh2->b_data;
         disk_block = (struct basicbtfs_disk_block *) bh2->b_data;
         child = &disk_block->block_type.btree_node;
 
@@ -1013,7 +955,6 @@ static inline int basicbtfs_btree_delete_entry(struct super_block *sb, struct in
 
     if (!bh) return -EIO;
 
-    // node = (struct basicbtfs_btree_node *) bh->b_data;
     disk_block = (struct basicbtfs_disk_block *) bh->b_data;
     node = &disk_block->block_type.btree_node;
 
@@ -1046,7 +987,6 @@ static inline int basicbtfs_btree_delete_entry(struct super_block *sb, struct in
                 return -EIO;
             }
 
-            // new_root_node = (struct basicbtfs_btree_node *) bh2->b_data;
             disk_block = (struct basicbtfs_disk_block *) bh2->b_data;
             new_root_node = &disk_block->block_type.btree_node;
             new_root_node->nr_of_files = node->nr_of_files - 1;
@@ -1055,7 +995,6 @@ static inline int basicbtfs_btree_delete_entry(struct super_block *sb, struct in
             new_root_node->parent = inode->i_ino;
             new_root_node->root = true;
             node->root = false;
-            // basicbtfs_cache_delete_node(sb, node->children[0], root_bno);
             mark_buffer_dirty(bh2);
             brelse(bh2);
         }
@@ -1083,13 +1022,8 @@ static inline int basicbtfs_btree_traverse_debug(struct super_block *sb, uint32_
     if (!bh) return -EIO;
 
 
-    // node = (struct basicbtfs_btree_node *) bh->b_data;
     disk_block = (struct basicbtfs_disk_block *) bh->b_data;
     node = &disk_block->block_type.btree_node;
-
-    if (node->root) {
-        // printk("nr of files and keys: %d | %d\n", node->nr_of_files, node->nr_of_keys);
-    }
 
     for (index = 0; index < node->nr_of_keys; index++) {
         if (!node->leaf) {
@@ -1100,7 +1034,6 @@ static inline int basicbtfs_btree_traverse_debug(struct super_block *sb, uint32_
                 return ret;
             }
         }
-        // printk(KERN_INFO "file: %d | ino: %d\n", node->entries[index].hash, node->entries[index].ino);
     }
 
     if (!node->leaf) {

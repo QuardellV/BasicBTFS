@@ -2051,19 +2051,10 @@ init() {
     sudo insmod basicbtfs.ko
     mkdir -p test
     sudo mount -t tmpfs -o size=20G tmpfs test
-    # # dd if=/dev/zero of='$ROOT_DIR'/test.img bs=1M count=50
     mkdir $ROOT_DIR
     dd if=/dev/zero of=test/test.img bs=1 count=0 seek=15G
     ./mkfs.basicbtfs test/test.img
     sudo mount -o loop -t basicbtfs test/test.img $ROOT_DIR
-    # sudo mount -o loop -t basicbtfs '$ROOT_DIR'/test.img test
-
-    # make
-    # sudo insmod basicbtfs.ko
-    # mkdir -p $ROOT_DIR
-    # dd if=/dev/zero of=test.img bs=10M count=50
-    # ./mkfs.basicbtfs test.img
-    # sudo mount -o loop -t basicbtfs test.img $ROOT_DIR
 }
 
 test_create_root $D_MOD "2" "test" "root"
@@ -2103,14 +2094,14 @@ endB=`date +%s.%N`
 runtimeB=$( echo "$endB - $startB" | bc -l )
 ./btfs defrag test
 startC=`date +%s.%N`
-# # # # # # test_move_file_simple
-# # # # # # test_move_file_noreplace
-# # # # # # test_move_file_overwrite
-# # # # # # test_move_file_to_other_dir
-# # # # # # # test_move_advanced
+# test_move_file_simple
+# test_move_file_noreplace
+# test_move_file_overwrite
+# test_move_file_to_other_dir
+# # test_move_advanced
 
-# # # # # # test_move_dir_simple
-# # # # # # test_move_dir_in_dir
+# test_move_dir_simple
+# test_move_dir_in_dir
 
 test_advanced_sequence_1
 test_advanced_sequence_2
