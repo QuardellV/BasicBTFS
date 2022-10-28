@@ -3,7 +3,6 @@
 
 BW_DIR=Results/tmpfs/bandwidth/ftfsbw
 LAT_DIR=Results/tmpfs/latency/ftfslat
-# SSD/HDD
 
 sudo rm -rf ../$BW_DIR
 mkdir ../$BW_DIR
@@ -108,8 +107,3 @@ do
     # rm -rf ${tmp}M_lat.1.log
     cd ../../../../../BasicFATFS
 done
-
-# 2. Application benchmarks with and without defragmentation test defragmentation by regularly defragmenting the thing
-#   - Mail server
-#   - sql database
-#   - file server

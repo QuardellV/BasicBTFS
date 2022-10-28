@@ -2051,19 +2051,10 @@ init() {
     sudo insmod basicftfs.ko
     mkdir -p test
     sudo mount -t tmpfs -o size=20G tmpfs test
-    # # dd if=/dev/zero of='$ROOT_DIR'/test.img bs=1M count=50
     mkdir $ROOT_DIR
     dd if=/dev/zero of=test/test.img bs=1 count=0 seek=15G
     ./mkfs.basicftfs test/test.img
     sudo mount -o loop -t basicftfs test/test.img $ROOT_DIR
-    # sudo mount -o loop -t basicbtfs '$ROOT_DIR'/test.img test
-
-    # make
-    # sudo insmod basicftfs.ko
-    # mkdir -p $ROOT_DIR
-    # dd if=/dev/zero of=test.img bs=10M count=50
-    # ./mkfs.basicftfs test.img
-    # sudo mount -o loop -t basicftfs test.img $ROOT_DIR
 }
 
 test_create_root $D_MOD "2" "test" "root"
@@ -2074,7 +2065,6 @@ test_create_already_exist
 
 test_mkdir_depth_1
 test_mkdir_depth_n
-# ./btfs defrag test
 test_mkdir_toolong
 
 test_create_file_subdir_1
@@ -2095,14 +2085,14 @@ test_rmdir_nonempty
 test_rm_in_subdir
 test_rm_subdir
 
-# # # # # # test_move_file_simple
-# # # # # # test_move_file_noreplace
-# # # # # # test_move_file_overwrite
-# # # # # # test_move_file_to_other_dir
-# # # # # # # test_move_advanced
+# test_move_file_simple
+# test_move_file_noreplace
+# test_move_file_overwrite
+# test_move_file_to_other_dir
+# # test_move_advanced
 
-# # # # # # test_move_dir_simple
-# # # # # # test_move_dir_in_dir
+# test_move_dir_simple
+# test_move_dir_in_dir
 
 test_advanced_sequence_1
 test_advanced_sequence_2

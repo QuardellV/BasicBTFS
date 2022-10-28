@@ -167,7 +167,6 @@ static int basicftfs_create(struct inode *dir, struct dentry *dentry, umode_t mo
     if (ret == -EIO) {
         brelse(bh_dir);
         put_blocks(BASICFTFS_SB(sb), BASICFTFS_INODE(inode)->i_bno, 1);
-        // dir->i_blocks--;
         put_inode(BASICFTFS_SB(sb), inode->i_ino);
         iput(inode);
         return ret;
@@ -179,7 +178,6 @@ static int basicftfs_create(struct inode *dir, struct dentry *dentry, umode_t mo
 
     if (ret < 0) {
         put_blocks(BASICFTFS_SB(sb), BASICFTFS_INODE(inode)->i_bno, 1);
-        // dir->i_blocks--;
         put_inode(BASICFTFS_SB(sb), inode->i_ino);
         iput(inode);
         return ret;
@@ -256,8 +254,8 @@ static int basicftfs_unlink(struct inode *dir ,struct dentry *dentry) {
         clean_inode(inode);
         put_blocks(sbi, bno, 1);
         put_inode(sbi, ino);
-        //TODO: Bug
     } else if (S_ISREG(inode->i_mode)) {
+        //TODO: Fix bug
         // clean_file_block(inode);
         // clean_inode(inode);
         // put_blocks(sbi, bno, 1);

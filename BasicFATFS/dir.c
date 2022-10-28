@@ -182,11 +182,9 @@ int basicftfs_add_entry_name(struct inode *dir, struct inode *inode, char *filen
 
 clean_allocated_dir_block:
     clean_allocated_block(cblock, sb, block_idx, is_allocated);
-    // dir->i_blocks -= 1;
 
 clean_allocated_inode:
     put_blocks(BASICFTFS_SB(sb), BASICFTFS_INODE(inode)->i_bno, 1);
-    // dir->i_blocks--;
     put_inode(BASICFTFS_SB(sb), inode->i_ino);
     iput(inode);
 
@@ -374,7 +372,6 @@ int clean_file_block(struct inode *inode) {
         char *block;
 
         put_blocks(sbi, file_block->table[bi], 1);
-        // dir->i_blocks -= file_block->clusters[ci].nr_of_blocks;
 
         bno = file_block->table[bi];
         bh2 = sb_bread(sb, bno);

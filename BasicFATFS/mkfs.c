@@ -61,20 +61,6 @@ static struct superblock *write_superblock(int fd, struct stat *fstats) {
         return NULL;
     }
 
-    printf(
-        "Superblock: (%ld)\n"
-        "\tmagic=%#x\n"
-        "\tnr_blocks=%u\n"
-        "\tnr_inodes=%u (inode blocks=%u blocks)\n"
-        "\tnr_ifree_blocks=%u\n"
-        "\tnr_bfree_blocks=%u\n"
-        "\tnr_free_inodes=%u\n"
-        "\tnr_free_blocks=%u\n",
-        sizeof(struct superblock), sb->info.s_magic, sb->info.s_nblocks,
-        sb->info.s_ninodes, sb->info.s_inode_blocks, sb->info.s_imap_blocks,
-        sb->info.s_bmap_blocks, sb->info.s_nfree_inodes,
-        sb->info.s_nfree_blocks);
-
     return sb;
 }
 
@@ -102,7 +88,6 @@ static int write_ifree_blocks(int fd, struct superblock *sb) {
         }
     }
 
-    printf("inode bitmap blocks: wrote %d\n", i);
     free(block);
     return 0;
 }
@@ -113,7 +98,6 @@ static int write_bfree_blocks(int fd, struct superblock *sb)
     uint32_t bits_used = le32toh(sb->info.s_imap_blocks) + le32toh(sb->info.s_bmap_blocks) + le32toh(sb->info.s_inode_blocks) + 2;
     uint32_t blocks_used = bits_used / BASICFTFS_BLOCKSIZE;
     uint32_t used_lines_last = (bits_used % BASICFTFS_BLOCKSIZE) / 64;
-    // uint32_t used_lines = bits_used / 64; // not-free bits are set per uint64 integer
     uint32_t used_lines_rem_last = (bits_used % BASICFTFS_BLOCKSIZE) % 64; // if not all 64 bits all free, this is are the first n not free bits.
     int ret = 0;
 
