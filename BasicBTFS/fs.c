@@ -90,8 +90,6 @@ static void __exit basicbtfs_exit(void) {
         printk(KERN_ERR "Failed unregistration of filesystem\n");
     }
 
-    // basicbtfs_cache_delete_dir_cache();
-
     basicbtfs_destroy_inode_cache();
     basicbtfs_destroy_btree_node_data_cache();
     basicbtfs_destroy_btree_dir_cache();

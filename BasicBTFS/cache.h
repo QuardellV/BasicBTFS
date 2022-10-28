@@ -9,13 +9,12 @@
 
 #include "basicbtfs.h"
 #include "bitmap.h"
-// #include "nametree.h"
 
 static inline void basicbtfs_cache_add_dir(struct super_block *sb, uint32_t bno, struct basicbtfs_btree_node_cache *node, struct basicbtfs_block *name_block, uint32_t name_bno) {
     struct basicbtfs_btree_dir_cache_list *new_cache_dir_entry = basicbtfs_alloc_btree_dir(sb);
     struct basicbtfs_sb_info *sbi = BASICBTFS_SB(sb);
     struct basicbtfs_name_tree_cache *name_tree_cache;
-    // struct basicbtfs_block *tmp_block = basicbtfs_alloc_file(sb);
+
     new_cache_dir_entry->root_node_cache = (struct basicbtfs_btree_node_cache *)basicbtfs_alloc_file(sb);
     new_cache_dir_entry->bno = bno;
     new_cache_dir_entry->nr_of_blocks = 5;
@@ -35,16 +34,10 @@ static inline void basicbtfs_cache_add_dir(struct super_block *sb, uint32_t bno,
     INIT_LIST_HEAD(&name_tree_cache->list);
     list_add(&name_tree_cache->list, &new_cache_dir_entry->name_tree_cache->list);
 
-    // list_add(&new_cache_dir_entry->name_tree_cache->list, &new_cache_dir_entry->name_tree_cache->list);
     INIT_LIST_HEAD(&new_cache_dir_entry->root_node_cache->list);
     INIT_LIST_HEAD(&node->list);
     list_add(&node->list, &new_cache_dir_entry->root_node_cache->list);
 
-    if (list_empty(&new_cache_dir_entry->root_node_cache->list)) {
-        // printk("empty\n");
-    } else {
-        // printk("not empty\n");
-    }
     sbi->s_cache_dir_entries++;
 }
 
@@ -68,7 +61,6 @@ static inline void basicbtfs_cache_add_name_block(struct super_block *sb, uint32
     struct basicbtfs_btree_dir_cache_list *dir_cache, *tmp;
     struct basicbtfs_name_tree_cache *nametree_hdr = basicbtfs_alloc_nametree_hdr(sb);
 
-    // printk("add name block\n");
     nametree_hdr->name_tree_block = basicbtfs_alloc_file(sb);
     nametree_hdr->name_bno = name_bno;
 
@@ -86,22 +78,6 @@ static inline void basicbtfs_cache_add_name_block(struct super_block *sb, uint32
         }
     }
 }
-
-// static inline void basicbtfs_cache_update_node(struct super_block *sb, uint32_t hash, uint32_t bno, struct basicbtfs_btree_node *node) {
-//     struct basicbtfs_btree_dir_cache_list *dir_cache;
-//     struct basicbtfs_btree_node_hdr_cache *node_hdr_cache;
-
-//     list_for_each_entry(dir_cache, &dir_cache_list, list) {
-//         if (dir_cache->bno == hash) {
-//             list_for_each_entry(node_hdr_cache, &dir_cache->btree_dir_cache->list, list) {
-//                 if (node_hdr_cache->bno == bno) {
-//                     memcpy(node_hdr_cache->node, node, sizeof(struct basicbtfs_btree_node));
-//                     break;
-//                 }
-//             }
-//         }
-//     }
-// }
 
 static inline void basicbtfs_cache_update_block(struct super_block *sb, uint32_t dir_bno, struct basicbtfs_block *name_block, uint32_t name_bno) {
     struct basicbtfs_btree_dir_cache_list *dir_cache;
@@ -125,7 +101,6 @@ static inline void basicbtfs_cache_update_root_node(uint32_t dir_bno, struct bas
 
     list_for_each_entry_safe(dir_cache, tmp, &dir_cache_list, list) {
         if (dir_cache->bno == dir_bno) {
-            // printk("found\n");
             list_del(&new_node->list);
             list_add(&new_node->list, &dir_cache->root_node_cache->list);
             break;
@@ -133,27 +108,19 @@ static inline void basicbtfs_cache_update_root_node(uint32_t dir_bno, struct bas
     }
 
     node_cache =  list_first_entry(&dir_cache->root_node_cache->list, struct basicbtfs_btree_node_cache, list);
-    if (new_node == node_cache) {
-        // printk("si\n");
-    } else {
-        // printk("not the same\n");
-    }
 }
 
 static inline void basicbtfs_cache_update_root_bno(uint32_t dir_bno, uint32_t new_bno) {
     struct basicbtfs_btree_dir_cache_list *tmp, *dir_cache;
-    // printk("new bno cache: %d\n", new_bno);
 
     list_for_each_entry_safe(dir_cache, tmp, &dir_cache_list, list) {
         if (dir_cache->bno == dir_bno) {
-            // printk("found\n");
             list_del(&dir_cache->list);
             dir_cache->bno = new_bno;
             list_add(&dir_cache->list, &dir_cache_list);
             return;
         }
     }
-    // printk("not found\n");
 }
 
 static inline struct basicbtfs_btree_node_cache * basicbtfs_cache_get_root_node(uint32_t dir_bno) {
@@ -161,15 +128,12 @@ static inline struct basicbtfs_btree_node_cache * basicbtfs_cache_get_root_node(
     struct basicbtfs_btree_node_cache *node_cache;
 
     list_for_each_entry(dir_cache, &dir_cache_list, list) {
-        // printk("cur bno: %d\n",dir_cache->bno );
         if (dir_cache->bno == dir_bno) {
-            // printk("found new bno: %d\n", dir_bno);
             node_cache =  list_first_entry(&dir_cache->root_node_cache->list, struct basicbtfs_btree_node_cache, list);
             return node_cache;
         }
     }
 
-    // printk("no :(\n");
     return NULL;
 }
 
@@ -182,7 +146,6 @@ static inline uint32_t basicbtfs_cache_get_nr_of_blocks(uint32_t dir_bno) {
         }
     }
 
-    // printk("no :(\n");
     return 0;
 }
 
@@ -196,12 +159,9 @@ static inline void basicbtfs_cache_delete_dir(struct super_block *sb, uint32_t h
 
     list_for_each_entry_safe(dir_cache, tmp_dir_cache, &dir_cache_list, list) {
         if (dir_cache->bno == hash) {
-            // printk("found\n");
             list_for_each_entry_safe(node_cache, tmp_node, &dir_cache->root_node_cache->list, list) {
-                // printk("yes\n");
                 list_del(&node_cache->list);
                 basicbtfs_destroy_file_block((struct basicbtfs_block *) node_cache);
-                // basicbtfs_destroy_btree_node_data(node_cache);
             }
 
             list_for_each_entry_safe(nametree_hdr_cache, tmp_natr_hdr_cache, &dir_cache->name_tree_cache->list, list) {
@@ -239,7 +199,6 @@ static inline int basicbtfs_cache_emit_block(struct basicbtfs_block *btfs_block,
                 filename = kzalloc(sizeof(char) * cur_entry->name_length, GFP_KERNEL);
                 strncpy(filename, block, cur_entry->name_length);
                 if (!dir_emit(ctx, filename, cur_entry->name_length - 1, cur_entry->ino, DT_UNKNOWN)) {
-                    // printk(KERN_INFO "No files available anymore\n");
                     kfree(filename);
                     return 1;
                 }
@@ -251,7 +210,6 @@ static inline int basicbtfs_cache_emit_block(struct basicbtfs_block *btfs_block,
 
             block += cur_entry->name_length;
             cur_entry = (struct basicbtfs_name_entry *) block;
-            // *current_index++;
         }
     }
 
@@ -297,7 +255,6 @@ static inline int basicbtfs_cache_emit_block_debug(struct basicbtfs_block *btfs_
         if (cur_entry->ino != 0) {
             filename = kzalloc(sizeof(char) * cur_entry->name_length, GFP_KERNEL);
             strncpy(filename, block, cur_entry->name_length);
-            // printk("Current filename: %d | %d | %d | %s\n", cur_entry->name_length, i, *current_index, filename);
             kfree(filename);
         } else {
             i--;
@@ -308,7 +265,6 @@ static inline int basicbtfs_cache_emit_block_debug(struct basicbtfs_block *btfs_
         *current_index += 1;
     }
 
-    // printk("current index: %d\n", *current_index);
     return 0;
 }
 
@@ -334,14 +290,12 @@ static inline uint32_t basicbtfs_btree_node_cache_lookup(struct basicbtfs_btree_
     uint32_t ret = 0;
     int index = 0;
 
-    // hash > btr_node->entries[index].hash
     while (index < btr_node->nr_of_keys && hash > btr_node->entries[index].hash) {
         index++;
         counter++;
     }
-    // btr_node->entries[index].hash == hash
+
     if (btr_node->entries[index].hash == hash) {
-        // printk(KERN_INFO "Current counter: %d of %d\n", counter, hash);
         ret = btr_node->entries[index].ino;
         return ret;
     }
@@ -360,7 +314,6 @@ static inline uint32_t basicbtfs_cache_lookup_entry(struct super_block *sb, uint
 
     list_for_each_entry(dir_cache, &dir_cache_list, list) {
         if (dir_cache->bno == dir_bno) {
-            // printk("found in lookup cache\n");
             node_cache =  list_first_entry(&dir_cache->root_node_cache->list, struct basicbtfs_btree_node_cache, list);
             return basicbtfs_btree_node_cache_lookup(node_cache, hash, 0);
         }
@@ -382,24 +335,6 @@ static inline void basicbtfs_cache_delete_node(struct super_block *sb, uint32_t 
             break;
         }
     }
-
-    // basicbtfs_destroy_btree_node_data(node_cache);
 }
-
-// static inline void basicbtfs_cache_delete_name_block(struct super_block *sb, uint32_t dir_bno, struct basicbtfs_btree_node_cache *node_cache) {
-//     struct basicbtfs_btree_dir_cache_list *dir_cache, *tmp;
-//     list_for_each_entry_safe(dir_cache, tmp, &dir_cache_list, list) {
-//         if (dir_cache->bno == dir_bno) {
-//             list_del(&dir_cache->list);
-//             dir_cache->nr_of_blocks--;
-//             list_add(&dir_cache->list, &dir_cache_list);
-//             list_del(&node_cache->list);
-//             basicbtfs_destroy_file_block((struct basicbtfs_block *) node_cache);
-//             break;
-//         }
-//     }
-
-//     // basicbtfs_destroy_btree_node_data(node_cache);
-// }
 
 #endif

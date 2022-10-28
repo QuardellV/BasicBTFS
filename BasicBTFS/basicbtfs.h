@@ -92,14 +92,11 @@ struct basicbtfs_entry {
     uint32_t hash;
     uint32_t name_bno;
     uint32_t block_index;
-    // char salt[BASICBTFS_SALT_LENGTH];
-    // char hash_name[BASICBTFS_NAME_LENGTH];
 };
 
 struct basicbtfs_name_entry {
     uint32_t ino;
     uint32_t name_length;
-    // char filename[];
 };
 
 struct basicbtfs_name_list_hdr {
@@ -109,7 +106,6 @@ struct basicbtfs_name_list_hdr {
     uint32_t next_block;
     uint32_t prev_block;
     bool first_list;
-    // uint32_t block_type;
 };
 
 struct basicbtfs_name_list_block {
@@ -125,7 +121,6 @@ struct basicbtfs_cluster {
 struct basicbtfs_cluster_table {
     uint32_t nr_of_clusters;
     uint32_t ino;
-    // uint32_t block_type;
     struct basicbtfs_cluster table[BASICBTFS_ATABLE_MAX_CLUSTERS];
 };
 
@@ -137,7 +132,6 @@ struct basicbtfs_alloc_table {
 struct basicbtfs_btree_node {
     struct basicbtfs_entry entries[2 * BASICBTFS_MIN_DEGREE - 1];
     uint32_t children[2 * BASICBTFS_MIN_DEGREE];
-    // uint32_t block_type;
     uint32_t parent;
     uint32_t tree_name_bno;
     uint32_t nr_of_keys;
@@ -165,7 +159,6 @@ struct basicbtfs_disk_block {
         struct basicbtfs_cluster_table cluster_table;
         struct basicbtfs_name_list_hdr name_list_hdr;
     } block_type;
-    // char block[BASICBTFS_BLOCKSIZE - sizeof(uint32_t)];
 };
 
 struct basicbtfs_block {

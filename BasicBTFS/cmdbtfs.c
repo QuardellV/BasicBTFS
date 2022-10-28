@@ -54,24 +54,6 @@ void init_default_commands() {
 
     init_command("defragment", BASICBTFS_IOC_DEFRAG);
     init_command("defrag", BASICBTFS_IOC_DEFRAG);
-    // init_command("quit"     , CMD_QUIT);
-    // init_command("q"        , CMD_QUIT);
-    // init_command("help"     , CMD_HELP);
-    // init_command("h"        , CMD_HELP);
-    // init_command("file"     , CMD_FILE);
-    // init_command("run"      , CMD_RUN);
-    // init_command("r"        , CMD_RUN);
-    // init_command("input"    , CMD_INPUT);
-    // init_command("break"    , CMD_BREAK);
-    // init_command("b"        , CMD_BREAK);
-    // init_command("step"     , CMD_STEP);
-    // init_command("s"        , CMD_STEP);
-    // init_command("continue" , CMD_CONTINUE);
-    // init_command("c"        , CMD_CONTINUE);
-    // init_command("info"     , CMD_INFO);
-    // init_command("backtrace", CMD_BACKTRACE);
-    // init_command("bt"       , CMD_BACKTRACE);
-
 }
 
 unsigned long search_command(char *command) {
@@ -116,9 +98,8 @@ int main(int argc, char **argv) {
                 if (fd == -1) {
                     perror("could not open disk\n");
                     return EXIT_FAILURE;
-                } else {
-                    printf("yes boys\n");
                 }
+                
                 ret = ioctl(fd, cur_cmd_code, (int32_t *) &args);
 
                 if (ret != -1) {

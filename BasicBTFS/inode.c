@@ -236,8 +236,6 @@ static int basicbtfs_create(struct inode *dir, struct dentry *dentry, umode_t mo
             brelse(bh);
             return -EIO;
         }
-
-        printk("new directory with btree and nametree: %d | %d\n", BASICBTFS_INODE(inode)->i_bno, node->tree_name_bno);
         
         node_cache = (struct basicbtfs_btree_node_cache *)basicbtfs_alloc_file(sb);
         // // basicbtfs_destroy_btree_node_data(node_cache);
@@ -252,17 +250,12 @@ static int basicbtfs_create(struct inode *dir, struct dentry *dentry, umode_t mo
 
     } else if (S_ISREG(inode->i_mode)) {
         bh = sb_bread(sb, BASICBTFS_INODE(inode)->i_bno);
-        printk("new file with file cluster entry: %d\n", BASICBTFS_INODE(inode)->i_bno);
 
         if (!bh) return -EIO;
         disk_block = (struct basicbtfs_disk_block *) bh->b_data;
         disk_block->block_type.cluster_table.ino = inode->i_ino;
         disk_block->block_type_id =BASICBTFS_BLOCKTYPE_CLUSTER_TABLE;
 
-        // cluster_list = (struct basicbtfs_cluster_table *) bh->b_data;
-        // cluster_list->ino = inode->i_ino;
-        // cluster_list->block_type = BASICBTFS_BLOCKTYPE_CLUSTER_TABLE;
-        printk("ino of file: %ld\n", inode->i_ino);
         mark_buffer_dirty(bh);
         brelse(bh);
     }
@@ -270,7 +263,6 @@ static int basicbtfs_create(struct inode *dir, struct dentry *dentry, umode_t mo
     ret = basicbtfs_add_entry(dir, inode, dentry);
     if (ret < 0) {
         put_blocks(BASICBTFS_SB(sb), BASICBTFS_INODE(inode)->i_bno, 1);
-        // dir->i_blocks--;
         put_inode(BASICBTFS_SB(sb), inode->i_ino);
         iput(inode);
         return ret;
@@ -352,18 +344,13 @@ static int basicbtfs_unlink(struct inode *dir ,struct dentry *dentry) {
         basicbtfs_nametree_free_namelist_blocks(sb, basicbtfs_disk_block->block_type.btree_node.tree_name_bno );
         basicbtfs_btree_free_dir(sb, inode, bno);
         put_inode(sbi, ino);
-        printk("nr of cache entries before: %d\n", sbi->s_cache_dir_entries);
+
         basicbtfs_cache_delete_dir(sb, bno);
         clean_inode(inode);
-        printk("nr of cache entries after: %d\n", sbi->s_cache_dir_entries);
-        // basicbtfs_cache_delete_dir(sb, BASICBTFS_INODE(inode)->i_bno);
-        //TODO: Bug
+
+
     } else if (S_ISREG(inode->i_mode)) {
         basicbtfs_file_free_blocks(inode);
-        // clean_file_block(inode);
-        // clean_inode(inode);
-        // put_blocks(sbi, bno, 1);
-        // put_inode(sbi, ino);
     }
 
     return ret;
@@ -384,7 +371,6 @@ static int basicbtfs_rmdir(struct inode *dir, struct dentry *dentry) {
 
     if (!bh) return -EIO;
 
-    // node = (struct basicbtfs_btree_node *) bh->b_data;
     disk_block = (struct basicbtfs_disk_block *) bh->b_data;
     node = &disk_block->block_type.btree_node;
 
@@ -398,15 +384,6 @@ static int basicbtfs_rmdir(struct inode *dir, struct dentry *dentry) {
 }
 
 static int basicbtfs_rename(struct inode *old_dir, struct dentry *old_dentry, struct inode *new_dir, struct dentry *new_dentry, unsigned int flags) {
-    /*
-     * 1. Check flags, and do what is necessary: RENAME_EXCHANGE, RENAME_NOREPLACE, RENAME_WHITEOUT?
-     * 2. Check name length
-     * 3. check if dentry exists. If true, replace
-     * 4. otherwise, add if non-full directory
-     * 5. update new dir metadata
-     * 6. remove from old dir
-     * 7. update old dir metadata
-     */
     int ret = 0;
 
     nr_of_inode_operations = increase_counter(nr_of_inode_operations, BASICBTFS_DEFRAG_PERIOD);
