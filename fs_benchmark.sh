@@ -3,7 +3,7 @@
 
 cd BasicBTFS
 
-./clean.sh && ./benchmark_btfs.sh && ./clean.sh
+./clean.sh && ./benchmark_basicbtfs.sh && ./clean.sh
 
 cd ../BasicBTFSNC
 
