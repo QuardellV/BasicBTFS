@@ -13,50 +13,42 @@ do
     tmp=$((2 ** i))
     tmp_dir=$BW_DIR/K${i}_${tmp}K
     echo $tmp
-
     mkdir ../$tmp_dir
 
-    ./clean.sh && ./test.sh
-    cd test/mnt
-    sudo fio --output-format=json+  --output=../../../$tmp_dir/linbtrfsbw${tmp}K.output --size=${tmp}K ../../perfbw.fio
+    for j in {0..20..1};
+    do
+        mkdir ../$tmp_dir/$j
 
-    fio_jsonplus_clat2csv ../../../$tmp_dir/linbtrfsbw${tmp}K.output ../../../$tmp_dir/linbtrfsbw${tmp}K.csv
-    cd ../../../$tmp_dir
-    # fio_generate_plots ${tmp}K_bw.1.log
+        ./clean.sh && ./test.sh
+        cd test/mnt
+        sudo fio --output-format=json+  --output=../../../$tmp_dir/$j/linbtrfsbw${tmp}K.output --size=${tmp}K ../../perfbw.fio
 
-    # rm -rf ${tmp}K_bw.1.log
-    # rm -rf ${tmp}K_clat.1.log
-    # rm -rf ${tmp}K_iops.1.log
-    # rm -rf ${tmp}K_lat.1.log
-    # rm -rf ${tmp}K_slat.1.log
-
-    cd ../../../../../BTRFS
+        fio_jsonplus_clat2csv ../../../$tmp_dir/$j/linbtrfsbw${tmp}K.output ../../../$tmp_dir/$j/linbtrfsbw${tmp}K.csv
+        cd ../../../$tmp_dir
+        cd ../../../../../BTRFS
+    done
 
 done
 
-for i in {0..9..1};
+for i in {0..1..1};
 do
     tmp=$((2 ** i))
     echo $tmp
     tmp_dir=$BW_DIR/M${i}_${tmp}M
-
     mkdir ../$tmp_dir
 
-    ./clean.sh && ./test.sh
-    cd test/mnt
-    sudo fio --output-format=json+  --output=../../../$tmp_dir/linbtrfsbw${tmp}M.output --size=${tmp}M ../../perfbw.fio
+    for j in {0..20..1};
+    do
+        mkdir ../$tmp_dir/$j
 
-    fio_jsonplus_clat2csv ../../../$tmp_dir/linbtrfsbw${tmp}M.output ../../../$tmp_dir/linbtrfsbw${tmp}M.csv
-    cd ../../../$tmp_dir
-    # fio_generate_plots ${tmp}M_bw.1.log
+        ./clean.sh && ./test.sh
+        cd test/mnt
+        sudo fio --output-format=json+  --output=../../../$tmp_dir/$j/linbtrfsbw${tmp}M.output --size=${tmp}M ../../perfbw.fio
 
-    # rm -rf ${tmp}M_bw.1.log
-    # rm -rf ${tmp}M_clat.1.log
-    # rm -rf ${tmp}M_iops.1.log
-    # rm -rf ${tmp}M_lat.1.log
-    # rm -rf ${tmp}M_slat.1.log
-
-    cd ../../../../../BTRFS
+        fio_jsonplus_clat2csv ../../../$tmp_dir/$j/linbtrfsbw${tmp}M.output ../../../$tmp_dir/$j/linbtrfsbw${tmp}M.csv
+        cd ../../../$tmp_dir
+        cd ../../../../../BTRFS
+    done
 done
 
 sudo rm -rf ../$LAT_DIR
@@ -67,49 +59,39 @@ do
     tmp=$((2 ** i))
     tmp_dir=$LAT_DIR/K${i}_${tmp}K
     echo $tmp
-
     mkdir ../$tmp_dir
 
-    ./clean.sh && ./test.sh
-    cd test/mnt
-    sudo fio --output-format=json+  --output=../../../$tmp_dir/linbtrfslat${tmp}K.output --size=${tmp}K ../../perflatency.fio
+    for j in {0..20..1};
+    do
+        mkdir ../$tmp_dir/$j
 
-    fio_jsonplus_clat2csv ../../../$tmp_dir/linbtrfslat${tmp}K.output ../../../$tmp_dir/linbtrfslat${tmp}K.csv
-    cd ../../../$tmp_dir
-    # fio_generate_plots ${tmp}K_lat.1.log
-    # rm -rf ${tmp}K_bw.1.log
-    # rm -rf ${tmp}K_clat.1.log
-    # rm -rf ${tmp}K_iops.1.log
-    # rm -rf ${tmp}K_lat.1.log
-    # rm -rf ${tmp}K_slat.1.log
-    cd ../../../../../BTRFS
+        ./clean.sh && ./test.sh
+        cd test/mnt
+        sudo fio --output-format=json+  --output=../../../$tmp_dir/$j/linbtrfslat${tmp}K.output --size=${tmp}K ../../perflatency.fio
+
+        fio_jsonplus_clat2csv ../../../$tmp_dir/$j/linbtrfslat${tmp}K.output ../../../$tmp_dir/$j/linbtrfslat${tmp}K.csv
+        cd ../../../$tmp_dir
+        cd ../../../../../BTRFS
+    done
 done
 
-for i in {0..9..1};
+for i in {0..1..1};
 do
     tmp=$((2 ** i))
     echo $tmp
     tmp_dir=$LAT_DIR/M${i}_${tmp}M
-
     mkdir ../$tmp_dir
 
-    ./clean.sh && ./test.sh
-    cd test/mnt
-    sudo fio --output-format=json+  --output=../../../$tmp_dir/linbtrfslat${tmp}M.output --size=${tmp}M ../../perflatency.fio
+    for j in {0..20..1};
+    do
+        mkdir ../$tmp_dir/$j
 
-    fio_jsonplus_clat2csv ../../../$tmp_dir/linbtrfslat${tmp}M.output ../../../$tmp_dir/linbtrfslat${tmp}M.csv
-    cd ../../../$tmp_dir
-    # fio_generate_plots ${tmp}M_lat.1.log
-    # rm -rf ${tmp}M_bw.1.log
-    # rm -rf ${tmp}M_clat.1.log
-    # rm -rf ${tmp}M_iops.1.log
-    # rm -rf ${tmp}M_lat.1.log
-    # rm -rf ${tmp}M_slat.1.log
+        ./clean.sh && ./test.sh
+        cd test/mnt
+        sudo fio --output-format=json+  --output=../../../$tmp_dir/$j/linbtrfslat${tmp}M.output --size=${tmp}M ../../perflatency.fio
 
-    cd ../../../../../BTRFS
+        fio_jsonplus_clat2csv ../../../$tmp_dir/$j/linbtrfslat${tmp}M.output ../../../$tmp_dir/$j/linbtrfslat${tmp}M.csv
+        cd ../../../$tmp_dir
+        cd ../../../../../BTRFS
+    done
 done
-
-# 2. Application benchmarks with and without defragmentation test defragmentation by regularly defragmenting the thing
-#   - Mail server
-#   - sql database
-#   - file server

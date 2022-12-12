@@ -2053,6 +2053,7 @@ init() {
     dd if=/dev/zero of=test/test.img bs=1 count=0 seek=15G
     mkfs.btrfs test/test.img
     sudo mount -o loop -t btrfs test/test.img $ROOT_DIR
+    sudo btrfs quota disable $ROOT_DIR
 }
 
 test_create_root $D_MOD "2" "test" "root"
