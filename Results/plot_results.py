@@ -111,35 +111,42 @@ def handle_benchmark(type, header):
                 handle_fs_dir(fs_dir, writer, dirname)
                 csvfile.close()
 
-def aggregrate_df(csv_file):
-    print(csv_file)
-    df = pandas.read_csv(csv_file, delimiter=',', quotechar='|')
+def print_debug(df):
+    print("bandwidth read %s: %f" % ("min", df["r_bw_mean"].min()))
+    print("bandwidth read %s: %f" % ("max", df["r_bw_mean"].max()))
+    print("bandwidth read %s: %f" % ("mean", df["r_bw_mean"].mean()))
+
+    print("bandwdith write %s: %f" % ("min", df["w_bw_mean"].min()))
+    print("bandwdith write %s: %f" % ("max", df["w_bw_mean"].max()))
+    print("bandwidth write %s: %f" % ("mean", df["w_bw_mean"].mean()))
+
+    print("latency read %s: %f" % ("min", df["r_lat_mean"].min()))
+    print("latency read %s: %f" % ("max", df["r_lat_mean"].max()))
+    print("latency read %s: %f" % ("mean", df["r_lat_mean"].mean()))
+    
+    print("latency write %s: %f" % ("min", df["w_lat_mean"].min()))
+    print("latency write %s: %f" % ("max", df["w_lat_mean"].max()))
+    print("latency write %s: %f" % ("mean", df["w_lat_mean"].mean()))
+
+
+def aggregrate_df(df):
     df_final = copy.copy(df)
     df_final = df_final[0:0]
 
 
     for group_name, df_group in df.groupby(['size', 'size_verbose', 'config']):
+        print("------------------------------- current config: (%s, %s) -------------------------------" % (group_name[1], group_name[2]))
+        print_debug(df_group)
         new_row = [group_name[0], group_name[1], df_group["r_bw_mean"].mean(), df_group['r_lat_mean'].mean(),
                     df_group['r_bw'].mean(), df_group['r_iops'].mean(),df_group['w_bw_mean'].mean(), df_group['w_lat_mean'].mean(),
                     df_group['w_bw'].mean(), df_group['w_iops'].mean(), group_name[2]]
         df_final.loc[len(df_final)] = new_row
     return df_final
 
-def plot_fig(df, x, y, name, config_list : dict, ylabel):
+def plot_fig_avg(df, x, y, name, config_list : dict, ylabel):
     template = "plotly_white"
     output_dir = ""
     xtick_set = False
-    bw_list =  [df[(df["config"] == "btfsbw")], 
-                df[(df["config"] == "btfsnocachebw")], 
-                df[(df["config"] == "ftfsbw")], 
-                df[(df["config"] == "linbtrfsbw")], 
-                df[(df["config"] == "linfatfsbw")]]
-    lat_list = [df[(df["config"] == "btfslat")],
-                df[(df["config"] == "btfsnocachelat")],
-                df[(df["config"] == "ftfslat")],
-                df[(df["config"] == "linbtrfslat")],
-                df[(df["config"] == "linfatfslat")]]
-
     fig = px.line(df, x=x, y=y, color="config", template=template,
               labels={
                   x: "Size [Bytes]", y: "CPU usage [%]", "config": "Filesystem"
@@ -150,9 +157,14 @@ def plot_fig(df, x, y, name, config_list : dict, ylabel):
     with open(filename, "wb") as f:
         f.write(scope.transform(fig, format="pdf"))
 
+    plt.rcParams.update({'font.size': 12})
+    plt.rcParams["figure.figsize"] = (10,5)
+
 
     for config, label in config_list.items():
         cur_df = df[(df["config"] == config)]
+        # print("------------------------------- current config: %s -------------------------------" % config)
+        # print(cur_df)
         plt.plot(cur_df[x], cur_df[y], label=label)
 
         if not xtick_set:
@@ -166,16 +178,15 @@ def plot_fig(df, x, y, name, config_list : dict, ylabel):
     
     plt.ylabel(ylabel)
 
-    tmp = ("%s_plt.pdf" % name)
+    tmp = ("%s_plt_median.pdf" % name)
     filename = os.path.join(output_dir, tmp)
     plt.savefig(filename, bbox_inches='tight')
     plt.show()
-    # fig = plt.figure()
-    # plt.plot(x, y)
 
 def plot():
     frames_bw = []
     frames_lat = []
+
     configs_bw = {"btfsbw" : "BasicBtreeFS", 
                   "btfsnocachebw" : "BasicBtreeFSNoCache", 
                   "ftfsbw" : "BasicLinkFS", 
@@ -191,25 +202,25 @@ def plot():
         csv_file = os.path.join("csv", csv)
 
         if os.path.isfile(csv_file) and csv_file.endswith("bw.csv"):
-            frames_bw.append(aggregrate_df(csv_file))
+            df = pandas.read_csv(csv_file, delimiter=',', quotechar='|')
+            frames_bw.append(aggregrate_df(df))
         elif os.path.isfile(csv_file) and csv_file.endswith("lat.csv"):
-            frames_lat.append(aggregrate_df(csv_file))
+            df = pandas.read_csv(csv_file, delimiter=',', quotechar='|')
+            frames_lat.append(aggregrate_df(df))
         
     df_bw = pandas.concat(frames_bw)
     df_lat = pandas.concat(frames_lat)
-
+    
     df_bw["r_bw_mean"] = df_bw["r_bw_mean"].apply(pandas.to_numeric).transform(lambda x: x / (1000 * 1000))
     df_bw["w_bw_mean"] = df_bw["w_bw_mean"].apply(pandas.to_numeric).transform(lambda x: x / (1000 * 1000))
     df_lat["r_lat_mean"] = df_lat["r_lat_mean"].apply(pandas.to_numeric).transform(lambda x: x / 1000)
     df_lat["w_lat_mean"] = df_lat["w_lat_mean"].apply(pandas.to_numeric).transform(lambda x: x / 1000)
 
-    print(df_bw)
-    print(df_lat)
+    plot_fig_avg(df_bw, "size", "r_bw_mean", "Read_Bandwidth", configs_bw, "Bandwidth [GiB/s]")
+    plot_fig_avg(df_bw, "size", "w_bw_mean", "Write_Bandwidth", configs_bw, "Bandwidth [GiB/s]")
+    plot_fig_avg(df_lat, "size", "r_lat_mean", "Read_Latency", configs_lat, "Latency [\u03bcsec]")
+    plot_fig_avg(df_lat, "size", "w_lat_mean", "Write_Latency", configs_lat, "Latency [\u03bcsec]")
 
-    plot_fig(df_bw, "size", "r_bw_mean", "Read_Bandwidth", configs_bw, "Bandwidth [GiB/s]")
-    plot_fig(df_bw, "size", "w_bw_mean", "Write_Bandwidth", configs_bw, "Bandwidth [GiB/s]")
-    plot_fig(df_lat, "size", "r_lat_mean", "Read_Latency", configs_lat, "Latency [\u03bcsec]")
-    plot_fig(df_lat, "size", "w_lat_mean", "Write_Latency", configs_lat, "Latency [\u03bcsec]")
 
 if __name__=="__main__":
 

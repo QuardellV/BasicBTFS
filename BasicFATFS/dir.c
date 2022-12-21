@@ -198,7 +198,7 @@ int basicftfs_add_entry(struct inode *dir, struct inode *inode, struct dentry *d
 
 int basicftfs_delete_entry(struct inode *dir, struct inode *inode) {
     struct super_block *sb = dir->i_sb;
-    struct buffer_head *bh = NULL, *bh2 = NULL, *bh_prev = NULL;
+    struct buffer_head *bh = NULL, *bh_block = NULL, *bh_prev = NULL;
     struct basicftfs_alloc_table *cblock = NULL;
     struct basicftfs_entry *entry_cur_saddr = NULL,*entry_cur = NULL, *entry_prev = NULL;
     int bi = 0, fi = 0;
@@ -212,12 +212,12 @@ int basicftfs_delete_entry(struct inode *dir, struct inode *inode) {
     cblock = (struct basicftfs_alloc_table *) bh->b_data;
     while (bi < BASICFTFS_ATABLE_MAX_BLOCKS && cblock->table[bi] != 0) {
         uint32_t page = cblock->table[bi];
-        bh2 = sb_bread(sb, page);
-        if (!bh2) {
+        bh_block = sb_bread(sb, page);
+        if (!bh_block) {
             brelse(bh);
             return -EIO;
         }
-        entry_cur_saddr = (struct basicftfs_entry *) bh2->b_data;
+        entry_cur_saddr = (struct basicftfs_entry *) bh_block->b_data;
         entry_cur = entry_cur_saddr;
 
         if (entry_cur->ino == 0) {
@@ -226,17 +226,17 @@ int basicftfs_delete_entry(struct inode *dir, struct inode *inode) {
 
         if (has_found) {
             move_files(entry_prev, entry_cur_saddr);
-            mark_buffer_dirty(bh2);
+            mark_buffer_dirty(bh_block);
             brelse(bh_prev);
-            bh_prev = bh2;
+            bh_prev = bh_block;
             entry_prev = entry_cur_saddr;
         } else {
             for (fi = 0; fi < BASICFTFS_ENTRIES_PER_BLOCK; fi++) {
                 if (entry_cur->ino == inode->i_ino) {
                     has_found = true;
                     remove_file_from_dir(fi, entry_cur_saddr);
-                    mark_buffer_dirty(bh2);
-                    bh_prev = bh2;
+                    mark_buffer_dirty(bh_block);
+                    bh_prev = bh_block;
                     entry_prev = entry_cur_saddr;
                     break;
                 }
@@ -245,7 +245,7 @@ int basicftfs_delete_entry(struct inode *dir, struct inode *inode) {
         }
 
         if (!has_found) {
-            brelse(bh2);
+            brelse(bh_block);
         }
         bi++;
     }
@@ -357,7 +357,7 @@ int clean_file_block(struct inode *inode) {
     struct basicftfs_sb_info *sbi = BASICFTFS_SB(sb);
     uint32_t bno = 0;
     int bi = 0;
-    struct buffer_head *bh = NULL, *bh2 = NULL;
+    struct buffer_head *bh = NULL, *bh_block = NULL;
 
     struct basicftfs_alloc_table *file_block = NULL;
 
@@ -374,13 +374,13 @@ int clean_file_block(struct inode *inode) {
         put_blocks(sbi, file_block->table[bi], 1);
 
         bno = file_block->table[bi];
-        bh2 = sb_bread(sb, bno);
-        if (!bh2) {
+        bh_block = sb_bread(sb, bno);
+        if (!bh_block) {
             continue;
         }
 
-        block = (char *) bh2->b_data;
-        reset_block(block, bh2);
+        block = (char *) bh_block->b_data;
+        reset_block(block, bh_block);
         bi++;
     }
 
