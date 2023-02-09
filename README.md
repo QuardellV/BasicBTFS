@@ -66,6 +66,10 @@ For the latency, a random sequence of reading and writing in a file will be done
 ## Plotting
 In order to measure the benchmarks of the correctly, ``` Results/jsonparsers.py ``` have been written to retrieve the correct data to correctly plot the benchmarks. Of each benchmark of each file size, the benchmark in terms of either the bandwidth mean or the latency mean and have been added to one of the corresponding csv files. Both for reading and for reading, there is benchmark in bandwidth and the latency. In this case, the ```bw_r_mean```, ```bw_w_mean```, ```lat_r_mean```, ```lat_w_mean```, have been retrieved from the json and added to their corresponding csv files. So, there are four csv files: bw read, bw write, latency read, and latency write where the file size in B is the x-axis and the latency in ms and the bandwidth ms are the y-axis. Using this CSV file, the benchmark can be plotted using which tool you ever want. For this paper, Latex has been used.
 
-Within each filesystem, the performance of the filesystem in terms of bandwidth and latency can be performed using the following command within each filesystem directory: ``` ./performancetest.sh``` 
+Within each filesystem, the performance of the filesystem in terms of bandwidth and latency can be performed using the following command within each filesystem directory: ``` ./benchmark_<fs>.sh`` 
 
-If the performance of all filesystems in terms of bandwidth and latency need to be performed, the following command can be used within the root directory of the working space: ```./performancetest.sh```
+If the performance of all filesystems in terms of bandwidth and latency need to be performed, the following command can be used within the root directory of the working space: ```./fs_benchmark.sh```
+
+We can plot the results for all filesystems using the following command: ```python3 plot_results.py```. These plots show the average bandwidth/latency over the file size, using the average based on the amount of iterations you decided to choose.
+
+We can plot verbose results for an individual filesystem using he following command: ```python3 plot_results_box.py```. These plots shows the boxplot of the bandwidth/latency over the file size, where the boxplot are all the results of all iterations over a certain file size.
